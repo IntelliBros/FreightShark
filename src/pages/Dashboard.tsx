@@ -1,0 +1,291 @@
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { TruckIcon, PackageIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, AlertCircleIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
+export const Dashboard = () => {
+  const { user } = useAuth();
+  const { shipments } = useData();
+  
+  // Filter shipments for current user
+  const userShipments = useMemo(() => {
+    if (!user) return [];
+    return shipments.filter(shipment => shipment.customerId === user.id);
+  }, [shipments, user]);
+  
+  // Get active shipments (In Transit, Customs, Awaiting Pickup)
+  const activeShipments = useMemo(() => {
+    return userShipments
+      .filter(shipment => 
+        shipment.status === 'In Transit' || 
+        shipment.status === 'Customs' || 
+        shipment.status === 'Awaiting Pickup'
+      )
+      .map(shipment => {
+        // Calculate progress based on status
+        // Status flow: Waiting for Pickup (20%) -> Invoice Payment (10%) -> Shipment IDs (10%) -> In Progress (40%) -> Delivered (20%)
+        let progress = 0;
+        let displayStatus = shipment.status;
+        
+        // Check for Missing Shipment IDs status
+        if (shipment.invoice?.status === 'Paid' && 
+            shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
+          displayStatus = 'Missing Shipment IDs';
+          progress = 30; // Waiting (20%) + Payment (10%)
+        } else if (shipment.invoice?.status === 'Paid' && 
+                   shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+          // IDs provided, check actual status
+          switch (shipment.status) {
+            case 'Delivered':
+              displayStatus = 'Delivered';
+              progress = 100;
+              break;
+            case 'Awaiting Pickup':
+              displayStatus = 'Waiting for Pickup';
+              progress = 40; // Waiting (20%) + Payment (10%) + IDs (10%)
+              break;
+            default:
+              // Any other status with payment and IDs means "In Progress"
+              displayStatus = 'In Progress';
+              progress = 80; // Waiting (20%) + Payment (10%) + IDs (10%) + In Progress (40%)
+          }
+        } else {
+          switch (shipment.status) {
+            case 'Awaiting Pickup': 
+              displayStatus = 'Waiting for Pickup';
+              progress = 20; 
+              break;
+            case 'In Transit':
+            case 'Customs':
+              displayStatus = 'In Progress';
+              progress = 80; 
+              break;
+            case 'Delivered': 
+              progress = 100; 
+              break;
+          }
+        }
+        
+        // Get first destination for display
+        const firstDest = shipment.destinations[0];
+        
+        return {
+          id: shipment.id,
+          status: displayStatus,
+          from: 'China', // You can enhance this by adding origin to the data model
+          to: firstDest ? firstDest.fbaWarehouse : 'N/A',
+          eta: new Date(shipment.estimatedDelivery).toLocaleDateString(),
+          progress
+        };
+      });
+  }, [userShipments]);
+  
+  // Calculate stats
+  const stats = useMemo(() => ({
+    activeShipments: activeShipments.length,
+    completedShipments: userShipments.filter(s => s.status === 'Delivered').length,
+    sampleShipments: 0 // This can be enhanced when sample shipments are added to the data model
+  }), [activeShipments, userShipments]);
+  return <div className="max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-[#2E3B55]">
+          Welcome back, {user?.name}
+        </h1>
+        <p className="text-gray-600 text-sm mt-1">
+          Here's what's happening with your shipments.
+        </p>
+      </div>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
+          <div className="w-12 h-12 rounded-full bg-[#E6EDF8] flex items-center justify-center mr-4">
+            <TruckIcon className="w-5 h-5 text-[#2E3B55]" />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-[#2E3B55]">{stats.activeShipments}</div>
+            <div className="text-sm text-gray-500">Active Shipments</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
+          <div className="w-12 h-12 rounded-full bg-[#FFF3E0] flex items-center justify-center mr-4">
+            <PackageIcon className="w-5 h-5 text-[#F7941D]" />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-[#2E3B55]">{stats.sampleShipments}</div>
+            <div className="text-sm text-gray-500">Sample Shipments</div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
+          <div className="w-12 h-12 rounded-full bg-[#E8F5E9] flex items-center justify-center mr-4">
+            <CheckCircleIcon className="w-5 h-5 text-[#4CAF50]" />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-[#2E3B55]">{stats.completedShipments}</div>
+            <div className="text-sm text-gray-500">Completed Shipments</div>
+          </div>
+        </div>
+      </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-[#2E3B55]">
+                New Shipment
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Ready to get started with a new shipment? Click the button below
+                to request a quote.
+              </p>
+            </div>
+            <img src="/image.png" alt="Shipping illustration" className="w-24 h-24 object-contain" />
+          </div>
+          <Link to="/quotes/new">
+            <Button variant="primary" className="mt-2">
+              <span className="mr-1">+</span> New shipment
+            </Button>
+          </Link>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-[#2E3B55]">
+                Sample Shipment
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Ready to get started with a new sample shipment? Click the
+                button below to begin.
+              </p>
+            </div>
+            <img src="/image.png" alt="Sample shipping illustration" className="w-24 h-24 object-contain" />
+          </div>
+          <Link to="/samples">
+            <Button variant="secondary" className="mt-2">
+              <span className="mr-1">+</span> Sample shipment
+            </Button>
+          </Link>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Card title="Active Shipments" subtitle="Your current shipments in progress" color="blue">
+          {activeShipments.length > 0 ? <div className="space-y-4">
+              {activeShipments.map(shipment => <div key={shipment.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <Link to={`/shipments/${shipment.id}`} className="text-[#2E3B55] hover:underline font-medium text-sm">
+                        Shipment {shipment.id}
+                      </Link>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {shipment.from} → {shipment.to}
+                      </div>
+                    </div>
+                    <Badge variant={shipment.status === 'In Transit' ? 'info' : 'warning'}>
+                      {shipment.status}
+                    </Badge>
+                  </div>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-500">Progress</span>
+                      <span className="text-gray-700">
+                        {shipment.progress}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div className="bg-[#2E3B55] h-1.5 rounded-full" style={{
+                  width: `${shipment.progress}%`
+                }}></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center text-gray-500">
+                      <ClockIcon className="w-3 h-3 mr-1" />
+                      <span>ETA: {shipment.eta}</span>
+                    </div>
+                    <Link to={`/shipments/${shipment.id}`} className="flex items-center text-[#2E3B55] hover:text-[#1e2940]">
+                      <span className="mr-1">Details</span>
+                      <ArrowRightIcon className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>)}
+            </div> : <div className="text-center py-8">
+              <PackageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-sm font-medium text-gray-700 mb-1">
+                No active shipments
+              </h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Start by creating a new quote
+              </p>
+              <Link to="/quotes/new">
+                <Button variant="primary" size="sm">
+                  Create Quote
+                </Button>
+              </Link>
+            </div>}
+        </Card>
+        <Card title="Announcements" subtitle="Latest updates and notifications" color="purple">
+          <div className="space-y-4">
+            <div className="p-4 bg-[#E6EDF8] rounded-lg flex items-start">
+              <div className="mr-3 mt-0.5">
+                <AlertCircleIcon className="w-4 h-4 text-[#2E3B55]" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-[#2E3B55]">
+                  Shipping Agent Update
+                </h4>
+                <p className="text-xs text-[#2E3B55]/80 mt-1">
+                  Some Amazon warehouses are experiencing delays due to capacity
+                  issues. Please check your shipment status regularly.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Posted 2 hours ago
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-yellow-50 rounded-lg flex items-start">
+              <div className="mr-3 mt-0.5">
+                <ClockIcon className="w-4 h-4 text-yellow-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-gray-900">
+                  Holiday Schedule Notice
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Our offices will be closed on December 25th and January 1st. 
+                  Please plan your shipments accordingly.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Posted yesterday
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-green-50 rounded-lg flex items-start">
+              <div className="mr-3 mt-0.5">
+                <CheckCircleIcon className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-gray-900">
+                  New Feature: Real-time Tracking
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  We've enhanced our tracking system with real-time updates. 
+                  Check your shipment status for live location data.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Posted 3 days ago
+                </p>
+              </div>
+            </div>
+            
+            <Button variant="secondary" fullWidth size="sm">
+              View All Announcements
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </div>;
+};
