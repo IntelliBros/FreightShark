@@ -62,51 +62,45 @@ export const ShipmentsList = () => {
   };
 
   const getProgressPercentage = (shipment: any) => {
-    // Status flow: Waiting for Pickup (20%) -> Invoice Payment (10%) -> Shipment IDs (10%) -> In Progress (40%) -> Delivered (20%)
-    
-    // If invoice not paid yet
-    if (shipment.invoice?.status !== 'Paid') {
-      if (shipment.status === 'Awaiting Pickup') {
-        return 20; // Waiting for Pickup only
-      }
-      return 0;
-    }
-    
-    // If invoice is paid but missing shipment IDs
-    if (shipment.invoice?.status === 'Paid' && 
-        shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
-      return 30; // Waiting (20%) + Payment (10%)
-    }
-    
-    // If invoice is paid and all IDs are provided - this means shipment is at least "In Progress"
-    if (shipment.invoice?.status === 'Paid' && 
-        shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
-      // Check actual shipment status
-      switch (shipment.status) {
-        case 'Delivered':
-          return 100; // All complete
-        case 'Awaiting Pickup':
-          // If still awaiting pickup but has IDs, just completed ID step
-          return 40; // Waiting (20%) + Payment (10%) + IDs (10%)
-        default:
-          // Any other status with payment and IDs means "In Progress"
-          // This includes 'In Transit', 'Customs', or any intermediate status
-          return 80; // Waiting (20%) + Payment (10%) + IDs (10%) + In Progress (40%)
-      }
-    }
-    
-    // Fallback based on status only (shouldn't reach here often)
+    // Simplified progress based on status since invoices are created by staff
     const status = shipment.status;
+    
+    // If shipment has been created, it's at least at booking confirmed stage
+    if (status === 'Booking Confirmed' || status === 'Awaiting Pickup') {
+      return 20;
+    }
+    
+    // Check if invoice exists and is paid
+    if (shipment.invoice?.status === 'Paid') {
+      // If paid but missing IDs
+      if (shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
+        return 30;
+      }
+      // If paid and has IDs, check actual status
+      if (status === 'In Transit' || status === 'Customs' || status === 'In Progress') {
+        return 70;
+      }
+      if (status === 'Out for Delivery') {
+        return 90;
+      }
+      if (status === 'Delivered') {
+        return 100;
+      }
+      return 40; // Paid but still waiting
+    }
+    
+    // Status-based progress without invoice
     switch (status) {
-      case 'Awaiting Pickup':
-        return 20;
       case 'In Transit':
       case 'Customs':
+      case 'In Progress':
+        return 50;
+      case 'Out for Delivery':
         return 80;
       case 'Delivered':
         return 100;
       default:
-        return 0;
+        return 20; // Default for any shipment that exists
     }
   };
 
@@ -268,7 +262,7 @@ export const ShipmentsList = () => {
                   <div className="text-xs text-gray-700">
                     <div className="flex items-center mb-1">
                       <ClockIcon className="h-3 w-3 text-gray-500 mr-1" />
-                      <span>Created: {new Date(shipment.createdAt).toLocaleDateString()}</span>
+                      <span>Created: {shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString() : 'Date not available'}</span>
                     </div>
                     {shipment.trackingEvents && shipment.trackingEvents.length > 0 && (
                       <div className="text-xs text-gray-600 mt-2 italic">
@@ -289,7 +283,7 @@ export const ShipmentsList = () => {
                     <div className="mb-2">
                       <span className="text-gray-500 block">Est. Weight:</span>
                       <span className="text-gray-900 font-medium">
-                        {shipment.destinations.reduce((sum, d) => sum + (d.estimatedWeight || 0), 0)} kg
+                        {shipment.destinations.reduce((sum, d) => sum + (d.estimatedWeight || d.weight || 0), 0)} kg
                       </span>
                     </div>
                     {(shipment.invoice?.amount || shipment.estimatedTotal) && (
