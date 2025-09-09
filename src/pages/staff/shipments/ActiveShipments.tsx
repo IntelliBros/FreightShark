@@ -22,12 +22,8 @@ export const ActiveShipments = () => {
   const activeShipments = useMemo(() => {
     return shipments
       .filter(shipment => 
-        shipment.status === 'In Progress' ||
-        shipment.status === 'In Transit' || 
-        shipment.status === 'Customs' || 
-        shipment.status === 'Awaiting Pickup' ||
-        (shipment.invoice?.status === 'Paid' && 
-         shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === ''))
+        shipment.status !== 'Delivered' && 
+        shipment.status !== 'Cancelled' // Show all non-delivered, non-cancelled shipments
       )
       .map(shipment => {
         // Find the customer
@@ -40,7 +36,9 @@ export const ActiveShipments = () => {
         );
         
         // Get first destination for display
-        const firstDest = shipment.destinations[0];
+        const firstDest = shipment.destinations && shipment.destinations.length > 0 
+          ? shipment.destinations[0] 
+          : null;
         
         // Check if missing shipment IDs
         const missingShipmentIds = shipment.invoice?.status === 'Paid' && 
@@ -83,7 +81,9 @@ export const ActiveShipments = () => {
         
         // Get carrier from tracking number pattern or default
         let carrier = 'DHL Express';
-        const latestEvent = shipment.trackingEvents[shipment.trackingEvents.length - 1];
+        const latestEvent = shipment.trackingEvents && shipment.trackingEvents.length > 0 
+          ? shipment.trackingEvents[shipment.trackingEvents.length - 1]
+          : null;
         if (latestEvent?.location?.includes('UPS')) carrier = 'UPS';
         else if (latestEvent?.location?.includes('FedEx')) carrier = 'FedEx';
         
@@ -114,13 +114,15 @@ export const ActiveShipments = () => {
           destination: firstDest ? `${firstDest.fbaWarehouse}, USA` : 'USA',
           carrier,
           trackingNumber,
-          departureDate: new Date(shipment.createdAt).toLocaleDateString(),
+          departureDate: shipment.createdAt || shipment.created_at 
+            ? new Date(shipment.createdAt || shipment.created_at).toLocaleDateString() 
+            : 'Date not available',
           progress,
-          lastUpdate: latestEvent 
-            ? `${new Date(latestEvent.date).toLocaleDateString()} - ${latestEvent.description}`
+          lastUpdate: latestEvent && latestEvent.date
+            ? `${new Date(latestEvent.date).toLocaleDateString()} - ${latestEvent.description || 'Status update'}`
             : 'No updates yet',
-          totalCartons: shipment.destinations.reduce((sum, d) => sum + d.cartons, 0),
-          totalWeight: shipment.destinations.reduce((sum, d) => sum + d.estimatedWeight, 0)
+          totalCartons: shipment.destinations?.reduce((sum, d) => sum + (d.cartons || 0), 0) || 0,
+          totalWeight: shipment.destinations?.reduce((sum, d) => sum + (d.estimatedWeight || d.weight || 0), 0) || 0
         };
       });
   }, [shipments, quoteRequests, users]);
@@ -140,6 +142,8 @@ export const ActiveShipments = () => {
     switch (status) {
       case 'Missing Shipment IDs':
         return <Badge variant="error">{status}</Badge>;
+      case 'Booking Confirmed':
+        return <Badge variant="secondary">Booking Confirmed</Badge>;
       case 'Waiting for Pickup':
       case 'Awaiting Pickup':
         return <Badge variant="warning">Waiting for Pickup</Badge>;
