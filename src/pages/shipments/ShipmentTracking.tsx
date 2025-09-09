@@ -180,13 +180,15 @@ export const ShipmentTracking = () => {
         const transformedShipment = {
           ...shipment,
           invoice: updatedShipmentData.invoice,
-          timeline: (updatedShipmentData.trackingEvents || []).map((event: any) => ({
-            date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
-            event: event.description || 'No description',
-            location: event.location || 'Unknown location',
-            status: event.status,
-            type: event.type || 'tracking'
-          }))
+          timeline: Array.isArray(updatedShipmentData.trackingEvents) 
+            ? updatedShipmentData.trackingEvents.map((event: any) => ({
+                date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
+                event: event.description || 'No description',
+                location: event.location || 'Unknown location',
+                status: event.status,
+                type: event.type || 'tracking'
+              }))
+            : []
         };
         
         setShipment(transformedShipment);
@@ -373,9 +375,18 @@ export const ShipmentTracking = () => {
           
           console.log('Starting transformation with shipmentData:', shipmentData);
           console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
+          if (shipmentData.trackingEvents && !Array.isArray(shipmentData.trackingEvents)) {
+            console.warn('trackingEvents exists but is not an array:', shipmentData.trackingEvents);
+          }
           console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
+          if (shipmentData.destinations && !Array.isArray(shipmentData.destinations)) {
+            console.warn('destinations exists but is not an array:', shipmentData.destinations);
+          }
           if (shipmentData.invoice) {
             console.log('warehouseDetails type:', typeof shipmentData.invoice.warehouseDetails, 'isArray:', Array.isArray(shipmentData.invoice.warehouseDetails));
+            if (shipmentData.invoice.warehouseDetails && !Array.isArray(shipmentData.invoice.warehouseDetails)) {
+              console.warn('warehouseDetails exists but is not an array:', shipmentData.invoice.warehouseDetails);
+            }
           }
           
           transformedShipment = {
@@ -396,9 +407,13 @@ export const ShipmentTracking = () => {
             chargeableWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0
           },
           serviceMode: serviceMode,
-          currentLocation: Array.isArray(shipmentData.trackingEvents) && shipmentData.trackingEvents.length > 0 
-            ? shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1].location 
-            : quoteRequestData?.supplierDetails?.city || 'Unknown',
+          currentLocation: (() => {
+            if (Array.isArray(shipmentData.trackingEvents) && shipmentData.trackingEvents.length > 0) {
+              const lastEvent = shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1];
+              return lastEvent?.location || quoteRequestData?.supplierDetails?.city || 'Unknown';
+            }
+            return quoteRequestData?.supplierDetails?.city || 'Unknown';
+          })(),
           destinations: (() => {
             try {
               if (shipmentData.invoice && Array.isArray(shipmentData.invoice.warehouseDetails)) {
@@ -490,8 +505,10 @@ export const ShipmentTracking = () => {
           ],
           invoice: shipmentData.invoice || null
         };
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error transforming shipment data:', error);
+          console.error('Error stack:', error.stack);
+          console.error('ShipmentData at error:', shipmentData);
           addToast('Error processing shipment data', 'error');
           setIsLoading(false);
           return;
@@ -515,8 +532,10 @@ export const ShipmentTracking = () => {
             setActiveDestination(transformedShipment.destinations[0].id);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching shipment data:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         addToast('Failed to load shipment data', 'error');
       } finally {
         setIsLoading(false);
@@ -962,9 +981,13 @@ export const ShipmentTracking = () => {
                       <ClockIcon className="w-3.5 h-3.5 mr-1" />
                       <span>
                         Last updated:{' '}
-                        {Array.isArray(shipment.timeline) && shipment.timeline.length > 0 
-                          ? shipment.timeline[shipment.timeline.length - 1].date 
-                          : 'Date not available'}
+                        {(() => {
+                          if (Array.isArray(shipment.timeline) && shipment.timeline.length > 0) {
+                            const lastEvent = shipment.timeline[shipment.timeline.length - 1];
+                            return lastEvent?.date || 'Date not available';
+                          }
+                          return 'Date not available';
+                        })()}
                       </span>
                     </div>
                   </div>
