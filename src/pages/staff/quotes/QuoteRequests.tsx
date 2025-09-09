@@ -131,9 +131,9 @@ export const QuoteRequests = () => {
                     {request.serviceType}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {request.cargoDetails.cartonCount} cartons •{' '}
-                    {request.cargoDetails.grossWeight.toFixed(2)} kg •{' '}
-                    {request.cargoDetails.cbm} CBM
+                    {request.cargoDetails?.cartonCount || 0} cartons •{' '}
+                    {(request.cargoDetails?.grossWeight || 0).toFixed(2)} kg •{' '}
+                    {request.cargoDetails?.cbm || 0} CBM
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
                     From: {request.supplierDetails.city},{' '}
