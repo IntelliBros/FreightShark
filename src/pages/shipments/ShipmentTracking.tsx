@@ -346,7 +346,9 @@ export const ShipmentTracking = () => {
                           'ocean-lcl';
         
         // Transform shipment data to match component's expected format
-        const transformedShipment = {
+        let transformedShipment;
+        try {
+          transformedShipment = {
           id: shipmentData.id,
           status: shipmentData.status,
           quoteId: shipmentData.quoteId,
@@ -396,13 +398,26 @@ export const ShipmentTracking = () => {
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
               }),
-          timeline: (shipmentData.trackingEvents || []).map((event: any) => ({
-            date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
-            event: event.description || 'No description',
-            location: event.location || 'Unknown location',
-            status: event.status,
-            type: event.type || 'tracking'
-          })),
+          timeline: (shipmentData.trackingEvents || []).map((event: any) => {
+            console.log('Processing tracking event:', event);
+            if (!event) {
+              console.warn('Null event in trackingEvents');
+              return {
+                date: 'Date not available',
+                event: 'No description',
+                location: 'Unknown location',
+                status: 'Unknown',
+                type: 'tracking'
+              };
+            }
+            return {
+              date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
+              event: event.description || 'No description',
+              location: event.location || 'Unknown location',
+              status: event.status || 'Unknown',
+              type: event.type || 'tracking'
+            };
+          }),
           documents: [
             { id: 'doc-1', name: 'Commercial Invoice.pdf', type: 'invoice' },
             { id: 'doc-2', name: 'Packing List.xlsx', type: 'packing-list' },
@@ -415,6 +430,12 @@ export const ShipmentTracking = () => {
           ],
           invoice: shipmentData.invoice || null
         };
+        } catch (error) {
+          console.error('Error transforming shipment data:', error);
+          addToast('Error processing shipment data', 'error');
+          setIsLoading(false);
+          return;
+        }
         
         console.log('=== Shipment Data Debug ===');
         console.log('Original shipmentData from backend:', shipmentData);
@@ -879,7 +900,9 @@ export const ShipmentTracking = () => {
                       <ClockIcon className="w-3.5 h-3.5 mr-1" />
                       <span>
                         Last updated:{' '}
-                        {shipment.timeline[shipment.timeline.length - 1].date}
+                        {shipment.timeline && shipment.timeline.length > 0 
+                          ? shipment.timeline[shipment.timeline.length - 1].date 
+                          : 'Date not available'}
                       </span>
                     </div>
                   </div>
@@ -917,7 +940,7 @@ export const ShipmentTracking = () => {
                         </button>
                       </div>
                       <div className="space-y-0 max-h-[350px] overflow-auto pr-2">
-                        {shipment.timeline.map((event: any, index: number) => <div key={index} className="flex">
+                        {shipment.timeline && shipment.timeline.length > 0 ? shipment.timeline.map((event: any, index: number) => <div key={index} className="flex">
                             <div className="mr-3">
                               <div className="flex flex-col items-center">
                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
@@ -949,7 +972,9 @@ export const ShipmentTracking = () => {
                                 {event.location}
                               </p>
                             </div>
-                          </div>)}
+                          </div>) : (
+                          <div className="text-center text-sm text-gray-500">No tracking events available</div>
+                        )}
                         {shipment.status === 'Delivered' && (
                           <div className="flex">
                             <div className="mr-3">
