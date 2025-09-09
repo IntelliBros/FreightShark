@@ -133,8 +133,8 @@ export const AuthProvider: React.FC<{
         password: userData.password,
         company: userData.company || '',
         role: 'user', // Only customers can self-register
-        amazonSellerId: userData.amazonSellerId,
-        einTaxId: userData.einTaxId
+        amazon_seller_id: userData.amazonSellerId,
+        ein_tax_id: userData.einTaxId
       });
       
       if (createdUser) {

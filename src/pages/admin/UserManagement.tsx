@@ -70,7 +70,7 @@ export const UserManagement = () => {
         password: tempPassword,
         company: 'FreightShark', // Admin/Staff work for FreightShark
         role: inviteForm.role,
-        staffPosition: inviteForm.role === 'staff' ? inviteForm.staffPosition : undefined
+        staff_position: inviteForm.role === 'staff' ? inviteForm.staffPosition : undefined
       };
       
       // Use DataService.createUser which now handles password hashing
@@ -177,13 +177,13 @@ export const UserManagement = () => {
                     <Badge variant={getRoleBadgeVariant(user.role)}>
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </Badge>
-                    {user.staffPosition && <div className="text-xs text-gray-500 mt-1">
-                        {user.staffPosition}
+                    {user.staff_position && <div className="text-xs text-gray-500 mt-1">
+                        {user.staff_position}
                       </div>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.amazonSellerId && <div>Seller ID: {user.amazonSellerId}</div>}
-                    {user.einTaxId && <div>Tax ID: {user.einTaxId}</div>}
+                    {user.amazon_seller_id && <div>Seller ID: {user.amazon_seller_id}</div>}
+                    {user.ein_tax_id && <div>Tax ID: {user.ein_tax_id}</div>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
                     <button onClick={() => toggleActions(user.id)} className="text-gray-400 hover:text-gray-500 focus:outline-none">
