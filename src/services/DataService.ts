@@ -323,7 +323,8 @@ export const DataService = {
         destinations: destinations,
         cargoDetails: cargoDetails,
         estimatedTotal: shipment.quotes?.total_cost || 0,
-        invoice: shipment.invoice || null // Only show invoice if explicitly created
+        invoice: shipment.invoice || null, // Only show invoice if explicitly created
+        createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
       };
     });
   },
@@ -360,7 +361,8 @@ export const DataService = {
       quoteId: shipment.quote_id,
       destinations: destinations,
       estimatedTotal: shipment.quotes?.total_cost || 0,
-      invoice: shipment.invoice || null // Only show invoice if explicitly created
+      invoice: shipment.invoice || null, // Only show invoice if explicitly created
+      createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
     };
   },
 
