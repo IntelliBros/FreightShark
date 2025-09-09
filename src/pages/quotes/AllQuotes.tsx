@@ -264,73 +264,79 @@ export const AllQuotes = () => {
             </div>
           </div>
         </Card> : <div className="space-y-4">
-          {filteredQuotes.map(item => <Card key={item.request.id} className={`transition-all duration-500 ${animatingQuotes.has(item.request.id) ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
-              <div className="flex flex-col md:flex-row justify-between">
-                <div className="md:w-1/4 mb-4 md:mb-0">
-                  <div className="flex items-center mb-2">
-                    <FileTextIcon className="h-5 w-5 text-gray-400 mr-2" />
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {item.request.id}
-                    </h3>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    <p className="mb-1">
-                      From: {item.request.supplierDetails?.name || 'Unknown Supplier'}
-                    </p>
-                    <p>
-                      {item.request.supplierDetails?.city ? 
-                        `${item.request.supplierDetails.city}, ${item.request.supplierDetails.country}` :
-                        item.request.pickup_location || 'Location not specified'
-                      }
-                    </p>
-                  </div>
-                  <div className="mt-2">
-                    <Badge variant={item.request.status === 'Awaiting Quote' ? 'warning' : item.request.status === 'Quote Provided' ? 'info' : item.request.status === 'Quote Accepted' ? 'success' : 'error'}>
-                      {item.request.status}
-                    </Badge>
+          {filteredQuotes.map(item => <Card key={item.request.id} className={`p-4 transition-all duration-500 ${animatingQuotes.has(item.request.id) ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Quote ID and Supplier Info */}
+                <div className="flex-shrink-0 lg:w-64">
+                  <div className="flex items-start justify-between lg:block">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileTextIcon className="h-4 w-4 text-gray-400" />
+                        <h3 className="text-base font-semibold text-gray-900">
+                          {item.request.id}
+                        </h3>
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p className="font-medium">
+                          {item.request.supplierDetails?.name || 'Unknown Supplier'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {item.request.supplierDetails?.city ? 
+                            `${item.request.supplierDetails.city}, ${item.request.supplierDetails.country}` :
+                            item.request.pickup_location || 'Location not specified'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="lg:mt-3">
+                      <Badge variant={item.request.status === 'Awaiting Quote' ? 'warning' : item.request.status === 'Quote Provided' ? 'info' : item.request.status === 'Quote Accepted' ? 'success' : 'error'}>
+                        {item.request.status}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-                <div className="md:w-1/2 mb-4 md:mb-0">
-                  <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
+
+                {/* Destinations */}
+                <div className="flex-1">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Destinations
                   </h4>
-                  <div className="space-y-2">
+                  <div className="flex flex-wrap gap-3">
                     {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).map((dest: any, index: number) => (
-                      <div key={dest.id || index} className="border-l-2 border-gray-200 pl-3">
-                        <p className="text-sm font-medium text-gray-900">
-                          {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed Warehouse'}
+                      <div key={dest.id || index} className="bg-gray-50 rounded-lg px-3 py-2 min-w-[120px]">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed'}
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-500">
                           {dest.cartons || dest.cartons_count || 0} cartons
                         </p>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="md:w-1/4">
-                  <div className="mb-3">
-                    <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                      Timeline
-                    </h4>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <ClockIcon className="h-4 w-4 text-gray-400 mr-1" />
-                      <span>
-                        Requested: {formatDate(item.request.requestedDate)}
-                      </span>
+
+                {/* Timeline and Actions */}
+                <div className="flex-shrink-0 lg:w-56 lg:text-right">
+                  <div className="space-y-2 mb-3">
+                    <div className="text-sm">
+                      <span className="text-gray-500">Requested:</span>
+                      <p className="font-medium text-gray-900">{formatDate(item.request.requestedDate)}</p>
                     </div>
-                    {item.quote && <div className="flex items-center text-sm text-gray-600 mt-1">
-                        <DollarSignIcon className="h-4 w-4 text-gray-400 mr-1" />
-                        <span className="font-medium text-blue-600">
+                    {item.quote && (
+                      <div className="text-sm">
+                        <span className="text-gray-500">Quote:</span>
+                        <p className="font-semibold text-blue-600 text-lg">
                           ${item.quote.total.toFixed(2)}
-                        </span>
-                      </div>}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {item.request.status === 'Awaiting Quote' ? <div className="flex items-center text-sm text-yellow-600">
-                      <ClockIcon className="h-4 w-4 mr-1" />
-                      Waiting for quote from our team
+                  {item.request.status === 'Awaiting Quote' ? <div className="flex items-center justify-end text-sm text-yellow-600">
+                      <ClockIcon className="h-3.5 w-3.5 mr-1" />
+                      <span className="text-xs">Waiting for quote</span>
                     </div> : item.request.status === 'Quote Provided' && item.quote ? <div className="flex space-x-2">
                       <button 
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full lg:w-auto justify-center"
                         onClick={() => handleAcceptQuote(item.quote!.id, item.request.id)}
                         disabled={processingQuotes.has(item.request.id)}
                       >
@@ -347,7 +353,7 @@ export const AllQuotes = () => {
                         )}
                       </button>
                       <button 
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full lg:w-auto justify-center"
                         onClick={() => handleRejectQuote(item.quote!.id, item.request.id)}
                         disabled={processingQuotes.has(item.request.id)}
                       >
