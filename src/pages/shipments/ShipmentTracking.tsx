@@ -165,7 +165,7 @@ export const ShipmentTracking = () => {
         const transformedShipment = {
           ...shipment,
           invoice: updatedShipmentData.invoice,
-          timeline: updatedShipmentData.trackingEvents.map((event: any) => ({
+          timeline: (updatedShipmentData.trackingEvents || []).map((event: any) => ({
             date: new Date(event.timestamp || event.date).toLocaleString(),
             event: event.description,
             location: event.location,
@@ -364,7 +364,7 @@ export const ShipmentTracking = () => {
             chargeableWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0
           },
           serviceMode: serviceMode,
-          currentLocation: shipmentData.trackingEvents.length > 0 
+          currentLocation: shipmentData.trackingEvents && shipmentData.trackingEvents.length > 0 
             ? shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1].location 
             : quoteRequestData?.supplierDetails?.city || 'Unknown',
           destinations: shipmentData.invoice && shipmentData.invoice.warehouseDetails 
@@ -396,7 +396,7 @@ export const ShipmentTracking = () => {
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
               }),
-          timeline: shipmentData.trackingEvents.map((event: any) => ({
+          timeline: (shipmentData.trackingEvents || []).map((event: any) => ({
             date: new Date(event.timestamp || event.date).toLocaleString(),
             event: event.description,
             location: event.location,
@@ -429,7 +429,7 @@ export const ShipmentTracking = () => {
         setShipment(transformedShipment);
         
         // Set the first destination as active
-        if (transformedShipment.destinations.length > 0) {
+        if (transformedShipment.destinations && transformedShipment.destinations.length > 0) {
           setActiveDestination(transformedShipment.destinations[0].id);
         }
       } catch (error) {
