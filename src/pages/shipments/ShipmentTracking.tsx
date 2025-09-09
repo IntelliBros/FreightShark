@@ -158,10 +158,13 @@ export const ShipmentTracking = () => {
             quoteData = await DataService.getQuoteById(quoteId);
             if (quoteData && (quoteData.requestId || quoteData.request_id)) {
               const requestId = quoteData.requestId || quoteData.request_id;
-              try {
-                quoteRequestData = await DataService.getQuoteRequestById(requestId);
-              } catch (err) {
-                console.log('Could not fetch quote request data:', err);
+              // Only fetch if requestId is not undefined or null
+              if (requestId && requestId !== 'undefined') {
+                try {
+                  quoteRequestData = await DataService.getQuoteRequestById(requestId);
+                } catch (err) {
+                  console.log('Could not fetch quote request data:', err);
+                }
               }
             }
           } catch (error) {
@@ -341,10 +344,13 @@ export const ShipmentTracking = () => {
             quoteData = await DataService.getQuoteById(quoteId);
             if (quoteData && (quoteData.requestId || quoteData.request_id)) {
               const requestId = quoteData.requestId || quoteData.request_id;
-              try {
-                quoteRequestData = await DataService.getQuoteRequestById(requestId);
-              } catch (err) {
-                console.log('Could not fetch quote request data:', err);
+              // Only fetch if requestId is not undefined or null
+              if (requestId && requestId !== 'undefined') {
+                try {
+                  quoteRequestData = await DataService.getQuoteRequestById(requestId);
+                } catch (err) {
+                  console.log('Could not fetch quote request data:', err);
+                }
               }
             }
           } catch (error) {

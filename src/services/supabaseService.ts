@@ -174,6 +174,12 @@ export const supabaseService = {
     },
 
     async getById(id: string) {
+      // Validate ID before making the request
+      if (!id || id === 'undefined' || id === 'null') {
+        console.warn('Invalid quote request ID provided:', id);
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('quote_requests')
         .select('*')
@@ -255,6 +261,12 @@ export const supabaseService = {
     },
 
     async getById(id: string) {
+      // Validate ID before making the request
+      if (!id || id === 'undefined' || id === 'null') {
+        console.warn('Invalid quote ID provided:', id);
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('quotes')
         .select(`
@@ -421,6 +433,12 @@ export const supabaseService = {
     },
 
     async getById(id: string) {
+      // Validate ID before making the request
+      if (!id || id === 'undefined' || id === 'null') {
+        console.warn('Invalid shipment ID provided:', id);
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('shipments')
         .select(`
