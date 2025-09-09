@@ -323,10 +323,7 @@ export const DataService = {
         destinations: destinations,
         cargoDetails: cargoDetails,
         estimatedTotal: shipment.quotes?.total_cost || 0,
-        invoice: shipment.quotes?.total_cost ? {
-          status: 'Pending',
-          amount: shipment.quotes.total_cost
-        } : null
+        invoice: shipment.invoice || null // Only show invoice if explicitly created
       };
     });
   },
@@ -363,10 +360,7 @@ export const DataService = {
       quoteId: shipment.quote_id,
       destinations: destinations,
       estimatedTotal: shipment.quotes?.total_cost || 0,
-      invoice: shipment.quotes?.total_cost ? {
-        status: 'Pending',
-        amount: shipment.quotes.total_cost
-      } : null
+      invoice: shipment.invoice || null // Only show invoice if explicitly created
     };
   },
 

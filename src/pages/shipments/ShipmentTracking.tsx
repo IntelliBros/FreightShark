@@ -122,7 +122,19 @@ export const ShipmentTracking = () => {
         amount: shipment.invoice.amount
       };
       
-      await DataService.processInvoicePayment(id!, paymentDetails);
+      // For now, simulate payment processing since invoices should be created by staff
+      // await DataService.processInvoicePayment(id!, paymentDetails);
+      
+      // Update the shipment with payment status
+      const updatedInvoice = {
+        ...shipment.invoice,
+        status: 'Paid',
+        paidAt: new Date().toISOString()
+      };
+      
+      await DataService.updateShipment(id!, { 
+        invoice: updatedInvoice 
+      });
       
       addToast('Payment processed successfully!', 'success');
       setShowPaymentModal(false);
