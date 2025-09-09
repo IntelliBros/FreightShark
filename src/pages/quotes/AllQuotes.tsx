@@ -107,7 +107,9 @@ export const AllQuotes = () => {
     setFilteredQuotes(filtered);
   }, [searchTerm, statusFilter, quotes]);
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Date not available';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Date not available';
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -288,30 +290,34 @@ export const AllQuotes = () => {
                     </Badge>
                   </div>
                 </div>
-                <div className="md:w-1/4 mb-4 md:mb-0">
-                  <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                    Service & Cargo
-                  </h4>
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    {item.request.serviceType || item.request.service_type || 'Air Freight'}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {item.request.cargoDetails?.cartonCount || item.request.total_cartons || 0} cartons •{' '}
-                    {(item.request.cargoDetails?.grossWeight || item.request.total_weight || 0).toFixed(2)} kg •{' '}
-                    {item.request.cargoDetails?.cbm || item.request.total_volume || 0} CBM
-                  </p>
-                </div>
-                <div className="md:w-1/4 mb-4 md:mb-0">
+                <div className="md:w-1/2 mb-4 md:mb-0">
                   <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
                     Destinations
                   </h4>
-                  <div className="space-y-1">
-                    {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).map((dest: any, index: number) => <p key={dest.id || index} className="text-sm text-gray-600">
-                        {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed Warehouse'}{' '}
-                        <span className="text-gray-400">
-                          ({dest.cartons || dest.cartons_count || 0} cartons)
-                        </span>
-                      </p>)}
+                  <div className="space-y-2">
+                    {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).map((dest: any, index: number) => (
+                      <div key={dest.id || index} className="border-l-2 border-gray-200 pl-3">
+                        <p className="text-sm font-medium text-gray-900">
+                          {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed Warehouse'}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {dest.cartons || dest.cartons_count || 0} cartons
+                        </p>
+                      </div>
+                    ))}
+                    {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).length > 0 && (
+                      <div className="pt-2 mt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 font-medium">Total Cargo:</p>
+                        <p className="text-sm text-gray-700">
+                          {item.request.cargoDetails?.cartonCount || item.request.total_cartons || 0} cartons •{' '}
+                          {(item.request.cargoDetails?.grossWeight || item.request.total_weight || 0).toFixed(2)} kg •{' '}
+                          {item.request.cargoDetails?.cbm || item.request.total_volume || 0} CBM
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Service: {item.request.serviceType || item.request.service_type || 'Air Freight'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="md:w-1/4">
