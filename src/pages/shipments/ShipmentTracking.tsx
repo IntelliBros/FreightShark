@@ -95,6 +95,12 @@ export const ShipmentTracking = () => {
   };
   
   const handlePaymentSubmit = async () => {
+    // Check if shipment and invoice exist
+    if (!shipment || !shipment.invoice) {
+      addToast('Invoice information not available', 'error');
+      return;
+    }
+    
     // Validate form
     if (!paymentForm.cardNumber || !paymentForm.cardHolder || !paymentForm.expiryDate || !paymentForm.cvv) {
       addToast('Please fill in all payment details', 'error');
@@ -209,6 +215,11 @@ export const ShipmentTracking = () => {
   };
   
   const handleSaveWarehouseIds = async () => {
+    if (!shipment) {
+      console.error('Cannot save warehouse IDs: shipment is null');
+      return;
+    }
+    
     console.log('Saving warehouse IDs:', warehouseIds);
     console.log('Current destinations:', shipment.destinations);
     
@@ -218,7 +229,7 @@ export const ShipmentTracking = () => {
       return !ids || !ids.shipmentId || !ids.fbaId;
     }) : [];
     
-    if (missingIds.length > 0) {
+    if (missingIds && missingIds.length > 0) {
       addToast('Please provide both Amazon Shipment ID and Amazon Reference ID for all warehouses', 'error');
       return;
     }
@@ -232,7 +243,7 @@ export const ShipmentTracking = () => {
       return !refIdPattern.test(ids.fbaId);
     }) : [];
     
-    if (invalidRefIds.length > 0) {
+    if (invalidRefIds && invalidRefIds.length > 0) {
       addToast('Amazon Reference ID must be exactly 8 alphanumeric characters (e.g., A2K9PL7X)', 'error');
       return;
     }
@@ -377,35 +388,50 @@ export const ShipmentTracking = () => {
           
           // Safely check trackingEvents
           let safeTrackingEvents = [];
-          if (shipmentData.trackingEvents) {
-            console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
-            if (Array.isArray(shipmentData.trackingEvents)) {
-              safeTrackingEvents = shipmentData.trackingEvents;
-            } else {
-              console.warn('trackingEvents exists but is not an array:', shipmentData.trackingEvents);
+          try {
+            if (shipmentData.trackingEvents) {
+              console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
+              if (Array.isArray(shipmentData.trackingEvents)) {
+                safeTrackingEvents = shipmentData.trackingEvents;
+                console.log('safeTrackingEvents length:', safeTrackingEvents.length);
+              } else {
+                console.warn('trackingEvents exists but is not an array:', shipmentData.trackingEvents);
+              }
             }
+          } catch (e) {
+            console.error('Error processing trackingEvents:', e);
           }
           
           // Safely check destinations
           let safeDestinations = [];
-          if (shipmentData.destinations) {
-            console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
-            if (Array.isArray(shipmentData.destinations)) {
-              safeDestinations = shipmentData.destinations;
-            } else {
-              console.warn('destinations exists but is not an array:', shipmentData.destinations);
+          try {
+            if (shipmentData.destinations) {
+              console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
+              if (Array.isArray(shipmentData.destinations)) {
+                safeDestinations = shipmentData.destinations;
+                console.log('safeDestinations length:', safeDestinations.length);
+              } else {
+                console.warn('destinations exists but is not an array:', shipmentData.destinations);
+              }
             }
+          } catch (e) {
+            console.error('Error processing destinations:', e);
           }
           
           // Safely check warehouseDetails
           let safeWarehouseDetails = [];
-          if (shipmentData.invoice && shipmentData.invoice.warehouseDetails) {
-            console.log('warehouseDetails type:', typeof shipmentData.invoice.warehouseDetails, 'isArray:', Array.isArray(shipmentData.invoice.warehouseDetails));
-            if (Array.isArray(shipmentData.invoice.warehouseDetails)) {
-              safeWarehouseDetails = shipmentData.invoice.warehouseDetails;
-            } else {
-              console.warn('warehouseDetails exists but is not an array:', shipmentData.invoice.warehouseDetails);
+          try {
+            if (shipmentData.invoice && shipmentData.invoice.warehouseDetails) {
+              console.log('warehouseDetails type:', typeof shipmentData.invoice.warehouseDetails, 'isArray:', Array.isArray(shipmentData.invoice.warehouseDetails));
+              if (Array.isArray(shipmentData.invoice.warehouseDetails)) {
+                safeWarehouseDetails = shipmentData.invoice.warehouseDetails;
+                console.log('safeWarehouseDetails length:', safeWarehouseDetails.length);
+              } else {
+                console.warn('warehouseDetails exists but is not an array:', shipmentData.invoice.warehouseDetails);
+              }
             }
+          } catch (e) {
+            console.error('Error processing warehouseDetails:', e);
           }
           
           transformedShipment = {
