@@ -366,6 +366,11 @@ export const ShipmentTracking = () => {
         // Transform shipment data to match component's expected format
         let transformedShipment;
         try {
+          // Ensure shipmentData has required properties
+          if (!shipmentData) {
+            throw new Error('Invalid shipment data');
+          }
+          
           transformedShipment = {
           id: shipmentData.id,
           status: shipmentData.status,
@@ -387,7 +392,7 @@ export const ShipmentTracking = () => {
           currentLocation: shipmentData.trackingEvents && shipmentData.trackingEvents.length > 0 
             ? shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1].location 
             : quoteRequestData?.supplierDetails?.city || 'Unknown',
-          destinations: shipmentData.invoice && shipmentData.invoice.warehouseDetails 
+          destinations: (shipmentData.invoice && shipmentData.invoice.warehouseDetails) 
             ? shipmentData.invoice.warehouseDetails.map((warehouseDetail: any) => {
                 return {
                   id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
@@ -415,7 +420,7 @@ export const ShipmentTracking = () => {
                   trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
-              }),
+              }) || [],
           timeline: (shipmentData.trackingEvents || []).map((event: any) => {
             console.log('Processing tracking event:', event);
             if (!event) {
@@ -974,7 +979,7 @@ export const ShipmentTracking = () => {
                                     <TruckIcon className="h-3.5 w-3.5 text-[#2E3B55]" />
                                   )}
                                 </div>
-                                {index < shipment.timeline.length - 1 && <div className="w-0.5 bg-gray-200 h-10"></div>}
+                                {shipment.timeline && index < shipment.timeline.length - 1 && <div className="w-0.5 bg-gray-200 h-10"></div>}
                               </div>
                             </div>
                             <div className="pb-6">
