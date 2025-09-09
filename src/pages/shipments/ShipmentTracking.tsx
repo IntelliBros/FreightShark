@@ -144,8 +144,13 @@ export const ShipmentTracking = () => {
           const quoteId = updatedShipmentData.quoteId || updatedShipmentData.quote_id;
           try {
             quoteData = await DataService.getQuoteById(quoteId);
-            if (quoteData) {
-              quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+            if (quoteData && (quoteData.requestId || quoteData.request_id)) {
+              const requestId = quoteData.requestId || quoteData.request_id;
+              try {
+                quoteRequestData = await DataService.getQuoteRequestById(requestId);
+              } catch (err) {
+                console.log('Could not fetch quote request data:', err);
+              }
             }
           } catch (error) {
             console.log('Could not fetch quote data:', error);
@@ -322,8 +327,13 @@ export const ShipmentTracking = () => {
           const quoteId = shipmentData.quoteId || shipmentData.quote_id;
           try {
             quoteData = await DataService.getQuoteById(quoteId);
-            if (quoteData) {
-              quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+            if (quoteData && (quoteData.requestId || quoteData.request_id)) {
+              const requestId = quoteData.requestId || quoteData.request_id;
+              try {
+                quoteRequestData = await DataService.getQuoteRequestById(requestId);
+              } catch (err) {
+                console.log('Could not fetch quote request data:', err);
+              }
             }
           } catch (error) {
             console.log('Could not fetch quote data:', error);
@@ -344,14 +354,14 @@ export const ShipmentTracking = () => {
           customer: shipmentData.customer,
           supplier: {
             name: quoteRequestData?.supplierDetails?.name || 'Unknown Supplier',
-            address: quoteRequestData ? 
-              `${quoteRequestData.supplierDetails.address}, ${quoteRequestData.supplierDetails.city}, ${quoteRequestData.supplierDetails.country}` : 
+            address: quoteRequestData?.supplierDetails ? 
+              `${quoteRequestData.supplierDetails.address || ''}, ${quoteRequestData.supplierDetails.city || ''}, ${quoteRequestData.supplierDetails.country || ''}`.replace(/^, |, $/, '') : 
               'Unknown Address'
           },
           masterCargo: {
-            grossWeight: shipmentData.cargoDetails.estimatedWeight,
-            cartonCount: shipmentData.cargoDetails.estimatedCartonCount,
-            chargeableWeight: shipmentData.cargoDetails.estimatedWeight
+            grossWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0,
+            cartonCount: shipmentData.cargoDetails?.estimatedCartonCount || shipmentData.cargoDetails?.cartonCount || 0,
+            chargeableWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0
           },
           serviceMode: serviceMode,
           currentLocation: shipmentData.trackingEvents.length > 0 
@@ -380,7 +390,7 @@ export const ShipmentTracking = () => {
                   fbaWarehouse: dest.fbaWarehouse,
                   address: getWarehouseAddress(dest.fbaWarehouse),
                   cartons: dest.cartons,
-                  chargeableWeight: dest.estimatedWeight,
+                  chargeableWeight: dest.estimatedWeight || dest.weight || 0,
                   status: shipmentData.status,
                   trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
