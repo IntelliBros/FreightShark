@@ -302,16 +302,36 @@ export const AllQuotes = () => {
                     Destinations
                   </h4>
                   <div className="flex flex-wrap gap-3">
-                    {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).map((dest: any, index: number) => (
-                      <div key={dest.id || index} className="bg-gray-50 rounded-lg px-3 py-2 min-w-[120px]">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {dest.cartons || dest.cartons_count || 0} cartons
-                        </p>
-                      </div>
-                    ))}
+                    {(() => {
+                      // Extract destinations array from various possible structures
+                      let destinations = [];
+                      if (item.request.destinations && Array.isArray(item.request.destinations)) {
+                        destinations = item.request.destinations;
+                      } else if (item.request.destination_warehouses) {
+                        if (Array.isArray(item.request.destination_warehouses)) {
+                          destinations = item.request.destination_warehouses;
+                        } else if (item.request.destination_warehouses.destinations && Array.isArray(item.request.destination_warehouses.destinations)) {
+                          destinations = item.request.destination_warehouses.destinations;
+                        }
+                      } else if (item.request.quote_request_warehouses && Array.isArray(item.request.quote_request_warehouses)) {
+                        destinations = item.request.quote_request_warehouses;
+                      }
+                      
+                      if (destinations.length === 0) {
+                        return <p className="text-sm text-gray-500">No destinations specified</p>;
+                      }
+                      
+                      return destinations.map((dest: any, index: number) => (
+                        <div key={dest.id || index} className="bg-gray-50 rounded-lg px-3 py-2 min-w-[120px]">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {dest.cartons || dest.cartons_count || 0} cartons
+                          </p>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
 
