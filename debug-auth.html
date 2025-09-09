@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auth</title>
+</head>
+<body>
+    <h1>FreightShark Auth Debug</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        import bcrypt from 'https://cdn.skypack.dev/bcryptjs';
+        
+        const output = document.getElementById('output');
+        
+        async function debugAuth() {
+            output.innerHTML = '<h2>Debugging Authentication...</h2>';
+            
+            // Check if users exist in localStorage
+            const existingUsers = localStorage.getItem('users');
+            output.innerHTML += `<p><strong>Existing users in localStorage:</strong></p>`;
+            if (existingUsers) {
+                const users = JSON.parse(existingUsers);
+                output.innerHTML += `<pre>${JSON.stringify(users, null, 2)}</pre>`;
+                
+                // Try to login with demo credentials
+                output.innerHTML += `<h3>Testing Login:</h3>`;
+                const testEmail = 'customer@example.com';
+                const testPassword = 'Password123!';
+                
+                const user = users.find(u => u.email.toLowerCase() === testEmail.toLowerCase());
+                if (user) {
+                    output.innerHTML += `<p>✅ User found: ${user.name}</p>`;
+                    
+                    if (user.passwordHash) {
+                        const isValid = await bcrypt.compare(testPassword, user.passwordHash);
+                        output.innerHTML += `<p>${isValid ? '✅' : '❌'} Password check: ${isValid}</p>`;
+                    } else {
+                        output.innerHTML += `<p>❌ No password hash found</p>`;
+                    }
+                } else {
+                    output.innerHTML += `<p>❌ User not found</p>`;
+                }
+            } else {
+                output.innerHTML += '<p>❌ No users found in localStorage</p>';
+                
+                // Initialize demo users
+                output.innerHTML += '<h3>Initializing Demo Users...</h3>';
+                const defaultPassword = 'Password123!';
+                const passwordHash = await bcrypt.hash(defaultPassword, 10);
+                
+                const demoUsers = [
+                    {
+                        id: 'admin-1',
+                        name: 'John Admin',
+                        email: 'admin@freightshark.com',
+                        passwordHash,
+                        company: 'FreightShark',
+                        role: 'admin'
+                    },
+                    {
+                        id: 'user-1',
+                        name: 'Demo Customer',
+                        email: 'customer@example.com',
+                        passwordHash,
+                        company: 'Acme Imports',
+                        role: 'user',
+                        amazonSellerId: 'A1B2C3D4E5',
+                        einTaxId: '12-3456789'
+                    },
+                    {
+                        id: 'staff-1',
+                        name: 'Sarah Chen',
+                        email: 'staff@freightshark.com',
+                        passwordHash,
+                        company: 'FreightShark',
+                        role: 'staff',
+                        staffPosition: 'Shipping Agent'
+                    }
+                ];
+                
+                localStorage.setItem('users', JSON.stringify(demoUsers));
+                output.innerHTML += '<p>✅ Demo users created!</p>';
+                output.innerHTML += '<p><strong>Try logging in again with:</strong></p>';
+                output.innerHTML += '<ul>';
+                output.innerHTML += '<li>customer@example.com / Password123!</li>';
+                output.innerHTML += '<li>staff@freightshark.com / Password123!</li>';
+                output.innerHTML += '<li>admin@freightshark.com / Password123!</li>';
+                output.innerHTML += '</ul>';
+            }
+        }
+        
+        debugAuth().catch(err => {
+            output.innerHTML += `<p>❌ Error: ${err.message}</p>`;
+        });
+    </script>
+</body>
+</html>

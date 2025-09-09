@@ -227,6 +227,13 @@ export const DataService = {
     return await supabaseService.announcements.delete(id);
   },
 
+  // Convert quote to shipment method
+  async convertQuoteToShipment(quoteId: string) {
+    await simulateDelay(600);
+    const result = await supabaseService.quotes.accept(quoteId);
+    return result.shipment;
+  },
+
   // Legacy methods for backward compatibility
   async addQuoteRequest(request: any) {
     return this.createQuoteRequest(request);

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Auth</title>
+</head>
+<body>
+    <h1>Testing Authentication</h1>
+    <button onclick="checkStorage()">Check Storage</button>
+    <button onclick="clearAndReinit()">Clear & Reinitialize</button>
+    <button onclick="testPassword()">Test Password Hash</button>
+    <pre id="output"></pre>
+    
+    <script type="module">
+        import bcrypt from 'https://cdn.skypack.dev/bcryptjs';
+        
+        window.checkStorage = () => {
+            const users = localStorage.getItem('ddp_users');
+            const sessions = localStorage.getItem('ddp_sessions');
+            const output = document.getElementById('output');
+            output.textContent = 'Users:\n' + users + '\n\nSessions:\n' + sessions;
+        };
+        
+        window.clearAndReinit = () => {
+            // Clear all
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('ddp_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // Reinitialize with demo users
+            const defaultPasswordHash = '$2b$10$JQYNkdcI/nLXtbPT7/Ae0OG7IrcR5JvWRCGlY/eQ5H8rJAqwkHKiq';
+            
+            const users = [
+                {
+                    id: 'admin-1',
+                    name: 'John Admin',
+                    email: 'admin@freightshark.com',
+                    passwordHash: defaultPasswordHash,
+                    company: 'FreightShark',
+                    role: 'admin',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'user-1',
+                    name: 'Demo Customer',
+                    email: 'customer@example.com',
+                    passwordHash: defaultPasswordHash,
+                    company: 'Acme Imports',
+                    role: 'user',
+                    amazonSellerId: 'A1B2C3D4E5',
+                    einTaxId: '12-3456789',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'staff-1',
+                    name: 'Sarah Chen',
+                    email: 'staff@freightshark.com',
+                    passwordHash: defaultPasswordHash,
+                    company: 'FreightShark',
+                    role: 'staff',
+                    staffPosition: 'Shipping Agent',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('ddp_users', JSON.stringify(users));
+            localStorage.setItem('ddp_sessions', JSON.stringify([]));
+            localStorage.setItem('ddp_id_sequences', JSON.stringify({ quote: 0, shipment: 0 }));
+            
+            document.getElementById('output').textContent = 'Storage reinitialized with demo users!';
+        };
+        
+        window.testPassword = async () => {
+            const password = 'Password123!';
+            const hash = '$2b$10$JQYNkdcI/nLXtbPT7/Ae0OG7IrcR5JvWRCGlY/eQ5H8rJAqwkHKiq';
+            const isValid = await bcrypt.compare(password, hash);
+            document.getElementById('output').textContent = `Password "${password}" matches hash: ${isValid}`;
+        };
+    </script>
+</body>
+</html>
