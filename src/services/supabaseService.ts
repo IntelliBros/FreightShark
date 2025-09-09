@@ -23,6 +23,7 @@ export interface Quote {
   request_id: string;
   customer_id: string;
   staff_id?: string;
+  rate_type?: string;
   freight_cost: number;
   insurance_cost?: number;
   additional_charges?: any;
@@ -274,11 +275,25 @@ export const supabaseService = {
     async create(quote: Partial<Quote>) {
       const quoteId = await getNextSequenceId('quote');
       
+      // Ensure all required fields are present and properly formatted
       const newQuote = {
-        ...quote,
         id: quoteId,
-        status: quote.status || 'Pending'
+        request_id: quote.request_id,
+        customer_id: quote.customer_id,
+        staff_id: quote.staff_id || null,
+        rate_type: quote.rate_type || 'per-kg',
+        freight_cost: quote.freight_cost || 0,
+        insurance_cost: quote.insurance_cost || 0,
+        additional_charges: quote.additional_charges || null,
+        total_cost: quote.total_cost || 0,
+        valid_until: quote.valid_until || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: quote.status || 'Pending',
+        per_warehouse_costs: quote.per_warehouse_costs || null,
+        commission_rate_per_kg: quote.commission_rate_per_kg || null,
+        notes: quote.notes || null
       };
+
+      console.log('Supabase quote insert:', newQuote);
 
       const { data, error } = await supabase
         .from('quotes')
@@ -286,7 +301,10 @@ export const supabaseService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase quote creation error:', error);
+        throw error;
+      }
       
       // Update quote request status
       if (quote.request_id) {

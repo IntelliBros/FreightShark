@@ -131,7 +131,35 @@ export const DataService = {
 
   async getQuoteRequestsByCustomerId(customerId: string) {
     await simulateDelay(400);
-    return await supabaseService.quoteRequests.getByCustomerId(customerId);
+    const requests = await supabaseService.quoteRequests.getByCustomerId(customerId);
+    
+    // Transform each request to extract extended data from JSONB
+    return requests.map(request => {
+      let destinations = [];
+      let supplierDetails = null;
+      let cargoDetails = null;
+      
+      if (typeof request.destination_warehouses === 'object' && request.destination_warehouses) {
+        if (request.destination_warehouses.destinations) {
+          destinations = request.destination_warehouses.destinations;
+        } else if (Array.isArray(request.destination_warehouses)) {
+          // Old format - just an array of destinations
+          destinations = request.destination_warehouses;
+        }
+        supplierDetails = request.destination_warehouses.supplierDetails || null;
+        cargoDetails = request.destination_warehouses.cargoDetails || null;
+      }
+      
+      // Map database fields to frontend format
+      return {
+        ...request,
+        customerId: request.customer_id,
+        requestedDate: request.cargo_ready_date, // Map cargo_ready_date to requestedDate
+        destinations,
+        supplierDetails,
+        cargoDetails
+      };
+    });
   },
 
   async createQuoteRequest(request: any) {
@@ -174,10 +202,20 @@ export const DataService = {
   // Quote methods
   async getQuotes(customerId?: string) {
     await simulateDelay(400);
+    let quotes;
     if (customerId) {
-      return await supabaseService.quotes.getByCustomerId(customerId);
+      quotes = await supabaseService.quotes.getByCustomerId(customerId);
+    } else {
+      quotes = await supabaseService.quotes.getAll();
     }
-    return await supabaseService.quotes.getAll();
+    
+    // Transform quotes to match expected frontend format
+    return quotes.map(quote => ({
+      ...quote,
+      requestId: quote.request_id, // Map request_id to requestId
+      customerId: quote.customer_id, // Map customer_id to customerId
+      staffId: quote.staff_id // Map staff_id to staffId
+    }));
   },
 
   async getQuoteById(id: string) {
@@ -187,7 +225,41 @@ export const DataService = {
 
   async createQuote(quote: any) {
     await simulateDelay(500);
-    return await supabaseService.quotes.create(quote);
+    console.log('Creating quote for request:', quote.requestId);
+    console.log('Quote request customerId:', quote.customerId);
+    console.log('Quote object being created:', quote);
+    
+    // Get current user from localStorage to set staff_id
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    
+    // Transform the quote data to match Supabase schema
+    const transformedQuote = {
+      request_id: quote.requestId,
+      customer_id: quote.customerId,
+      staff_id: currentUser.id || 'staff-1',
+      status: quote.status || 'Pending',
+      rate_type: quote.rateType || 'per-kg',
+      freight_cost: quote.subtotal || 0,
+      insurance_cost: 0,
+      additional_charges: {
+        otherCharges: quote.otherCharges || [],
+        discounts: quote.discounts || []
+      },
+      total_cost: quote.total || 0,
+      valid_until: quote.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      per_warehouse_costs: quote.warehouseRates || [],
+      commission_rate_per_kg: quote.warehouseRates?.[0]?.ratePerKg || 0,
+      notes: quote.notes || ''
+    };
+    
+    try {
+      const result = await supabaseService.quotes.create(transformedQuote);
+      console.log('Quote created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to create quote:', error);
+      throw error;
+    }
   },
 
   async updateQuote(id: string, updates: any) {
