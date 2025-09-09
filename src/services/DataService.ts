@@ -240,6 +240,10 @@ export const DataService = {
     return this.getQuotes(customerId);
   },
 
+  async getQuotesByCustomerId(customerId: string) {
+    return this.getQuotes(customerId);
+  },
+
   async getShipmentsByCustomer(customerId: string) {
     return this.getShipments(customerId);
   },
