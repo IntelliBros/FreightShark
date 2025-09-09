@@ -132,7 +132,7 @@ export const StaffDashboard = () => {
                         </Badge>}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      Customer: {request.customer.company}
+                      Customer: {request.customer?.company || 'Unknown Company'}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5 flex items-center">
                       <ClockIcon className="w-3 h-3 mr-1 text-gray-400" />

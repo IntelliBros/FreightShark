@@ -37,7 +37,11 @@ export const QuoteRequests = () => {
     let filtered = [...quoteRequests];
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(request => request.id.toLowerCase().includes(search) || request.customer.company.toLowerCase().includes(search) || request.supplierDetails.name.toLowerCase().includes(search));
+      filtered = filtered.filter(request => 
+        request.id.toLowerCase().includes(search) || 
+        (request.customer?.company?.toLowerCase().includes(search)) || 
+        request.supplierDetails.name.toLowerCase().includes(search)
+      );
     }
     if (statusFilter !== 'all') {
       filtered = filtered.filter(request => request.status === statusFilter);
@@ -110,8 +114,8 @@ export const QuoteRequests = () => {
                     </h3>
                   </div>
                   <div className="text-sm text-gray-500">
-                    <p className="mb-1">{request.customer.company}</p>
-                    <p>{request.customer.name}</p>
+                    <p className="mb-1">{request.customer?.company || 'Unknown Company'}</p>
+                    <p>{request.customer?.name || 'Unknown Customer'}</p>
                   </div>
                   <div className="mt-2">
                     <Badge variant={request.status === 'Awaiting Quote' ? 'warning' : 'success'}>

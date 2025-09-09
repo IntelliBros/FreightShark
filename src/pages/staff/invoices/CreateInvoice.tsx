@@ -135,7 +135,7 @@ export const CreateInvoice = () => {
     }];
     setShipments(mockShipments);
   }, []);
-  const filteredShipments = searchQuery ? shipments.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()) || s.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.customer.company.toLowerCase().includes(searchQuery.toLowerCase())) : shipments;
+  const filteredShipments = searchQuery ? shipments.filter(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()) || (s.customer.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (s.customer.company || '').toLowerCase().includes(searchQuery.toLowerCase())) : shipments;
   const handleSelectShipment = (shipment: Shipment) => {
     setSelectedShipment(shipment);
     // Pre-populate invoice data
@@ -145,7 +145,7 @@ export const CreateInvoice = () => {
       quoteId: shipment.quoteId,
       customer: {
         name: shipment.customer.name,
-        company: shipment.customer.company,
+        company: shipment.customer.company || 'Unknown Company',
         email: shipment.customer.email
       },
       originalQuoteAmount: shipment.estimatedTotal,
@@ -324,7 +324,7 @@ export const CreateInvoice = () => {
                         {shipment.id}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {shipment.customer.company} ({shipment.customer.name})
+                        {shipment.customer.company || 'Unknown Company'} ({shipment.customer.name || 'Unknown Customer'})
                       </p>
                       <p className="text-sm text-gray-500">
                         Quote: {shipment.quoteId}
@@ -813,7 +813,7 @@ export const CreateInvoice = () => {
                   <div>
                     <span className="text-xs text-gray-500 block">Company</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {invoiceData.customer.company}
+                      {invoiceData.customer.company || 'Unknown Company'}
                     </span>
                   </div>
                   <div>

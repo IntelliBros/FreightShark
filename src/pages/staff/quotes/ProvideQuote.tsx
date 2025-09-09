@@ -293,9 +293,9 @@ export const ProvideQuote = () => {
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Customer</h3>
-                <p className="text-gray-900">{quoteRequest.customer.company}</p>
+                <p className="text-gray-900">{quoteRequest.customer?.company || 'Unknown Company'}</p>
                 <p className="text-sm text-gray-600">
-                  {quoteRequest.customer.name}
+                  {quoteRequest.customer?.name || 'Unknown Customer'}
                 </p>
               </div>
               <div>

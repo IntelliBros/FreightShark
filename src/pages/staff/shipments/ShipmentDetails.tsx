@@ -117,7 +117,7 @@ export const ShipmentDetails = () => {
             id: customerData.id,
             name: customerData.name,
             email: customerData.email,
-            company: customerData.company
+            company: customerData.company || 'Unknown Company'
           } : {
             id: shipmentData.customerId,
             name: 'Unknown',
@@ -604,7 +604,7 @@ export const ShipmentDetails = () => {
               {shipment.status}
             </Badge>
             <span className="text-sm text-gray-600">
-              Customer: {shipment.customer.company} ({shipment.customer.name})
+              Customer: {shipment.customer.company || 'Unknown Company'} ({shipment.customer.name || 'Unknown Customer'})
             </span>
           </div>
         </div>
@@ -1019,13 +1019,13 @@ export const ShipmentDetails = () => {
                       Customer Information
                     </h3>
                     <p className="font-medium text-gray-900">
-                      {shipment.customer.company}
+                      {shipment.customer.company || 'Unknown Company'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {shipment.customer.name}
+                      {shipment.customer.name || 'Unknown Customer'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {shipment.customer.email}
+                      {shipment.customer.email || 'No email'}
                     </p>
                   </div>
                   <div>
@@ -1397,7 +1397,7 @@ export const ShipmentDetails = () => {
                       Bill To
                     </h4>
                     <p className="text-sm font-medium text-gray-900">
-                      {shipment.customer.company}
+                      {shipment.customer.company || 'Unknown Company'}
                     </p>
                     <p className="text-sm text-gray-700">
                       {shipment.customer.name}

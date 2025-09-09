@@ -34,7 +34,7 @@ export const UserManagement = () => {
     fetchUsers();
   }, []);
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase()) || user.company.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase()) || (user.company || '').toLowerCase().includes(searchTerm.toLowerCase());
     if (filter === 'all') return matchesSearch;
     return matchesSearch && user.role === filter;
   });
@@ -171,7 +171,7 @@ export const UserManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{user.company}</div>
+                    <div className="text-sm text-gray-900">{user.company || 'No Company'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Badge variant={getRoleBadgeVariant(user.role)}>

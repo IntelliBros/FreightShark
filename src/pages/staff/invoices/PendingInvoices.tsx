@@ -40,7 +40,7 @@ export const PendingInvoices = () => {
   const filteredInvoices = pendingInvoices.filter(invoice => {
     if (searchTerm === '') return true;
     const searchLower = searchTerm.toLowerCase();
-    return invoice.id.toLowerCase().includes(searchLower) || invoice.shipmentId.toLowerCase().includes(searchLower) || invoice.customer.name.toLowerCase().includes(searchLower) || invoice.customer.company.toLowerCase().includes(searchLower) || invoice.customer.email.toLowerCase().includes(searchLower);
+    return invoice.id.toLowerCase().includes(searchLower) || invoice.shipmentId.toLowerCase().includes(searchLower) || (invoice.customer.name || '').toLowerCase().includes(searchLower) || (invoice.customer.company || '').toLowerCase().includes(searchLower) || (invoice.customer.email || '').toLowerCase().includes(searchLower);
   });
   const sendReminder = (invoiceId: string) => {
     // In a real app, this would send an API request
@@ -150,11 +150,11 @@ export const PendingInvoices = () => {
                         <Badge variant="warning">Pending</Badge>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
-                        {invoice.customer.company}
+                        {invoice.customer?.company || 'Unknown Company'}
                       </p>
                       <div className="mt-2 text-sm text-gray-700">
                         <span className="text-gray-500">Contact:</span>{' '}
-                        {invoice.customer.name} • {invoice.customer.email}
+                        {invoice.customer?.name || 'Unknown Customer'} • {invoice.customer?.email || 'No email'}
                       </div>
                       <div className="mt-1 text-sm text-gray-700">
                         <span className="text-gray-500">Shipment:</span>{' '}
