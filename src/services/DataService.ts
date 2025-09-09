@@ -359,8 +359,26 @@ export const DataService = {
   // Convert quote to shipment method
   async convertQuoteToShipment(quoteId: string) {
     await simulateDelay(600);
-    const result = await supabaseService.quotes.accept(quoteId);
-    return result.shipment;
+    try {
+      console.log('Converting quote to shipment:', quoteId);
+      const result = await supabaseService.quotes.accept(quoteId);
+      console.log('Quote acceptance result:', result);
+      
+      if (result && result.shipment) {
+        // Transform shipment data to match frontend format
+        const transformedShipment = {
+          ...result.shipment,
+          shipmentId: result.shipment.id,
+          customerId: result.shipment.customer_id,
+          quoteId: result.shipment.quote_id
+        };
+        return transformedShipment;
+      }
+      return result?.shipment;
+    } catch (error) {
+      console.error('Failed to convert quote to shipment:', error);
+      throw error;
+    }
   },
 
   // Legacy methods for backward compatibility

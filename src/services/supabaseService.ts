@@ -329,25 +329,48 @@ export const supabaseService = {
     },
 
     async accept(id: string) {
-      // Get quote details
+      // Get quote details with request information
       const quote = await this.getById(id);
       if (!quote) throw new Error('Quote not found');
+      
+      console.log('Accepting quote:', quote);
       
       // Update quote status
       await this.update(id, { status: 'Accepted' });
       
+      // Get the quote request details if not already loaded
+      let quoteRequest = quote.quote_requests;
+      if (!quoteRequest && quote.request_id) {
+        quoteRequest = await supabaseService.quoteRequests.getById(quote.request_id);
+      }
+      
       // Create shipment using the same number as the quote (Q-12345 -> FS-12345)
       const quoteNumber = id.replace('Q-', '');
       const shipmentId = `FS-${quoteNumber}`;
-      const shipment = await supabaseService.shipments.create({
+      
+      // Prepare destination data
+      let destinationData = '';
+      if (quoteRequest) {
+        if (quoteRequest.destination_warehouses) {
+          destinationData = typeof quoteRequest.destination_warehouses === 'string' 
+            ? quoteRequest.destination_warehouses 
+            : JSON.stringify(quoteRequest.destination_warehouses);
+        }
+      }
+      
+      const shipmentData = {
         id: shipmentId,
         quote_id: id,
         customer_id: quote.customer_id,
         status: 'Booking Confirmed',
-        origin: quote.quote_requests?.pickup_location || '',
-        destination: JSON.stringify(quote.quote_requests?.destination_warehouses || {}),
-        estimated_delivery: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-      });
+        origin: quoteRequest?.pickup_location || 'Unknown Origin',
+        destination: destinationData || 'Unknown Destination',
+        estimated_delivery: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        cargo_details: quoteRequest?.destination_warehouses || null
+      };
+      
+      console.log('Creating shipment with data:', shipmentData);
+      const shipment = await supabaseService.shipments.create(shipmentData);
       
       return { quote, shipment };
     }
@@ -409,13 +432,20 @@ export const supabaseService = {
     },
 
     async create(shipment: Partial<Shipment>) {
+      console.log('Creating shipment in database:', shipment);
+      
       const { data, error } = await supabase
         .from('shipments')
         .insert(shipment)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to create shipment:', error);
+        throw error;
+      }
+      
+      console.log('Shipment created successfully:', data);
       
       // Create initial tracking event
       await supabaseService.tracking.create({

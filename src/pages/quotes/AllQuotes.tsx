@@ -118,16 +118,14 @@ export const AllQuotes = () => {
   };
   const handleAcceptQuote = async (quoteId: string, requestId: string) => {
     try {
+      console.log('Accepting quote:', quoteId, 'for request:', requestId);
+      
       // Add to processing set to show loading state
       setProcessingQuotes(prev => new Set([...prev, requestId]));
       
-      // Update quote status to Accepted first
-      await DataService.updateQuote(quoteId, {
-        status: 'Accepted'
-      });
-      
-      // Convert the approved quote to a shipment
+      // Convert the approved quote to a shipment (this also updates the quote status)
       const shipment = await DataService.convertQuoteToShipment(quoteId);
+      console.log('Shipment created:', shipment);
       
       if (shipment) {
         // Add to animating set for fade-out effect
