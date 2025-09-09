@@ -145,12 +145,12 @@ export const QuoteRequests = () => {
                     Destinations
                   </h4>
                   <div className="space-y-1">
-                    {request.destinations.map((dest, index) => <p key={dest.id} className="text-sm text-gray-600">
+                    {request.destinations?.map((dest, index) => <p key={dest.id} className="text-sm text-gray-600">
                         {dest.fbaWarehouse}{' '}
                         <span className="text-gray-400">
                           ({dest.cartons} cartons)
                         </span>
-                      </p>)}
+                      </p>) || <p className="text-sm text-gray-500">No destinations</p>}
                   </div>
                 </div>
                 <div className="md:w-1/4 flex flex-col justify-between">

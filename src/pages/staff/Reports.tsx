@@ -45,8 +45,8 @@ export const Reports = () => {
       const invoiceAmount = shipment.invoice?.totalAmount || 0;
       
       // Create a row for each destination warehouse
-      shipment.destinations.forEach((dest: any, index: number) => {
-        const warehouseSuffix = shipment.destinations.length > 1 ? `-${index + 1}` : '';
+      (shipment.destinations || []).forEach((dest: any, index: number) => {
+        const warehouseSuffix = (shipment.destinations?.length || 0) > 1 ? `-${index + 1}` : '';
         
         // Find the delivered event if status is Delivered
         let deliveryDate: Date | null = null;
@@ -81,7 +81,7 @@ export const Reports = () => {
               // Also get the actual weight from invoice for display
               invoicedActualWeight = warehouseDetail.actualWeight || null;
             }
-          } else if (shipment.destinations.length === 1) {
+          } else if ((shipment.destinations?.length || 0) === 1) {
             // If only one destination, use the full invoice amount
             warehouseInvoiceAmount = shipment.invoice.amount || shipment.invoice.total || null;
             // For single destination, try to get chargeable weight from invoice
@@ -97,7 +97,7 @@ export const Reports = () => {
           id: `${shipment.id}${warehouseSuffix}`,
           parentShipmentId: shipment.id,
           warehouseIndex: index + 1,
-          totalWarehouses: shipment.destinations.length,
+          totalWarehouses: shipment.destinations?.length || 0,
           customer: customer?.name || 'Unknown',
           customerId: shipment.customerId,
           origin,

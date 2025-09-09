@@ -56,7 +56,7 @@ export const ProvideQuote = () => {
         }
         setQuoteRequest(request);
         // Initialize warehouse rates based on destinations
-        const initialRates = request.destinations.map(dest => ({
+        const initialRates = (request.destinations || []).map(dest => ({
           warehouseId: dest.id,
           ratePerKg: 0
         }));
@@ -377,7 +377,7 @@ export const ProvideQuote = () => {
                 Destination Rates
               </h3>
               <div className="space-y-4">
-                {quoteRequest.destinations.map(dest => {
+                {(quoteRequest.destinations || []).map(dest => {
                 const warehouseRate = quoteForm.warehouseRates.find(wr => wr.warehouseId === dest.id);
                 return <div key={dest.id} className="p-4 border border-gray-200 rounded-lg">
                       <div className="flex justify-between items-center mb-3">

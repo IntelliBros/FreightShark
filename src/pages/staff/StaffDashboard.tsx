@@ -140,14 +140,14 @@ export const StaffDashboard = () => {
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {request.serviceType} • {request.destinations.length}{' '}
-                    destination{request.destinations.length > 1 ? 's' : ''}
+                    {request.serviceType} • {request.destinations?.length || 0}{' '}
+                    destination{(request.destinations?.length || 0) > 1 ? 's' : ''}
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="text-xs text-gray-600">
-                    Destination{request.destinations.length > 1 ? 's' : ''}:{' '}
-                    {request.destinations.map(d => d.fbaWarehouse).join(', ')}
+                    Destination{(request.destinations?.length || 0) > 1 ? 's' : ''}:{' '}
+                    {request.destinations?.map(d => d.fbaWarehouse).join(', ') || 'No destinations'}
                   </div>
                   <Link to={`/staff/quotes/provide/${request.id}`}>
                     <Button variant="primary" size="sm">
@@ -187,7 +187,7 @@ export const StaffDashboard = () => {
                         Customer ID: {shipment.customerId}
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
-                        {shipment.destinations.map(d => d.fbaWarehouse).join(' → ')}
+                        {shipment.destinations?.map(d => d.fbaWarehouse).join(' → ') || 'No destinations'}
                       </div>
                     </div>
                   </div>
