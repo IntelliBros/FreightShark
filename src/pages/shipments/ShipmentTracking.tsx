@@ -211,10 +211,10 @@ export const ShipmentTracking = () => {
     console.log('Current destinations:', shipment.destinations);
     
     // Validate all IDs are provided
-    const missingIds = shipment.destinations.filter((dest: any) => {
+    const missingIds = shipment.destinations ? shipment.destinations.filter((dest: any) => {
       const ids = warehouseIds[dest.id];
       return !ids || !ids.shipmentId || !ids.fbaId;
-    });
+    }) : [];
     
     if (missingIds.length > 0) {
       addToast('Please provide both Amazon Shipment ID and Amazon Reference ID for all warehouses', 'error');
@@ -222,13 +222,13 @@ export const ShipmentTracking = () => {
     }
     
     // Validate Amazon Reference ID format (8 alphanumeric characters)
-    const invalidRefIds = shipment.destinations.filter((dest: any) => {
+    const invalidRefIds = shipment.destinations ? shipment.destinations.filter((dest: any) => {
       const ids = warehouseIds[dest.id];
       if (!ids?.fbaId) return false;
       // Check if it's exactly 8 characters and alphanumeric
       const refIdPattern = /^[A-Z0-9]{8}$/i;
       return !refIdPattern.test(ids.fbaId);
-    });
+    }) : [];
     
     if (invalidRefIds.length > 0) {
       addToast('Amazon Reference ID must be exactly 8 alphanumeric characters (e.g., A2K9PL7X)', 'error');
@@ -239,11 +239,11 @@ export const ShipmentTracking = () => {
     
     try {
       // Update shipment with the provided IDs
-      const updatedDestinations = shipment.destinations.map((dest: any) => ({
+      const updatedDestinations = shipment.destinations ? shipment.destinations.map((dest: any) => ({
         ...dest,
         amazonShipmentId: warehouseIds[dest.id]?.shipmentId || dest.amazonShipmentId,
         amazonReferenceId: warehouseIds[dest.id]?.fbaId || dest.amazonReferenceId
-      }));
+      })) : [];
       
       console.log('Updated destinations to save:', updatedDestinations);
       
@@ -389,7 +389,7 @@ export const ShipmentTracking = () => {
             chargeableWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0
           },
           serviceMode: serviceMode,
-          currentLocation: shipmentData.trackingEvents && shipmentData.trackingEvents.length > 0 
+          currentLocation: Array.isArray(shipmentData.trackingEvents) && shipmentData.trackingEvents.length > 0 
             ? shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1].location 
             : quoteRequestData?.supplierDetails?.city || 'Unknown',
           destinations: (shipmentData.invoice && shipmentData.invoice.warehouseDetails) 
@@ -699,7 +699,7 @@ export const ShipmentTracking = () => {
       {activeTab === 'overview' && <div className="space-y-5">
           {/* Required IDs Notice - Show after payment but only if IDs are missing */}
           {shipment.invoice && shipment.invoice.status === 'Paid' && 
-           shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
+           shipment.destinations && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
             <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
               <div className="flex items-start">
                 <AlertCircleIcon className="h-6 w-6 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
@@ -797,7 +797,7 @@ export const ShipmentTracking = () => {
                   Required: Enter Amazon IDs for Each Warehouse
                 </h4>
                 <div className="space-y-3">
-                  {shipment.destinations.map((dest: any) => (
+                  {shipment.destinations && shipment.destinations.map((dest: any) => (
                     <div key={dest.id} className="bg-white p-3 rounded border border-red-200">
                       <h5 className="font-medium text-gray-900 mb-2 text-sm">{dest.fbaWarehouse}</h5>
                       <div className="grid grid-cols-2 gap-3">
@@ -861,7 +861,7 @@ export const ShipmentTracking = () => {
             )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {shipment.destinations.map((dest: any) => <div key={dest.id} className={`cursor-pointer transition-all rounded-lg p-4 ${activeDestination === dest.id ? 'bg-blue-50 border-2 border-blue-200 shadow-lg' : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'}`} onClick={() => setActiveDestination(dest.id)}>
+              {shipment.destinations && shipment.destinations.map((dest: any) => <div key={dest.id} className={`cursor-pointer transition-all rounded-lg p-4 ${activeDestination === dest.id ? 'bg-blue-50 border-2 border-blue-200 shadow-lg' : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'}`} onClick={() => setActiveDestination(dest.id)}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-start">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 transition-colors ${activeDestination === dest.id ? 'bg-blue-500' : 'bg-gray-100'}`}>
