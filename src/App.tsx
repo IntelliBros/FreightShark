@@ -19,7 +19,6 @@ import { Login } from './pages/auth/Login';
 import { StaffLogin } from './pages/auth/StaffLogin';
 import { AdminLogin } from './pages/auth/AdminLogin';
 import { SignUp } from './pages/auth/SignUp';
-import { OnBoarding } from './pages/auth/OnBoarding';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { CreateInvoice } from './pages/staff/invoices/CreateInvoice';
 import { PendingInvoices } from './pages/staff/invoices/PendingInvoices';
@@ -53,7 +52,6 @@ export function App() {
               <Route path="/staff-login" element={<StaffLogin />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/signup" element={<SignUp />} />
-              <Route path="/onboarding" element={<OnBoarding />} />
               {/* Customer dashboard */}
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />

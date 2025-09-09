@@ -141,7 +141,14 @@ export const AuthProvider: React.FC<{
         setUser(result.user);
         setToken(result.token);
         localStorage.setItem('authToken', result.token);
-        navigate('/onboarding');
+        // Navigate based on role
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else if (result.user.role === 'staff') {
+          navigate('/staff');
+        } else {
+          navigate('/');
+        }
       }
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Registration failed');
