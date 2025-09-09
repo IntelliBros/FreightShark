@@ -32,7 +32,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bhm1',
     code: 'BHM1',
-    name: 'FBA BHM1',
+    name: 'BHM1',
     address: '975 Powder Plant Road',
     city: 'Bessemer',
     state: 'AL',
@@ -45,7 +45,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'mob5',
     code: 'MOB5',
-    name: 'FBA MOB5',
+    name: 'MOB5',
     address: '6735 Trippel Road',
     city: 'Theodore',
     state: 'AL',
@@ -60,7 +60,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phx3',
     code: 'PHX3',
-    name: 'FBA PHX3',
+    name: 'PHX3',
     address: '6835 W Buckeye Road',
     city: 'Phoenix',
     state: 'AZ',
@@ -73,7 +73,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phx5',
     code: 'PHX5',
-    name: 'FBA PHX5',
+    name: 'PHX5',
     address: '16920 W Commerce Drive',
     city: 'Goodyear',
     state: 'AZ',
@@ -86,7 +86,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phx6',
     code: 'PHX6',
-    name: 'FBA PHX6',
+    name: 'PHX6',
     address: '4750 W Mohave Street',
     city: 'Phoenix',
     state: 'AZ',
@@ -99,7 +99,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phx7',
     code: 'PHX7',
-    name: 'FBA PHX7',
+    name: 'PHX7',
     address: '800 N 75th Avenue',
     city: 'Phoenix',
     state: 'AZ',
@@ -112,7 +112,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'tus1',
     code: 'TUS1',
-    name: 'FBA TUS1',
+    name: 'TUS1',
     address: '8181 E Irvington Road',
     city: 'Tucson',
     state: 'AZ',
@@ -127,7 +127,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'lax9',
     code: 'LAX9',
-    name: 'FBA LAX9',
+    name: 'LAX9',
     address: '18700 S Alameda Street',
     city: 'Compton',
     state: 'CA',
@@ -140,7 +140,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ont1',
     code: 'ONT1',
-    name: 'FBA ONT1',
+    name: 'ONT1',
     address: '12340 World Trade Drive',
     city: 'San Diego',
     state: 'CA',
@@ -153,7 +153,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ont6',
     code: 'ONT6',
-    name: 'FBA ONT6',
+    name: 'ONT6',
     address: '24208 San Michele Road',
     city: 'Moreno Valley',
     state: 'CA',
@@ -166,7 +166,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ont8',
     code: 'ONT8',
-    name: 'FBA ONT8',
+    name: 'ONT8',
     address: '24300 Nandina Avenue',
     city: 'Moreno Valley',
     state: 'CA',
@@ -179,7 +179,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'sck1',
     code: 'SCK1',
-    name: 'FBA SCK1',
+    name: 'SCK1',
     address: '4611 Newcastle Road',
     city: 'Stockton',
     state: 'CA',
@@ -192,7 +192,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'sck3',
     code: 'SCK3',
-    name: 'FBA SCK3',
+    name: 'SCK3',
     address: '3565 N Airport Way',
     city: 'Manteca',
     state: 'CA',
@@ -205,7 +205,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'sjc7',
     code: 'SJC7',
-    name: 'FBA SJC7',
+    name: 'SJC7',
     address: '188 Mountain House Parkway',
     city: 'Tracy',
     state: 'CA',
@@ -218,7 +218,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'smf1',
     code: 'SMF1',
-    name: 'FBA SMF1',
+    name: 'SMF1',
     address: '4900 W Elkhorn Boulevard',
     city: 'Sacramento',
     state: 'CA',
@@ -233,7 +233,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'den2',
     code: 'DEN2',
-    name: 'FBA DEN2',
+    name: 'DEN2',
     address: '4900 Dahlia Street',
     city: 'Commerce City',
     state: 'CO',
@@ -246,7 +246,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'den5',
     code: 'DEN5',
-    name: 'FBA DEN5',
+    name: 'DEN5',
     address: '8451 Rosemary Street',
     city: 'Commerce City',
     state: 'CO',
@@ -261,7 +261,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bdl2',
     code: 'BDL2',
-    name: 'FBA BDL2',
+    name: 'BDL2',
     address: '710 Dividend Road',
     city: 'Rocky Hill',
     state: 'CT',
@@ -276,7 +276,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phl4',
     code: 'PHL4',
-    name: 'FBA PHL4',
+    name: 'PHL4',
     address: '250 Riverside Drive',
     city: 'New Castle',
     state: 'DE',
@@ -289,7 +289,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phl5',
     code: 'PHL5',
-    name: 'FBA PHL5',
+    name: 'PHL5',
     address: '727 N Dupont Highway',
     city: 'New Castle',
     state: 'DE',
@@ -304,7 +304,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'mco1',
     code: 'MCO1',
-    name: 'FBA MCO1',
+    name: 'MCO1',
     address: '12340 Boggy Creek Road',
     city: 'Orlando',
     state: 'FL',
@@ -317,7 +317,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'tpa1',
     code: 'TPA1',
-    name: 'FBA TPA1',
+    name: 'TPA1',
     address: '3350 Laurel Ridge Avenue',
     city: 'Riverview',
     state: 'FL',
@@ -330,7 +330,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'tpa2',
     code: 'TPA2',
-    name: 'FBA TPA2',
+    name: 'TPA2',
     address: '3292 Laurel Ridge Avenue',
     city: 'Riverview',
     state: 'FL',
@@ -345,7 +345,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'atl6',
     code: 'ATL6',
-    name: 'FBA ATL6',
+    name: 'ATL6',
     address: '1000 Cobb Place Boulevard NW',
     city: 'Kennesaw',
     state: 'GA',
@@ -358,7 +358,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'atl7',
     code: 'ATL7',
-    name: 'FBA ATL7',
+    name: 'ATL7',
     address: '6855 Shannon Parkway',
     city: 'Union City',
     state: 'GA',
@@ -373,7 +373,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'mdw2',
     code: 'MDW2',
-    name: 'FBA MDW2',
+    name: 'MDW2',
     address: '250 Emerald Drive',
     city: 'Joliet',
     state: 'IL',
@@ -386,7 +386,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'mdw6',
     code: 'MDW6',
-    name: 'FBA MDW6',
+    name: 'MDW6',
     address: '1125 Remington Boulevard',
     city: 'Romeoville',
     state: 'IL',
@@ -401,7 +401,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ind1',
     code: 'IND1',
-    name: 'FBA IND1',
+    name: 'IND1',
     address: '710 S Girls School Road',
     city: 'Indianapolis',
     state: 'IN',
@@ -414,7 +414,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ind2',
     code: 'IND2',
-    name: 'FBA IND2',
+    name: 'IND2',
     address: '800 Perry Road',
     city: 'Plainfield',
     state: 'IN',
@@ -427,7 +427,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ind3',
     code: 'IND3',
-    name: 'FBA IND3',
+    name: 'IND3',
     address: '710 S High School Road',
     city: 'Indianapolis',
     state: 'IN',
@@ -442,7 +442,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ict1',
     code: 'ICT1',
-    name: 'FBA ICT1',
+    name: 'ICT1',
     address: '12075 E Pawnee Street',
     city: 'Wichita',
     state: 'KS',
@@ -455,7 +455,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'mci1',
     code: 'MCI1',
-    name: 'FBA MCI1',
+    name: 'MCI1',
     address: '19645 Waverly Road',
     city: 'Edgerton',
     state: 'KS',
@@ -470,7 +470,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'lex1',
     code: 'LEX1',
-    name: 'FBA LEX1',
+    name: 'LEX1',
     address: '1850 Mercer Road',
     city: 'Lexington',
     state: 'KY',
@@ -483,7 +483,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'lex2',
     code: 'LEX2',
-    name: 'FBA LEX2',
+    name: 'LEX2',
     address: '172 Trade Street',
     city: 'Lexington',
     state: 'KY',
@@ -496,7 +496,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'sdf8',
     code: 'SDF8',
-    name: 'FBA SDF8',
+    name: 'SDF8',
     address: '4360 Robards Lane',
     city: 'Louisville',
     state: 'KY',
@@ -511,7 +511,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'msy1',
     code: 'MSY1',
-    name: 'FBA MSY1',
+    name: 'MSY1',
     address: '14400 Airline Highway',
     city: 'Baton Rouge',
     state: 'LA',
@@ -526,7 +526,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bwi2',
     code: 'BWI2',
-    name: 'FBA BWI2',
+    name: 'BWI2',
     address: '2010 Broening Highway',
     city: 'Baltimore',
     state: 'MD',
@@ -539,7 +539,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bwi5',
     code: 'BWI5',
-    name: 'FBA BWI5',
+    name: 'BWI5',
     address: '8484 Baltimore National Pike',
     city: 'Ellicott City',
     state: 'MD',
@@ -554,7 +554,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bos7',
     code: 'BOS7',
-    name: 'FBA BOS7',
+    name: 'BOS7',
     address: '100 Cabot Street',
     city: 'Stoughton',
     state: 'MA',
@@ -569,7 +569,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'dtw1',
     code: 'DTW1',
-    name: 'FBA DTW1',
+    name: 'DTW1',
     address: '2800 Centerpoint Parkway',
     city: 'Pontiac',
     state: 'MI',
@@ -584,7 +584,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'msp1',
     code: 'MSP1',
-    name: 'FBA MSP1',
+    name: 'MSP1',
     address: '2601 4th Avenue E',
     city: 'Shakopee',
     state: 'MN',
@@ -599,7 +599,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'stl8',
     code: 'STL8',
-    name: 'FBA STL8',
+    name: 'STL8',
     address: '13801 Rider Trail North',
     city: 'Earth City',
     state: 'MO',
@@ -614,7 +614,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'las1',
     code: 'LAS1',
-    name: 'FBA LAS1',
+    name: 'LAS1',
     address: '8125 Placid Street',
     city: 'Las Vegas',
     state: 'NV',
@@ -627,7 +627,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'las2',
     code: 'LAS2',
-    name: 'FBA LAS2',
+    name: 'LAS2',
     address: '1980 Pabco Road',
     city: 'Henderson',
     state: 'NV',
@@ -640,7 +640,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'rno4',
     code: 'RNO4',
-    name: 'FBA RNO4',
+    name: 'RNO4',
     address: '8000 North Virginia Street',
     city: 'Reno',
     state: 'NV',
@@ -655,7 +655,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'lga9',
     code: 'LGA9',
-    name: 'FBA LGA9',
+    name: 'LGA9',
     address: '1 Connell Drive',
     city: 'Berkeley Heights',
     state: 'NJ',
@@ -668,7 +668,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ewr4',
     code: 'EWR4',
-    name: 'FBA EWR4',
+    name: 'EWR4',
     address: '50 New Canton Way',
     city: 'Robbinsville',
     state: 'NJ',
@@ -681,7 +681,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ewr9',
     code: 'EWR9',
-    name: 'FBA EWR9',
+    name: 'EWR9',
     address: '8003 Industrial Avenue',
     city: 'Carteret',
     state: 'NJ',
@@ -696,7 +696,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'lga4',
     code: 'LGA4',
-    name: 'FBA LGA4',
+    name: 'LGA4',
     address: '3250 Westchester Avenue',
     city: 'Bronx',
     state: 'NY',
@@ -709,7 +709,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'alb1',
     code: 'ALB1',
-    name: 'FBA ALB1',
+    name: 'ALB1',
     address: '350 Northern Boulevard',
     city: 'Castleton-on-Hudson',
     state: 'NY',
@@ -724,7 +724,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'clt2',
     code: 'CLT2',
-    name: 'FBA CLT2',
+    name: 'CLT2',
     address: '10240 Statesville Road',
     city: 'Huntersville',
     state: 'NC',
@@ -737,7 +737,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'rdu1',
     code: 'RDU1',
-    name: 'FBA RDU1',
+    name: 'RDU1',
     address: '2020 Lewis Drive',
     city: 'Garner',
     state: 'NC',
@@ -752,7 +752,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'cmh1',
     code: 'CMH1',
-    name: 'FBA CMH1',
+    name: 'CMH1',
     address: '11903 National Road SW',
     city: 'Etna',
     state: 'OH',
@@ -765,7 +765,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'cmh2',
     code: 'CMH2',
-    name: 'FBA CMH2',
+    name: 'CMH2',
     address: '6050 Gateway Court',
     city: 'Obetz',
     state: 'OH',
@@ -778,7 +778,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'cle3',
     code: 'CLE3',
-    name: 'FBA CLE3',
+    name: 'CLE3',
     address: '1155 Babbitt Road',
     city: 'Euclid',
     state: 'OH',
@@ -793,7 +793,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'okc1',
     code: 'OKC1',
-    name: 'FBA OKC1',
+    name: 'OKC1',
     address: '7000 Crossroads Boulevard',
     city: 'Oklahoma City',
     state: 'OK',
@@ -808,7 +808,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'pdx6',
     code: 'PDX6',
-    name: 'FBA PDX6',
+    name: 'PDX6',
     address: '100 SW 7th Street',
     city: 'Sherwood',
     state: 'OR',
@@ -821,7 +821,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'pdx9',
     code: 'PDX9',
-    name: 'FBA PDX9',
+    name: 'PDX9',
     address: '650 NW 27th Avenue',
     city: 'Troutdale',
     state: 'OR',
@@ -836,7 +836,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phl6',
     code: 'PHL6',
-    name: 'FBA PHL6',
+    name: 'PHL6',
     address: '675 Allen Street',
     city: 'Allentown',
     state: 'PA',
@@ -849,7 +849,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'phl7',
     code: 'PHL7',
-    name: 'FBA PHL7',
+    name: 'PHL7',
     address: '500 McCarthy Drive',
     city: 'Lewisberry',
     state: 'PA',
@@ -862,7 +862,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ppa1',
     code: 'PPA1',
-    name: 'FBA PPA1',
+    name: 'PPA1',
     address: '545 Oak Hill Road',
     city: 'Mountaintop',
     state: 'PA',
@@ -877,7 +877,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'cae1',
     code: 'CAE1',
-    name: 'FBA CAE1',
+    name: 'CAE1',
     address: '1441 Boston Avenue',
     city: 'West Columbia',
     state: 'SC',
@@ -890,7 +890,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'gsp1',
     code: 'GSP1',
-    name: 'FBA GSP1',
+    name: 'GSP1',
     address: '402 John Dodd Road',
     city: 'Spartanburg',
     state: 'SC',
@@ -905,7 +905,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bna1',
     code: 'BNA1',
-    name: 'FBA BNA1',
+    name: 'BNA1',
     address: '14840 Central Pike',
     city: 'Lebanon',
     state: 'TN',
@@ -918,7 +918,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bna2',
     code: 'BNA2',
-    name: 'FBA BNA2',
+    name: 'BNA2',
     address: '500 Duke Drive',
     city: 'Franklin',
     state: 'TN',
@@ -931,7 +931,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'cha1',
     code: 'CHA1',
-    name: 'FBA CHA1',
+    name: 'CHA1',
     address: '7200 Discovery Drive',
     city: 'Chattanooga',
     state: 'TN',
@@ -946,7 +946,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'dal3',
     code: 'DAL3',
-    name: 'FBA DAL3',
+    name: 'DAL3',
     address: '1301 Chalk Hill Road',
     city: 'Dallas',
     state: 'TX',
@@ -959,7 +959,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'dfw1',
     code: 'DFW1',
-    name: 'FBA DFW1',
+    name: 'DFW1',
     address: '2700 Regent Boulevard',
     city: 'Irving',
     state: 'TX',
@@ -972,7 +972,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'dfw6',
     code: 'DFW6',
-    name: 'FBA DFW6',
+    name: 'DFW6',
     address: '940 W Bethel Road',
     city: 'Coppell',
     state: 'TX',
@@ -985,7 +985,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'dfw8',
     code: 'DFW8',
-    name: 'FBA DFW8',
+    name: 'DFW8',
     address: '2828 Regent Boulevard',
     city: 'Irving',
     state: 'TX',
@@ -998,7 +998,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'hou2',
     code: 'HOU2',
-    name: 'FBA HOU2',
+    name: 'HOU2',
     address: '1000 W Sam Houston Parkway S',
     city: 'Houston',
     state: 'TX',
@@ -1011,7 +1011,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'hou7',
     code: 'HOU7',
-    name: 'FBA HOU7',
+    name: 'HOU7',
     address: '14350 Westport Road',
     city: 'Houston',
     state: 'TX',
@@ -1024,7 +1024,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'sat1',
     code: 'SAT1',
-    name: 'FBA SAT1',
+    name: 'SAT1',
     address: '6000 Enterprise Avenue',
     city: 'Schertz',
     state: 'TX',
@@ -1039,7 +1039,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'slc1',
     code: 'SLC1',
-    name: 'FBA SLC1',
+    name: 'SLC1',
     address: '2999 Directors Row',
     city: 'Salt Lake City',
     state: 'UT',
@@ -1054,7 +1054,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'iad8',
     code: 'IAD8',
-    name: 'FBA IAD8',
+    name: 'IAD8',
     address: '44810 Falcon Place',
     city: 'Sterling',
     state: 'VA',
@@ -1067,7 +1067,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'ric1',
     code: 'RIC1',
-    name: 'FBA RIC1',
+    name: 'RIC1',
     address: '1901 Meadowville Technology Parkway',
     city: 'Chester',
     state: 'VA',
@@ -1082,7 +1082,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bfi4',
     code: 'BFI4',
-    name: 'FBA BFI4',
+    name: 'BFI4',
     address: '21005 64th Avenue S',
     city: 'Kent',
     state: 'WA',
@@ -1095,7 +1095,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'sea8',
     code: 'SEA8',
-    name: 'FBA SEA8',
+    name: 'SEA8',
     address: '2700 Center Drive',
     city: 'DuPont',
     state: 'WA',
@@ -1108,7 +1108,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'bfi3',
     code: 'BFI3',
-    name: 'FBA BFI3',
+    name: 'BFI3',
     address: '20529 59th Place S',
     city: 'Kent',
     state: 'WA',
@@ -1123,7 +1123,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'mkc4',
     code: 'MKC4',
-    name: 'FBA MKC4',
+    name: 'MKC4',
     address: '3501 120th Avenue',
     city: 'Kenosha',
     state: 'WI',
@@ -1138,7 +1138,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'yyz1',
     code: 'YYZ1',
-    name: 'FBA YYZ1',
+    name: 'YYZ1',
     address: '6835 Invader Crescent',
     city: 'Mississauga',
     state: 'ON',
@@ -1151,7 +1151,7 @@ const AMAZON_WAREHOUSES: AmazonWarehouse[] = [
   {
     id: 'yyc1',
     code: 'YYC1',
-    name: 'FBA YYC1',
+    name: 'YYC1',
     address: '300 394 Avenue SE',
     city: 'Calgary',
     state: 'AB',

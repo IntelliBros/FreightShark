@@ -168,7 +168,6 @@ export const NewQuote = () => {
   // Amazon warehouse state
   const [availableWarehouses, setAvailableWarehouses] = useState<AmazonWarehouse[]>([]);
   const [warehouseSearch, setWarehouseSearch] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<'all' | AmazonWarehouse['region']>('all');
 
   // Load warehouses on component mount
   useEffect(() => {
@@ -176,21 +175,12 @@ export const NewQuote = () => {
     setAvailableWarehouses(warehouses);
   }, []);
 
-  // Filter warehouses based on search and region
+  // Filter warehouses based on search
   const getFilteredWarehouses = (): AmazonWarehouse[] => {
-    let warehouses = availableWarehouses;
-
-    // Filter by region
-    if (selectedRegion !== 'all') {
-      warehouses = amazonWarehouseService.getWarehousesByRegion(selectedRegion);
-    }
-
-    // Filter by search query
     if (warehouseSearch.trim()) {
-      warehouses = amazonWarehouseService.searchWarehouses(warehouseSearch);
+      return amazonWarehouseService.searchWarehouses(warehouseSearch);
     }
-
-    return warehouses;
+    return availableWarehouses;
   };
 
   // Helper function to get warehouse display address
@@ -767,26 +757,6 @@ export const NewQuote = () => {
                                 </span>
                               </div>
                               
-                              {/* Region Filter */}
-                              <div className="mb-2">
-                                <div className="flex gap-1 text-xs">
-                                  {['all', 'US-West', 'US-Central', 'US-East', 'Canada'].map((region) => (
-                                    <button
-                                      key={region}
-                                      type="button"
-                                      onClick={() => setSelectedRegion(region as any)}
-                                      className={`px-2 py-1 rounded transition-colors ${
-                                        selectedRegion === region 
-                                          ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                      }`}
-                                    >
-                                      {region === 'all' ? 'All Regions' : region}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
                               {/* Search Input */}
                               <div className="relative mb-2">
                                 <SearchIcon className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
@@ -808,7 +778,7 @@ export const NewQuote = () => {
                                 <option value="">Select a warehouse ({getFilteredWarehouses().length} available)</option>
                                 {getFilteredWarehouses().map(warehouse => (
                                   <option key={warehouse.id} value={warehouse.name}>
-                                    {warehouse.name} - {warehouse.city}, {warehouse.state} ({warehouse.region})
+                                    {warehouse.name} - {warehouse.city}, {warehouse.state}
                                   </option>
                                 ))}
                               </select>
