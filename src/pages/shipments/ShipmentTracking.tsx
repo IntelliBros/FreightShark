@@ -382,7 +382,7 @@ export const ShipmentTracking = () => {
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
               })
-            : shipmentData.destinations.map((dest: any) => {
+            : (shipmentData.destinations || []).map((dest: any) => {
                 return {
                   id: dest.id,
                   amazonShipmentId: dest.amazonShipmentId || '',
@@ -718,7 +718,7 @@ export const ShipmentTracking = () => {
                         Due Date
                       </span>
                       <span className="text-sm font-medium text-gray-900">
-                        {shipment.invoice.dueDate}
+                        {shipment.invoice.dueDate || 'Not set'}
                       </span>
                     </div>
                   </div>
@@ -1166,7 +1166,7 @@ export const ShipmentTracking = () => {
               <p className="text-sm text-gray-500">
                 Invoice #{shipment.invoice.id} • Created on{' '}
                 {shipment.invoice.createdAt ? new Date(shipment.invoice.createdAt).toLocaleDateString() : 'Date not available'}{' '}
-                • Due by {shipment.invoice.dueDate}
+                • Due by {shipment.invoice.dueDate || 'Not set'}
               </p>
             </div>
             <div className="flex items-center space-x-3">
@@ -1236,7 +1236,7 @@ export const ShipmentTracking = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Due Date:</span>
                       <span className="text-sm text-gray-900">
-                        {shipment.invoice.dueDate}
+                        {shipment.invoice.dueDate || 'Not set'}
                       </span>
                     </div>
                   </div>
