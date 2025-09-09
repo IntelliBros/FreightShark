@@ -214,7 +214,8 @@ export const DataService = {
       ...quote,
       requestId: quote.request_id, // Map request_id to requestId
       customerId: quote.customer_id, // Map customer_id to customerId
-      staffId: quote.staff_id // Map staff_id to staffId
+      staffId: quote.staff_id, // Map staff_id to staffId
+      total: quote.total_cost // Map total_cost to total for backwards compatibility
     }));
   },
 

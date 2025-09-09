@@ -273,7 +273,7 @@ export const PendingQuotes = () => {
                   <div className="text-sm mt-2">
                     <span className="text-gray-500 block">Total Quote:</span>
                     <span className="font-medium text-blue-600">
-                      ${item.quote.total.toFixed(2)}
+                      ${(item.quote.total_cost || item.quote.total || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="mt-4">
