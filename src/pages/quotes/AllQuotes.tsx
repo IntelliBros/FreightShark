@@ -305,19 +305,6 @@ export const AllQuotes = () => {
                         </p>
                       </div>
                     ))}
-                    {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).length > 0 && (
-                      <div className="pt-2 mt-2 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 font-medium">Total Cargo:</p>
-                        <p className="text-sm text-gray-700">
-                          {item.request.cargoDetails?.cartonCount || item.request.total_cartons || 0} cartons •{' '}
-                          {(item.request.cargoDetails?.grossWeight || item.request.total_weight || 0).toFixed(2)} kg •{' '}
-                          {item.request.cargoDetails?.cbm || item.request.total_volume || 0} CBM
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Service: {item.request.serviceType || item.request.service_type || 'Air Freight'}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
                 <div className="md:w-1/4">
