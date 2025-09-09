@@ -1,6 +1,7 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { DataService } from '../services/DataService';
 type User = {
   id: string;
   name: string;
@@ -125,27 +126,35 @@ export const AuthProvider: React.FC<{
   }) => {
     setIsLoading(true);
     try {
-      const result = await authService.register({
+      // Create user directly in database using DataService
+      const createdUser = await DataService.createUser({
         name: userData.name || '',
         email: userData.email || '',
         password: userData.password,
         company: userData.company || '',
         role: 'user', // Only customers can self-register
         amazonSellerId: userData.amazonSellerId,
-        einTaxId: userData.einTaxId,
-        staffPosition: userData.staffPosition
+        einTaxId: userData.einTaxId
       });
       
-      if (result) {
-        // Registration returns user and token
-        setUser(result.user);
-        setToken(result.token);
-        localStorage.setItem('authToken', result.token);
+      if (createdUser) {
+        // Generate a token for the created user (for immediate login)
+        const token = btoa(JSON.stringify({ 
+          userId: createdUser.id, 
+          email: createdUser.email, 
+          role: createdUser.role 
+        }));
+        
+        // Set user state and token
+        setUser(createdUser);
+        setToken(token);
+        localStorage.setItem('authToken', token);
+        
         // Navigate to customer dashboard (only customers can self-register)
         navigate('/');
       }
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Registration failed');
+      throw new Error(error.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }

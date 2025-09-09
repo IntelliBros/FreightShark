@@ -64,7 +64,7 @@ export const UserManagement = () => {
       // Generate a temporary password for invited users
       const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
       
-      const newUser = {
+      const userData = {
         name: inviteForm.name,
         email: inviteForm.email,
         password: tempPassword,
@@ -73,7 +73,8 @@ export const UserManagement = () => {
         staffPosition: inviteForm.role === 'staff' ? inviteForm.staffPosition : undefined
       };
       
-      const createdUser = await DataService.createUser(newUser);
+      // Use DataService.createUser which now handles password hashing
+      const createdUser = await DataService.createUser(userData);
       setUsers(prevUsers => [...prevUsers, createdUser]);
       
       addToast(`User ${inviteForm.name} has been invited successfully. Temporary password: ${tempPassword}`, 'success');

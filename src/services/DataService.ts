@@ -58,6 +58,12 @@ export const DataService = {
 
   async createUser(userData: any) {
     await simulateDelay(400);
+    // Hash password before storing if it's provided as plain text
+    if (userData.password && !userData.password_hash) {
+      const bcrypt = await import('bcryptjs');
+      userData.password_hash = await bcrypt.hash(userData.password, 10);
+      delete userData.password; // Remove plain text password
+    }
     return await supabaseService.users.create(userData);
   },
 
