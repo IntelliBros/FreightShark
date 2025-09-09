@@ -95,7 +95,11 @@ export const AllQuotes = () => {
     let filtered = [...quotes];
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(item => item.request.id.toLowerCase().includes(search) || item.request.supplierDetails.name.toLowerCase().includes(search));
+      filtered = filtered.filter(item => 
+        item.request.id.toLowerCase().includes(search) || 
+        (item.request.supplierDetails?.name && item.request.supplierDetails.name.toLowerCase().includes(search)) ||
+        (item.request.pickup_location && item.request.pickup_location.toLowerCase().includes(search))
+      );
     }
     if (statusFilter !== 'all') {
       filtered = filtered.filter(item => item.request.status === statusFilter);
@@ -269,11 +273,13 @@ export const AllQuotes = () => {
                   </div>
                   <div className="text-sm text-gray-500">
                     <p className="mb-1">
-                      From: {item.request.supplierDetails.name}
+                      From: {item.request.supplierDetails?.name || 'Unknown Supplier'}
                     </p>
                     <p>
-                      {item.request.supplierDetails.city},{' '}
-                      {item.request.supplierDetails.country}
+                      {item.request.supplierDetails?.city ? 
+                        `${item.request.supplierDetails.city}, ${item.request.supplierDetails.country}` :
+                        item.request.pickup_location || 'Location not specified'
+                      }
                     </p>
                   </div>
                   <div className="mt-2">
