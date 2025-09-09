@@ -293,12 +293,12 @@ export const AllQuotes = () => {
                     Service & Cargo
                   </h4>
                   <p className="text-sm font-medium text-gray-900 mb-1">
-                    {item.request.serviceType}
+                    {item.request.serviceType || item.request.service_type || 'Air Freight'}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {item.request.cargoDetails.cartonCount} cartons •{' '}
-                    {item.request.cargoDetails.grossWeight.toFixed(2)} kg •{' '}
-                    {item.request.cargoDetails.cbm} CBM
+                    {item.request.cargoDetails?.cartonCount || item.request.total_cartons || 0} cartons •{' '}
+                    {(item.request.cargoDetails?.grossWeight || item.request.total_weight || 0).toFixed(2)} kg •{' '}
+                    {item.request.cargoDetails?.cbm || item.request.total_volume || 0} CBM
                   </p>
                 </div>
                 <div className="md:w-1/4 mb-4 md:mb-0">
@@ -306,10 +306,10 @@ export const AllQuotes = () => {
                     Destinations
                   </h4>
                   <div className="space-y-1">
-                    {item.request.destinations.map(dest => <p key={dest.id} className="text-sm text-gray-600">
-                        {dest.fbaWarehouse || 'Unnamed Warehouse'}{' '}
+                    {(item.request.destinations || item.request.destination_warehouses || item.request.quote_request_warehouses || []).map((dest: any, index: number) => <p key={dest.id || index} className="text-sm text-gray-600">
+                        {dest.fbaWarehouse || dest.fba_warehouse_code || dest.warehouses?.fba_warehouse_code || 'Unnamed Warehouse'}{' '}
                         <span className="text-gray-400">
-                          ({dest.cartons} cartons)
+                          ({dest.cartons || dest.cartons_count || 0} cartons)
                         </span>
                       </p>)}
                   </div>
