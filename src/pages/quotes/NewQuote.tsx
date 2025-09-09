@@ -87,6 +87,7 @@ type QuoteFormData = {
     competitorASIN: string;
     regulatedGoods: 'fda' | 'wood-bamboo-animal' | 'batteries-hazmat' | 'cream-liquids-powders' | 'none' | '';
   };
+  specialInstructions: string;
 };
 export const NewQuote = () => {
   const navigate = useNavigate();
@@ -155,7 +156,8 @@ export const NewQuote = () => {
       description: '',
       competitorASIN: '',
       regulatedGoods: ''
-    }
+    },
+    specialInstructions: ''
   });
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
@@ -504,6 +506,32 @@ export const NewQuote = () => {
     }
   };
   const handleSubmitQuote = async () => {
+    // Validate required fields
+    if (!formData.supplier) {
+      addToast('Please select or add a supplier', 'error');
+      return;
+    }
+    
+    if (formData.destinations.length === 0) {
+      addToast('Please add at least one destination', 'error');
+      return;
+    }
+    
+    if (!formData.productDetails.description) {
+      addToast('Please provide a product description', 'error');
+      return;
+    }
+    
+    if (!formData.productDetails.competitorASIN) {
+      addToast('Please provide a competitor ASIN', 'error');
+      return;
+    }
+    
+    if (!formData.productDetails.regulatedGoods) {
+      addToast('Please select regulated goods type', 'error');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       // Format the data for the API
@@ -518,7 +546,7 @@ export const NewQuote = () => {
           grossWeight: totalDestinationGrossWeight,
           cbm: (totalDestinationVolumetricWeight / 167).toFixed(3), // Convert volumetric weight to CBM (1 CBM = 167 kg)
           hazardous: false,
-          notes: '',
+          notes: formData.specialInstructions || '',
           productDescription: formData.productDetails.description,
           competitorASIN: formData.productDetails.competitorASIN,
           regulatedGoods: formData.productDetails.regulatedGoods
@@ -537,15 +565,8 @@ export const NewQuote = () => {
           country: 'China',
           contactName: formData.supplier.contact,
           contactPhone: ''
-        } : {
-          name: '',
-          address: '',
-          city: '',
-          country: '',
-          contactName: '',
-          contactPhone: ''
-        },
-        specialRequirements: ''
+        } : null,
+        specialRequirements: formData.specialInstructions || ''
       };
       try {
         // Save the quote request to the data service
@@ -985,6 +1006,8 @@ export const NewQuote = () => {
                     <textarea 
                       id="special-instructions" 
                       rows={3} 
+                      value={formData.specialInstructions}
+                      onChange={(e) => setFormData({ ...formData, specialInstructions: e.target.value })}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
                       placeholder="Add any special delivery instructions, requirements, or notes for all destinations..." 
                     />
