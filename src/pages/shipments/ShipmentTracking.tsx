@@ -374,17 +374,36 @@ export const ShipmentTracking = () => {
           }
           
           console.log('Starting transformation with shipmentData:', shipmentData);
-          console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
-          if (shipmentData.trackingEvents && !Array.isArray(shipmentData.trackingEvents)) {
-            console.warn('trackingEvents exists but is not an array:', shipmentData.trackingEvents);
+          
+          // Safely check trackingEvents
+          let safeTrackingEvents = [];
+          if (shipmentData.trackingEvents) {
+            console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
+            if (Array.isArray(shipmentData.trackingEvents)) {
+              safeTrackingEvents = shipmentData.trackingEvents;
+            } else {
+              console.warn('trackingEvents exists but is not an array:', shipmentData.trackingEvents);
+            }
           }
-          console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
-          if (shipmentData.destinations && !Array.isArray(shipmentData.destinations)) {
-            console.warn('destinations exists but is not an array:', shipmentData.destinations);
+          
+          // Safely check destinations
+          let safeDestinations = [];
+          if (shipmentData.destinations) {
+            console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
+            if (Array.isArray(shipmentData.destinations)) {
+              safeDestinations = shipmentData.destinations;
+            } else {
+              console.warn('destinations exists but is not an array:', shipmentData.destinations);
+            }
           }
-          if (shipmentData.invoice) {
+          
+          // Safely check warehouseDetails
+          let safeWarehouseDetails = [];
+          if (shipmentData.invoice && shipmentData.invoice.warehouseDetails) {
             console.log('warehouseDetails type:', typeof shipmentData.invoice.warehouseDetails, 'isArray:', Array.isArray(shipmentData.invoice.warehouseDetails));
-            if (shipmentData.invoice.warehouseDetails && !Array.isArray(shipmentData.invoice.warehouseDetails)) {
+            if (Array.isArray(shipmentData.invoice.warehouseDetails)) {
+              safeWarehouseDetails = shipmentData.invoice.warehouseDetails;
+            } else {
               console.warn('warehouseDetails exists but is not an array:', shipmentData.invoice.warehouseDetails);
             }
           }
@@ -408,46 +427,46 @@ export const ShipmentTracking = () => {
           },
           serviceMode: serviceMode,
           currentLocation: (() => {
-            if (Array.isArray(shipmentData.trackingEvents) && shipmentData.trackingEvents.length > 0) {
-              const lastEvent = shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1];
+            if (safeTrackingEvents.length > 0) {
+              const lastEvent = safeTrackingEvents[safeTrackingEvents.length - 1];
               return lastEvent?.location || quoteRequestData?.supplierDetails?.city || 'Unknown';
             }
             return quoteRequestData?.supplierDetails?.city || 'Unknown';
           })(),
           destinations: (() => {
             try {
-              if (shipmentData.invoice && Array.isArray(shipmentData.invoice.warehouseDetails)) {
-                console.log('Mapping warehouseDetails, count:', shipmentData.invoice.warehouseDetails.length);
-                return shipmentData.invoice.warehouseDetails.map((warehouseDetail: any) => {
-                return {
-                  id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
-                  amazonShipmentId: warehouseDetail.amazonShipmentId || '',
-                  amazonReferenceId: warehouseDetail.amazonReferenceId || '',
-                  fbaWarehouse: warehouseDetail.warehouse,
-                  address: getWarehouseAddress(warehouseDetail.warehouse),
-                  cartons: warehouseDetail.cartons,
-                  chargeableWeight: warehouseDetail.chargeableWeight,
-                  status: shipmentData.status,
-                  trackingNumber: warehouseDetail.soNumber,
-                  progress: getProgressPercentage(shipmentData.status, shipmentData)
-                };
-              });
-              } else if (Array.isArray(shipmentData.destinations)) {
-                console.log('Mapping destinations, count:', shipmentData.destinations.length);
-                return shipmentData.destinations.map((dest: any) => {
-                return {
-                  id: dest.id,
-                  amazonShipmentId: dest.amazonShipmentId || '',
-                  amazonReferenceId: dest.amazonReferenceId || '',
-                  fbaWarehouse: dest.fbaWarehouse,
-                  address: getWarehouseAddress(dest.fbaWarehouse),
-                  cartons: dest.cartons,
-                  chargeableWeight: dest.estimatedWeight || dest.weight || 0,
-                  status: shipmentData.status,
-                  trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-                  progress: getProgressPercentage(shipmentData.status, shipmentData)
-                };
-              });
+              if (safeWarehouseDetails.length > 0) {
+                console.log('Mapping warehouseDetails, count:', safeWarehouseDetails.length);
+                return safeWarehouseDetails.map((warehouseDetail: any) => {
+                  return {
+                    id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
+                    amazonShipmentId: warehouseDetail.amazonShipmentId || '',
+                    amazonReferenceId: warehouseDetail.amazonReferenceId || '',
+                    fbaWarehouse: warehouseDetail.warehouse,
+                    address: getWarehouseAddress(warehouseDetail.warehouse),
+                    cartons: warehouseDetail.cartons,
+                    chargeableWeight: warehouseDetail.chargeableWeight,
+                    status: shipmentData.status,
+                    trackingNumber: warehouseDetail.soNumber,
+                    progress: getProgressPercentage(shipmentData.status, shipmentData)
+                  };
+                });
+              } else if (safeDestinations.length > 0) {
+                console.log('Mapping destinations, count:', safeDestinations.length);
+                return safeDestinations.map((dest: any) => {
+                  return {
+                    id: dest.id,
+                    amazonShipmentId: dest.amazonShipmentId || '',
+                    amazonReferenceId: dest.amazonReferenceId || '',
+                    fbaWarehouse: dest.fbaWarehouse,
+                    address: getWarehouseAddress(dest.fbaWarehouse),
+                    cartons: dest.cartons,
+                    chargeableWeight: dest.estimatedWeight || dest.weight || 0,
+                    status: shipmentData.status,
+                    trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+                    progress: getProgressPercentage(shipmentData.status, shipmentData)
+                  };
+                });
               } else {
                 console.log('No destinations or warehouseDetails found');
                 return [];
@@ -459,16 +478,14 @@ export const ShipmentTracking = () => {
           })(),
           timeline: (() => {
             try {
-              const events = shipmentData.trackingEvents;
-              console.log('Timeline - events type:', typeof events, 'isArray:', Array.isArray(events));
+              console.log('Timeline - using safeTrackingEvents, length:', safeTrackingEvents.length);
               
-              if (!Array.isArray(events)) {
-                console.log('Timeline - events is not an array, returning empty array');
+              if (safeTrackingEvents.length === 0) {
+                console.log('Timeline - no events, returning empty array');
                 return [];
               }
               
-              console.log('Timeline - mapping', events.length, 'events');
-              return events.map((event: any, index: number) => {
+              return safeTrackingEvents.map((event: any, index: number) => {
                 console.log(`Processing tracking event ${index}:`, event);
                 if (!event) {
                   console.warn(`Null event at index ${index} in trackingEvents`);
