@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboardIcon, FileTextIcon, TruckIcon, UsersIcon, BarChartIcon, SettingsIcon, ChevronDownIcon, ChevronRightIcon, LogOutIcon, ChevronLeftIcon, ClipboardCheckIcon, DollarSignIcon, ReceiptIcon, MessageCircleIcon, InboxIcon, BellIcon } from 'lucide-react';
+import { LayoutDashboardIcon, FileTextIcon, TruckIcon, BarChartIcon, SettingsIcon, ChevronDownIcon, ChevronRightIcon, LogOutIcon, ChevronLeftIcon, ClipboardCheckIcon, DollarSignIcon, ReceiptIcon, MessageCircleIcon, InboxIcon, BellIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 export const StaffSidebar = () => {
   const location = useLocation();
@@ -11,7 +11,6 @@ export const StaffSidebar = () => {
     quotes: true,
     shipments: true,
     invoices: true,
-    customers: false,
     messages: false
   });
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -113,11 +112,6 @@ export const StaffSidebar = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/staff/invoices/create" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/invoices/create') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    Create Invoice
-                  </Link>
-                </li>
-                <li>
                   <Link to="/staff/invoices/paid" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/invoices/paid') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
                     Paid
                   </Link>
@@ -141,27 +135,6 @@ export const StaffSidebar = () => {
                 <li>
                   <Link to="/staff/messages/sent" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/messages/sent') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
                     Sent
-                  </Link>
-                </li>
-              </ul>}
-          </li>
-          <li>
-            <button onClick={() => toggleExpanded('customers')} className={`flex items-center justify-between w-full px-3 py-2 rounded-lg ${isGroupActive('/staff/customers') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <div className="flex items-center">
-                <UsersIcon className="h-4 w-4 min-w-4" />
-                {!isCollapsed && <span className="ml-3 text-sm">Customers</span>}
-              </div>
-              {!isCollapsed && (expanded.customers ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />)}
-            </button>
-            {expanded.customers && !isCollapsed && <ul className="mt-1 ml-7 space-y-1">
-                <li>
-                  <Link to="/staff/customers/list" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/customers/list') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    All Customers
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/staff/customers/add" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/customers/add') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    Add Customer
                   </Link>
                 </li>
               </ul>}

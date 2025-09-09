@@ -10,7 +10,14 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.15.5",
+    "@types/uuid": "^10.0.0",
+    "axios": "^1.11.0",
+    "bcryptjs": "^3.0.2",
     "lucide-react": "^0.441.0",
+    "pg": "^8.16.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",

@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { DataService, QuoteRequest } from '../../../services/DataService';
 import { useData } from '../../../context/DataContext';
+import { ChatPanel } from '../../../components/chat/ChatPanel';
+import { useAuth } from '../../../context/AuthContext';
 
 // Helper function to get warehouse addresses
 const getWarehouseAddress = (fbaWarehouse: string): string => {
@@ -31,6 +33,7 @@ export const ShipmentDetails = () => {
     addToast
   } = useToast();
   const { refreshData } = useData();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [shipment, setShipment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -626,6 +629,10 @@ export const ShipmentDetails = () => {
           </button>
           <button className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'documents' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`} onClick={() => setActiveTab('documents')}>
             Documents
+          </button>
+          <button className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`} onClick={() => setActiveTab('chat')}>
+            <MessageCircleIcon className="inline h-4 w-4 mr-1" />
+            Chat
           </button>
         </nav>
       </div>
@@ -1613,5 +1620,20 @@ export const ShipmentDetails = () => {
             </div>
           </div>
         </Card>}
+      
+      {activeTab === 'chat' && (
+        <Card>
+          <div className="h-[600px]">
+            <ChatPanel 
+              shipmentId={id || ''} 
+              currentUser={{
+                id: user?.id || 'staff-1',
+                name: user?.name || 'Staff Member',
+                role: user?.role === 'admin' ? 'admin' : 'staff'
+              }}
+            />
+          </div>
+        </Card>
+      )}
     </div>;
 };

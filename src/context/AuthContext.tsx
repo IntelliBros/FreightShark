@@ -1,5 +1,6 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 type User = {
   id: string;
   name: string;
@@ -14,8 +15,10 @@ type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   staffLogin: (email: string, password: string) => Promise<void>;
+  adminLogin: (email: string, password: string) => Promise<void>;
   signup: (userData: Partial<User> & {
     password: string;
   }) => Promise<void>;
@@ -28,14 +31,27 @@ export const AuthProvider: React.FC<{
   children
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   useEffect(() => {
-    // Simulate checking for existing session
+    // Check for existing session
     const checkAuth = async () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+      const storedToken = localStorage.getItem('authToken');
+      if (storedToken) {
+        try {
+          const { user } = await authService.validate();
+          if (user) {
+            setUser(user);
+            setToken(storedToken);
+          } else {
+            // Invalid or expired token
+            localStorage.removeItem('authToken');
+          }
+        } catch (error) {
+          // Token validation failed
+          localStorage.removeItem('authToken');
+        }
       }
       setIsLoading(false);
     };
@@ -44,21 +60,25 @@ export const AuthProvider: React.FC<{
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Mock user for demo
-      const mockUser: User = {
-        id: 'user-1',
-        name: 'John Doe',
-        email: email,
-        company: 'Acme Imports',
-        role: 'admin',
-        amazonSellerId: 'A1B2C3D4E5',
-        einTaxId: '12-3456789'
-      };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      navigate('/');
+      const result = await authService.login(email, password);
+      if (result) {
+        setUser(result.user);
+        setToken(result.token);
+        localStorage.setItem('authToken', result.token);
+        
+        // Navigate based on role
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else if (result.user.role === 'staff') {
+          navigate('/staff');
+        } else {
+          navigate('/');
+        }
+      } else {
+        throw new Error('Invalid email or password');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -66,20 +86,36 @@ export const AuthProvider: React.FC<{
   const staffLogin = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Mock staff user for demo
-      const mockStaff: User = {
-        id: 'staff-1',
-        name: 'Sarah Chen',
-        email: email,
-        company: 'DDP Freight',
-        role: 'staff',
-        staffPosition: 'Shipping Agent'
-      };
-      setUser(mockStaff);
-      localStorage.setItem('user', JSON.stringify(mockStaff));
-      navigate('/staff');
+      const result = await authService.login(email, password);
+      if (result && result.user.role === 'staff') {
+        setUser(result.user);
+        setToken(result.token);
+        localStorage.setItem('authToken', result.token);
+        navigate('/staff');
+      } else {
+        throw new Error('Invalid staff credentials');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Invalid staff credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const adminLogin = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const result = await authService.login(email, password);
+      if (result && result.user.role === 'admin') {
+        setUser(result.user);
+        setToken(result.token);
+        localStorage.setItem('authToken', result.token);
+        navigate('/admin');
+      } else {
+        throw new Error('Invalid admin credentials');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Invalid admin credentials');
     } finally {
       setIsLoading(false);
     }
@@ -89,31 +125,47 @@ export const AuthProvider: React.FC<{
   }) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Mock user creation
-      const newUser: User = {
-        id: 'user-' + Date.now(),
-        name: userData.name || 'New User',
+      const result = await authService.register({
+        name: userData.name || '',
         email: userData.email || '',
-        company: userData.company || 'New Company',
-        role: 'user',
+        password: userData.password,
+        company: userData.company || '',
+        role: userData.role || 'user',
         amazonSellerId: userData.amazonSellerId,
-        einTaxId: userData.einTaxId
-      };
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      navigate('/onboarding');
+        einTaxId: userData.einTaxId,
+        staffPosition: userData.staffPosition
+      });
+      
+      if (result) {
+        // Registration returns user and token
+        setUser(result.user);
+        setToken(result.token);
+        localStorage.setItem('authToken', result.token);
+        navigate('/onboarding');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
   };
-  const logout = () => {
+  const logout = async () => {
+    try {
+      if (token) {
+        await authService.logout();
+      }
+    } catch (error) {
+      // Continue with logout even if API call fails
+      console.error('Logout API call failed:', error);
+    }
     setUser(null);
-    localStorage.removeItem('user');
+    setToken(null);
+    localStorage.removeItem('authToken');
     // Redirect based on user role
     if (user?.role === 'staff') {
       navigate('/staff-login');
+    } else if (user?.role === 'admin') {
+      navigate('/admin-login');
     } else {
       navigate('/login');
     }
@@ -122,8 +174,10 @@ export const AuthProvider: React.FC<{
     user,
     isAuthenticated: !!user,
     isLoading,
+    token,
     login,
     staffLogin,
+    adminLogin,
     signup,
     logout
   }}>

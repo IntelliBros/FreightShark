@@ -1,15 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
-// Types
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-  role: 'admin' | 'user' | 'staff';
-  amazonSellerId?: string;
-  einTaxId?: string;
-  staffPosition?: string;
-};
+import { supabaseService } from './supabaseService';
+import { authService } from './authService';
+
+// Re-export types from supabaseService
+export type { QuoteRequest, Quote, Shipment, User } from './supabaseService';
+
+// Legacy types for backward compatibility
 export type CartonDetail = {
   id: string;
   length: number;
@@ -18,6 +13,7 @@ export type CartonDetail = {
   weight: number;
   quantity: number;
 };
+
 export type DestinationWarehouse = {
   id: string;
   fbaWarehouse: string;
@@ -26,657 +22,224 @@ export type DestinationWarehouse = {
   weight: number;
   cartonDetails?: CartonDetail[];
 };
-export type QuoteRequest = {
-  id: string;
-  customerId: string;
-  customer: {
-    id: string;
-    name: string;
-    email: string;
-    company: string;
-  };
-  status: 'Awaiting Quote' | 'Quote Provided' | 'Quote Accepted' | 'Quote Rejected';
-  serviceType: 'Air Express' | 'Air Freight' | 'Ocean FCL' | 'Ocean LCL';
-  requestedDate: string;
-  dueBy: string;
-  cargoDetails: {
-    cartonCount: number;
-    grossWeight: number;
-    cbm: number;
-    hazardous: boolean;
-    notes: string;
-  };
-  destinations: DestinationWarehouse[];
-  supplierDetails: {
-    name: string;
-    address: string;
-    city: string;
-    country: string;
-    contactName: string;
-    contactPhone: string;
-  };
-  specialRequirements: string;
-  createdAt: string;
-  updatedAt: string;
-};
-export type Quote = {
-  id: string;
-  requestId: string;
-  customerId: string;
-  staffId: string;
-  status: 'Pending' | 'Accepted' | 'Rejected' | 'Expired' | 'Shipped';
-  rateType: 'per-kg' | 'flat-rate';
-  warehouseRates: {
-    warehouseId: string;
-    ratePerKg: number;
-  }[];
-  otherCharges: {
-    id: string;
-    description: string;
-    amount: number;
-  }[];
-  discounts: {
-    id: string;
-    description: string;
-    amount: number;
-  }[];
-  subtotal: number;
-  total: number;
-  notes: string;
-  createdAt: string;
-  expiresAt: string;
-};
+
 export type Announcement = {
   id: string;
   title: string;
   content: string;
-  type: 'info' | 'warning' | 'success';
+  type: 'info' | 'warning' | 'success' | 'error';
   createdBy: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  isActive: boolean;
 };
 
-export type Shipment = {
-  id: string;
-  quoteId: string;
-  customerId: string;
-  status: 'Awaiting Pickup' | 'In Transit' | 'Customs' | 'Delivered';
-  estimatedTotal: number;
-  destinations: {
-    id: string;
-    fbaWarehouse: string;
-    amazonShipmentId: string;
-    amazonReferenceId?: string;
-    soNumber?: string;
-    cartons: number;
-    estimatedWeight: number;
-    actualWeight?: number;
-  }[];
-  cargoDetails: {
-    estimatedCartonCount: number;
-    estimatedWeight: number;
-    actualCartonCount?: number;
-    actualWeight?: number;
-    dimensionChanges?: boolean;
-  };
-  trackingEvents: {
-    id: string;
-    date: string;
-    status: string;
-    location: string;
-    description: string;
-  }[];
-  documents?: {
-    id: string;
-    name: string;
-    type: string;
-    size: number;
-    uploadedAt: string;
-    uploadedBy: string;
-    warehouseId?: string;
-    url?: string;
-  }[];
-  createdAt: string;
-  updatedAt: string;
-  estimatedDelivery: string;
-};
-// Initial seed data - only keeping users
-const seedUsers: User[] = [{
-  id: 'user-1',
-  name: 'John Doe',
-  email: 'john@acmeimports.com',
-  company: 'Acme Imports',
-  role: 'admin',
-  amazonSellerId: 'A1B2C3D4E5',
-  einTaxId: '12-3456789'
-}, {
-  id: 'user-2',
-  name: 'Lisa Wong',
-  email: 'lisa@globaltraders.com',
-  company: 'Global Traders Inc',
-  role: 'user',
-  amazonSellerId: 'F6G7H8I9J0',
-  einTaxId: '98-7654321'
-}, {
-  id: 'staff-1',
-  name: 'Sarah Chen',
-  email: 'sarah@ddpfreight.com',
-  company: 'DDP Freight',
-  role: 'staff',
-  staffPosition: 'Shipping Agent'
-}, {
-  id: 'staff-2',
-  name: 'Mike Johnson',
-  email: 'mike@ddpfreight.com',
-  company: 'DDP Freight',
-  role: 'staff',
-  staffPosition: 'Account Manager'
-}];
-// Helper functions to simulate API delays
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const simulateNetworkDelay = () => delay(Math.random() * 500 + 500); // 500-1000ms delay
-// LocalStorage keys
-const STORAGE_KEYS = {
-  USERS: 'ddp_users',
-  QUOTE_REQUESTS: 'ddp_quote_requests',
-  QUOTES: 'ddp_quotes',
-  SHIPMENTS: 'ddp_shipments',
-  ANNOUNCEMENTS: 'ddp_announcements'
-};
-// Initialize localStorage with seed data if not already set
-const initializeStorage = () => {
-  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(seedUsers));
-  }
-  // Initialize empty arrays for quote requests, quotes, and shipments
-  if (!localStorage.getItem(STORAGE_KEYS.QUOTE_REQUESTS)) {
-    localStorage.setItem(STORAGE_KEYS.QUOTE_REQUESTS, JSON.stringify([]));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.QUOTES)) {
-    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify([]));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.SHIPMENTS)) {
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify([]));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS)) {
-    // Initialize with some seed announcements
-    const seedAnnouncements: Announcement[] = [
-      {
-        id: 'ANN-001',
-        title: 'Shipping Agent Update',
-        content: 'Some Amazon warehouses are experiencing delays due to capacity issues. Please check your shipment status regularly.',
-        type: 'warning',
-        createdBy: 'STAFF-001',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        isActive: true
-      },
-      {
-        id: 'ANN-002',
-        title: 'Holiday Schedule Notice',
-        content: 'Our offices will be closed on December 25th and January 1st. Please plan your shipments accordingly.',
-        type: 'info',
-        createdBy: 'STAFF-001',
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // yesterday
-        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        isActive: true
-      },
-      {
-        id: 'ANN-003',
-        title: 'New Feature: Real-time Tracking',
-        content: 'We\'ve enhanced our tracking system with real-time updates. Check your shipment status for live location data.',
-        type: 'success',
-        createdBy: 'STAFF-001',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-        updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        isActive: true
-      }
-    ];
-    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(seedAnnouncements));
-  }
-};
-// Data service methods
+// Simulate network delay for development
+const simulateDelay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Data Service using Supabase
 export const DataService = {
-  // Initialize data
-  initialize: () => {
-    initializeStorage();
-  },
+  // Authentication methods
+  authenticateUser: authService.login,
+  registerUser: authService.register,
+  validateSession: authService.validate,
+  logout: authService.logout,
+
   // User methods
-  getUsers: async (): Promise<User[]> => {
-    await simulateNetworkDelay();
-    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    return users;
+  async getUsers() {
+    await simulateDelay(300);
+    return await supabaseService.users.getAll();
   },
-  getUserById: async (userId: string): Promise<User | null> => {
-    await simulateNetworkDelay();
-    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    return users.find((user: User) => user.id === userId) || null;
+
+  async getUserById(id: string) {
+    await simulateDelay(200);
+    return await supabaseService.users.getById(id);
   },
-  // Quote request methods
-  getQuoteRequests: async (): Promise<QuoteRequest[]> => {
-    await simulateNetworkDelay();
-    const requests = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTE_REQUESTS) || '[]');
-    return requests;
+
+  async createUser(userData: any) {
+    await simulateDelay(400);
+    return await supabaseService.users.create(userData);
   },
-  getQuoteRequestById: async (requestId: string): Promise<QuoteRequest | null> => {
-    await simulateNetworkDelay();
-    const requests = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTE_REQUESTS) || '[]');
-    return requests.find((req: QuoteRequest) => req.id === requestId) || null;
+
+  async updateUser(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.users.update(id, updates);
   },
-  getQuoteRequestsByCustomerId: async (customerId: string): Promise<QuoteRequest[]> => {
-    await simulateNetworkDelay();
-    const requests = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTE_REQUESTS) || '[]');
-    return requests.filter((req: QuoteRequest) => req.customerId === customerId);
+
+  // Quote Request methods
+  async getQuoteRequests(customerId?: string) {
+    await simulateDelay(400);
+    if (customerId) {
+      return await supabaseService.quoteRequests.getByCustomerId(customerId);
+    }
+    return await supabaseService.quoteRequests.getAll();
   },
-  createQuoteRequest: async (request: Omit<QuoteRequest, 'id' | 'createdAt' | 'updatedAt' | 'customer'>): Promise<QuoteRequest> => {
-    await simulateNetworkDelay();
-    const requests = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTE_REQUESTS) || '[]');
-    // Get user information
-    const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    const user = users.find((u: User) => u.id === request.customerId);
-    const newRequest: QuoteRequest = {
-      ...request,
-      id: `REQ-${Math.floor(Math.random() * 10000)}`,
-      customer: {
-        id: user?.id || request.customerId,
-        name: user?.name || 'Unknown User',
-        email: user?.email || 'unknown@example.com',
-        company: user?.company || 'Unknown Company'
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+
+  async getQuoteRequestById(id: string) {
+    await simulateDelay(200);
+    return await supabaseService.quoteRequests.getById(id);
+  },
+
+  async createQuoteRequest(request: any) {
+    await simulateDelay(500);
+    console.log('Creating quote request:', request);
+    
+    // Transform data to match database schema
+    const transformedRequest = {
+      customer_id: request.customerId || request.customer_id,
+      service_type: request.serviceType || 'Air Freight',
+      pickup_location: request.supplierDetails ? 
+        `${request.supplierDetails.name}, ${request.supplierDetails.address}, ${request.supplierDetails.city}, ${request.supplierDetails.country}` : 
+        request.pickup_location || '',
+      destination_warehouses: request.destinations || request.destination_warehouses || [],
+      cargo_ready_date: request.requestedDate || request.cargo_ready_date || new Date().toISOString().split('T')[0],
+      total_weight: request.cargoDetails?.grossWeight || request.total_weight,
+      total_volume: request.cargoDetails?.cbm || request.total_volume,
+      total_cartons: request.cargoDetails?.cartonCount || request.total_cartons,
+      special_requirements: request.specialRequirements || request.special_requirements || '',
+      status: 'Awaiting Quote'
     };
-    requests.push(newRequest);
-    localStorage.setItem(STORAGE_KEYS.QUOTE_REQUESTS, JSON.stringify(requests));
-    return newRequest;
+
+    const result = await supabaseService.quoteRequests.create(transformedRequest);
+    console.log('Quote request created:', result);
+    return result;
   },
-  updateQuoteRequest: async (requestId: string, updates: Partial<QuoteRequest>): Promise<QuoteRequest | null> => {
-    await simulateNetworkDelay();
-    const requests = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTE_REQUESTS) || '[]');
-    const index = requests.findIndex((req: QuoteRequest) => req.id === requestId);
-    if (index === -1) return null;
-    const updatedRequest = {
-      ...requests[index],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    requests[index] = updatedRequest;
-    localStorage.setItem(STORAGE_KEYS.QUOTE_REQUESTS, JSON.stringify(requests));
-    return updatedRequest;
+
+  async updateQuoteRequest(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.quoteRequests.update(id, updates);
   },
+
   // Quote methods
-  getQuotes: async (): Promise<Quote[]> => {
-    await simulateNetworkDelay();
-    const quotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTES) || '[]');
-    return quotes;
+  async getQuotes(customerId?: string) {
+    await simulateDelay(400);
+    if (customerId) {
+      return await supabaseService.quotes.getByCustomerId(customerId);
+    }
+    return await supabaseService.quotes.getAll();
   },
-  getQuoteById: async (quoteId: string): Promise<Quote | null> => {
-    await simulateNetworkDelay();
-    const quotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTES) || '[]');
-    return quotes.find((quote: Quote) => quote.id === quoteId) || null;
+
+  async getQuoteById(id: string) {
+    await simulateDelay(200);
+    return await supabaseService.quotes.getById(id);
   },
-  getQuotesByCustomerId: async (customerId: string): Promise<Quote[]> => {
-    await simulateNetworkDelay();
-    const quotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTES) || '[]');
-    return quotes.filter((quote: Quote) => quote.customerId === customerId);
+
+  async createQuote(quote: any) {
+    await simulateDelay(500);
+    return await supabaseService.quotes.create(quote);
   },
-  getQuoteByRequestId: async (requestId: string): Promise<Quote | null> => {
-    await simulateNetworkDelay();
-    const quotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTES) || '[]');
-    return quotes.find((quote: Quote) => quote.requestId === requestId) || null;
+
+  async updateQuote(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.quotes.update(id, updates);
   },
-  createQuote: async (quote: Omit<Quote, 'id' | 'createdAt'>): Promise<Quote> => {
-    await simulateNetworkDelay();
-    const quotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTES) || '[]');
-    const newQuote: Quote = {
-      ...quote,
-      id: `Q-${Math.floor(Math.random() * 10000)}`,
-      createdAt: new Date().toISOString()
-    };
-    quotes.push(newQuote);
-    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
-    // Update the quote request status
-    await DataService.updateQuoteRequest(quote.requestId, {
-      status: 'Quote Provided'
-    });
-    return newQuote;
+
+  async acceptQuote(id: string) {
+    await simulateDelay(600);
+    return await supabaseService.quotes.accept(id);
   },
-  updateQuote: async (quoteId: string, updates: Partial<Quote>): Promise<Quote | null> => {
-    await simulateNetworkDelay();
-    const quotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.QUOTES) || '[]');
-    const index = quotes.findIndex((quote: Quote) => quote.id === quoteId);
-    if (index === -1) return null;
-    const updatedQuote = {
-      ...quotes[index],
-      ...updates
-    };
-    quotes[index] = updatedQuote;
-    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
-    return updatedQuote;
-  },
+
   // Shipment methods
-  getShipments: async (): Promise<Shipment[]> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    return shipments;
-  },
-  getShipmentById: async (shipmentId: string): Promise<Shipment | null> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    return shipments.find((shipment: Shipment) => shipment.id === shipmentId) || null;
-  },
-  getShipmentsByCustomerId: async (customerId: string): Promise<Shipment[]> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    return shipments.filter((shipment: Shipment) => shipment.customerId === customerId);
-  },
-  createShipment: async (shipment: Omit<Shipment, 'id' | 'createdAt' | 'updatedAt' | 'trackingEvents'>): Promise<Shipment> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    const newShipment: Shipment = {
-      ...shipment,
-      id: `SH-${Math.floor(Math.random() * 10000)}`,
-      trackingEvents: [{
-        id: `event-${uuidv4()}`,
-        date: new Date().toISOString(),
-        status: 'Created',
-        location: 'System',
-        description: 'Shipment created in system'
-      }],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    shipments.push(newShipment);
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify(shipments));
-    return newShipment;
-  },
-  updateShipment: async (shipmentId: string, updates: Partial<Shipment>): Promise<Shipment | null> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    const index = shipments.findIndex((shipment: Shipment) => shipment.id === shipmentId);
-    if (index === -1) return null;
-    const updatedShipment = {
-      ...shipments[index],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    shipments[index] = updatedShipment;
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify(shipments));
-    return updatedShipment;
-  },
-  addTrackingEvent: async (shipmentId: string, event: Omit<Shipment['trackingEvents'][0], 'id'>): Promise<Shipment | null> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    const index = shipments.findIndex((shipment: Shipment) => shipment.id === shipmentId);
-    if (index === -1) return null;
-    const newEvent = {
-      id: `event-${uuidv4()}`,
-      ...event
-    };
-    const updatedShipment = {
-      ...shipments[index],
-      trackingEvents: [...shipments[index].trackingEvents, newEvent],
-      updatedAt: new Date().toISOString()
-    };
-    shipments[index] = updatedShipment;
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify(shipments));
-    return updatedShipment;
-  },
-  // Convert approved quote to shipment
-  convertQuoteToShipment: async (quoteId: string): Promise<Shipment | null> => {
-    await simulateNetworkDelay();
-    
-    // Get the quote
-    const quote = await DataService.getQuoteById(quoteId);
-    if (!quote || quote.status !== 'Accepted') {
-      throw new Error('Quote not found or not approved');
+  async getShipments(customerId?: string) {
+    await simulateDelay(400);
+    if (customerId) {
+      return await supabaseService.shipments.getByCustomerId(customerId);
     }
-    
-    // Get the quote request
-    const quoteRequest = await DataService.getQuoteRequestById(quote.requestId);
-    if (!quoteRequest) {
-      throw new Error('Quote request not found');
-    }
-    
-    // Create shipment from quote data
-    const shipmentData = {
-      quoteId: quote.id,
-      customerId: quote.customerId,
-      status: 'Awaiting Pickup' as const,
-      estimatedTotal: quote.total,
-      destinations: quoteRequest.destinations.map(dest => ({
-        id: dest.id,
-        fbaWarehouse: dest.fbaWarehouse,
-        amazonShipmentId: dest.amazonShipmentId,
-        cartons: dest.cartons,
-        estimatedWeight: dest.weight
-      })),
-      cargoDetails: {
-        estimatedCartonCount: quoteRequest.cargoDetails.cartonCount,
-        estimatedWeight: quoteRequest.cargoDetails.grossWeight
-      },
-      estimatedDelivery: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days from now
-    };
-    
-    // Create the shipment
-    const shipment = await DataService.createShipment(shipmentData);
-    
-    // Update quote status to indicate it's been converted to shipment
-    await DataService.updateQuote(quoteId, {
-      status: 'Shipped'
+    return await supabaseService.shipments.getAll();
+  },
+
+  async getShipmentById(id: string) {
+    await simulateDelay(200);
+    return await supabaseService.shipments.getById(id);
+  },
+
+  async createShipment(shipment: any) {
+    await simulateDelay(500);
+    return await supabaseService.shipments.create(shipment);
+  },
+
+  async updateShipment(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.shipments.update(id, updates);
+  },
+
+  // Tracking methods
+  async addTrackingEvent(shipmentId: string, event: any) {
+    await simulateDelay(300);
+    return await supabaseService.tracking.create({
+      ...event,
+      shipment_id: shipmentId
     });
-    
-    // Update quote request status
-    await DataService.updateQuoteRequest(quoteRequest.id, {
-      status: 'Quote Accepted'
-    });
-    
-    return shipment;
   },
-  // Process invoice payment
-  processInvoicePayment: async (shipmentId: string, paymentDetails: {
-    cardNumber: string;
-    cardHolder: string;
-    expiryDate: string;
-    cvv: string;
-    amount: number;
-  }): Promise<boolean> => {
-    await simulateNetworkDelay();
-    
-    // Get the shipment
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    const shipmentIndex = shipments.findIndex((s: Shipment) => s.id === shipmentId);
-    
-    if (shipmentIndex === -1) {
-      throw new Error('Shipment not found');
-    }
-    
-    const shipment = shipments[shipmentIndex];
-    
-    if (!shipment.invoice) {
-      throw new Error('No invoice found for this shipment');
-    }
-    
-    if (shipment.invoice.status === 'Paid') {
-      throw new Error('Invoice has already been paid');
-    }
-    
-    // Validate payment amount matches invoice amount
-    if (Math.abs(paymentDetails.amount - shipment.invoice.amount) > 0.01) {
-      throw new Error('Payment amount does not match invoice amount');
-    }
-    
-    // Update invoice status to Paid
-    const paymentDate = new Date().toISOString();
-    const transactionId = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    shipment.invoice.status = 'Paid';
-    shipment.invoice.paidDate = paymentDate;
-    shipment.invoice.paymentDetails = {
-      method: 'Credit Card',
-      last4: paymentDetails.cardNumber.slice(-4),
-      transactionId: transactionId,
-      processedAt: paymentDate
-    };
-    
-    // Add payment event to tracking timeline
-    if (!shipment.trackingEvents) {
-      shipment.trackingEvents = [];
-    }
-    
-    shipment.trackingEvents.push({
-      timestamp: paymentDate,
-      status: 'Payment Received',
-      location: 'System',
-      description: `Invoice payment of $${paymentDetails.amount.toFixed(2)} received. Transaction ID: ${transactionId}`,
-      type: 'payment'
-    });
-    
-    // Save updated shipment
-    shipments[shipmentIndex] = shipment;
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify(shipments));
-    
-    return true;
+
+  async getTrackingEvents(shipmentId: string) {
+    await simulateDelay(200);
+    return await supabaseService.tracking.getByShipmentId(shipmentId);
   },
-  
-  // Update SO Number for a specific warehouse destination
-  updateWarehouseSoNumber: async (shipmentId: string, warehouseId: string, soNumber: string): Promise<Shipment | null> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    const shipmentIndex = shipments.findIndex((s: Shipment) => s.id === shipmentId);
-    
-    if (shipmentIndex === -1) return null;
-    
-    const shipment = shipments[shipmentIndex];
-    const destinationIndex = shipment.destinations.findIndex((d: any) => d.id === warehouseId);
-    
-    if (destinationIndex === -1) return null;
-    
-    // Update SO number for the specific destination
-    shipment.destinations[destinationIndex].soNumber = soNumber;
-    shipment.updatedAt = new Date().toISOString();
-    
-    // Save updated shipment
-    shipments[shipmentIndex] = shipment;
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify(shipments));
-    
-    return shipment;
-  },
-  
-  // Add document to shipment
-  addDocumentToShipment: async (shipmentId: string, document: {
-    name: string;
-    type: string;
-    size: number;
-    warehouseId?: string;
-    uploadedBy: string;
-  }): Promise<Shipment | null> => {
-    await simulateNetworkDelay();
-    const shipments = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIPMENTS) || '[]');
-    const shipmentIndex = shipments.findIndex((s: Shipment) => s.id === shipmentId);
-    
-    if (shipmentIndex === -1) return null;
-    
-    const shipment = shipments[shipmentIndex];
-    
-    // Initialize documents array if it doesn't exist
-    if (!shipment.documents) {
-      shipment.documents = [];
-    }
-    
-    // Add new document
-    const newDocument = {
-      id: `DOC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+
+  // Document methods
+  async addDocument(shipmentId: string, document: any) {
+    await simulateDelay(300);
+    return await supabaseService.documents.create({
       ...document,
-      uploadedAt: new Date().toISOString(),
-      url: `/documents/${shipmentId}/${document.name}` // Mock URL
-    };
-    
-    shipment.documents.push(newDocument);
-    shipment.updatedAt = new Date().toISOString();
-    
-    // Save updated shipment
-    shipments[shipmentIndex] = shipment;
-    localStorage.setItem(STORAGE_KEYS.SHIPMENTS, JSON.stringify(shipments));
-    
-    return shipment;
+      shipment_id: shipmentId
+    });
   },
-  
-  // Clear all data (for testing)
-  clearAllData: async () => {
-    await simulateNetworkDelay();
-    localStorage.removeItem(STORAGE_KEYS.USERS);
-    localStorage.removeItem(STORAGE_KEYS.QUOTE_REQUESTS);
-    localStorage.removeItem(STORAGE_KEYS.QUOTES);
-    localStorage.removeItem(STORAGE_KEYS.SHIPMENTS);
-    localStorage.removeItem(STORAGE_KEYS.ANNOUNCEMENTS);
-    initializeStorage();
+
+  async getDocuments(shipmentId: string) {
+    await simulateDelay(200);
+    return await supabaseService.documents.getByShipmentId(shipmentId);
+  },
+
+  async deleteDocument(documentId: string) {
+    await simulateDelay(300);
+    return await supabaseService.documents.delete(documentId);
   },
 
   // Announcement methods
-  getAnnouncements: async (): Promise<Announcement[]> => {
-    await simulateNetworkDelay();
-    const announcements = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || '[]');
-    // Return only active announcements, sorted by date
-    return announcements
-      .filter((a: Announcement) => a.isActive)
-      .sort((a: Announcement, b: Announcement) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+  async getAnnouncements() {
+    await simulateDelay(200);
+    return await supabaseService.announcements.getActive();
   },
 
-  getAllAnnouncements: async (): Promise<Announcement[]> => {
-    await simulateNetworkDelay();
-    const announcements = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || '[]');
-    // Return all announcements for staff view
-    return announcements.sort((a: Announcement, b: Announcement) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+  async getAllAnnouncements() {
+    await simulateDelay(200);
+    return await supabaseService.announcements.getAll();
   },
 
-  createAnnouncement: async (announcement: Omit<Announcement, 'id' | 'createdAt' | 'updatedAt'>): Promise<Announcement> => {
-    await simulateNetworkDelay();
-    const announcements = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || '[]');
-    
-    const newAnnouncement: Announcement = {
-      ...announcement,
-      id: `ANN-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    announcements.push(newAnnouncement);
-    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements));
-    
-    return newAnnouncement;
+  async createAnnouncement(announcement: any) {
+    await simulateDelay(300);
+    return await supabaseService.announcements.create(announcement);
   },
 
-  updateAnnouncement: async (id: string, updates: Partial<Omit<Announcement, 'id' | 'createdAt' | 'createdBy'>>): Promise<Announcement | null> => {
-    await simulateNetworkDelay();
-    const announcements = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || '[]');
-    const index = announcements.findIndex((a: Announcement) => a.id === id);
-    
-    if (index === -1) return null;
-    
-    announcements[index] = {
-      ...announcements[index],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements));
-    return announcements[index];
+  async updateAnnouncement(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.announcements.update(id, updates);
   },
 
-  deleteAnnouncement: async (id: string): Promise<boolean> => {
-    await simulateNetworkDelay();
-    const announcements = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || '[]');
-    const filteredAnnouncements = announcements.filter((a: Announcement) => a.id !== id);
-    
-    if (filteredAnnouncements.length === announcements.length) return false;
-    
-    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(filteredAnnouncements));
-    return true;
-  }
+  async deleteAnnouncement(id: string) {
+    await simulateDelay(300);
+    return await supabaseService.announcements.delete(id);
+  },
+
+  // Legacy methods for backward compatibility
+  async addQuoteRequest(request: any) {
+    return this.createQuoteRequest(request);
+  },
+
+  async updateQuoteRequestStatus(id: string, status: string) {
+    return this.updateQuoteRequest(id, { status });
+  },
+
+  async getQuotesByCustomer(customerId: string) {
+    return this.getQuotes(customerId);
+  },
+
+  async getShipmentsByCustomer(customerId: string) {
+    return this.getShipments(customerId);
+  },
+
+  // ID generation methods (keep for compatibility)
+  generateQuoteId: () => `Q-${Date.now().toString().slice(-5)}`,
+  generateShipmentId: () => `FS-${Date.now().toString().slice(-5)}`
 };

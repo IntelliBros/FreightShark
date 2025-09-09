@@ -34,6 +34,8 @@ import { UpdateShipment } from './pages/staff/shipments/UpdateShipment';
 import { ShipmentDetails } from './pages/staff/shipments/ShipmentDetails';
 import { CompletedShipments } from './pages/staff/shipments/CompletedShipments';
 import { StaffAnnouncements } from './pages/staff/Announcements';
+import { Reports } from './pages/staff/Reports';
+import { Settings as StaffSettings } from './pages/staff/Settings';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
@@ -85,10 +87,10 @@ export function App() {
                 <Route path="shipments/completed" element={<CompletedShipments />} />
                 <Route path="customers/list" element={<StaffDashboard />} />
                 <Route path="customers/add" element={<StaffDashboard />} />
-                <Route path="reports" element={<StaffDashboard />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="announcements" element={<StaffAnnouncements />} />
                 <Route path="announcements/:id" element={<AnnouncementDetail />} />
-                <Route path="settings" element={<StaffDashboard />} />
+                <Route path="settings" element={<StaffSettings />} />
                 <Route path="messages" element={<StaffDashboard />} />
                 <Route path="messages/:id" element={<StaffDashboard />} />
                 <Route path="messages/inbox" element={<StaffDashboard />} />

@@ -8,6 +8,7 @@ import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, MessageCir
 import { DataService, QuoteRequest } from '../../services/DataService';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Helper function to get warehouse addresses
 const getWarehouseAddress = (fbaWarehouse: string): string => {
@@ -26,6 +27,7 @@ export const ShipmentTracking = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { refreshData } = useData();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [activeDestination, setActiveDestination] = useState<string>('');
   const [expandedSections, setExpandedSections] = useState({
@@ -347,7 +349,6 @@ export const ShipmentTracking = () => {
                   address: getWarehouseAddress(warehouseDetail.warehouse),
                   cartons: warehouseDetail.cartons,
                   chargeableWeight: warehouseDetail.chargeableWeight,
-                  eta: new Date(shipmentData.estimatedDelivery).toLocaleDateString(),
                   status: shipmentData.status,
                   trackingNumber: warehouseDetail.soNumber,
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
@@ -362,7 +363,6 @@ export const ShipmentTracking = () => {
                   address: getWarehouseAddress(dest.fbaWarehouse),
                   cartons: dest.cartons,
                   chargeableWeight: dest.estimatedWeight,
-                  eta: new Date(shipmentData.estimatedDelivery).toLocaleDateString(),
                   status: shipmentData.status,
                   trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
@@ -830,11 +830,7 @@ export const ShipmentTracking = () => {
                 }}></div>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-gray-500">
-                    <div className="flex items-center">
-                      <ClockIcon className="w-3 h-3 mr-1" />
-                      <span>ETA: {dest.eta}</span>
-                    </div>
+                  <div className="flex justify-end items-center text-xs text-gray-500">
                     <div className="flex items-center">
                       <TruckIcon className="w-3 h-3 mr-1" />
                       <span>Cartons: {dest.cartons}</span>
@@ -926,23 +922,31 @@ export const ShipmentTracking = () => {
                               </p>
                             </div>
                           </div>)}
-                        <div className="flex">
-                          <div className="mr-3">
-                            <div className="flex flex-col items-center">
-                              <div className="w-7 h-7 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
-                                <MapPinIcon className="h-3.5 w-3.5 text-gray-400" />
+                        {shipment.status === 'Delivered' && (
+                          <div className="flex">
+                            <div className="mr-3">
+                              <div className="flex flex-col items-center">
+                                <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
+                                  <CheckCircleIcon className="h-3.5 w-3.5 text-green-600" />
+                                </div>
                               </div>
                             </div>
+                            <div>
+                              <p className="text-sm font-medium text-green-700">
+                                Final Delivery
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {(() => {
+                                  const deliveredEvent = shipment.timeline.find((e: any) => 
+                                    e.event?.toLowerCase().includes('delivered') || 
+                                    e.status?.toLowerCase() === 'delivered'
+                                  );
+                                  return deliveredEvent ? deliveredEvent.date : 'Delivered';
+                                })()}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-400">
-                              Final Delivery
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              Estimated: {activeDestinationData.eta}
-                            </p>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>}
                 </div>
@@ -988,14 +992,6 @@ export const ShipmentTracking = () => {
                     </span>
                     <span className="text-sm font-medium text-gray-900">
                       {activeDestinationData.soNumber || 'Not provided'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-500 block">
-                      Estimated Arrival
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {activeDestinationData.eta}
                     </span>
                   </div>
                 </div>
@@ -1123,7 +1119,14 @@ export const ShipmentTracking = () => {
           </div>
         </Card>}
       {activeTab === 'chat' && <div className="h-[600px] bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
-          <ChatPanel contextType="shipment" contextId={id || ''} isOpen={true} />
+          <ChatPanel 
+            shipmentId={id || ''} 
+            currentUser={{
+              id: user?.id || 'user-1',
+              name: user?.name || 'Customer',
+              role: user?.role === 'admin' ? 'admin' : user?.role === 'staff' ? 'staff' : 'customer'
+            }}
+          />
         </div>}
       {activeTab === 'invoice' && shipment.invoice && (
         <Card>

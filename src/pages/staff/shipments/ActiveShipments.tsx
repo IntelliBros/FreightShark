@@ -115,7 +115,6 @@ export const ActiveShipments = () => {
           carrier,
           trackingNumber,
           departureDate: new Date(shipment.createdAt).toLocaleDateString(),
-          estimatedArrival: new Date(shipment.estimatedDelivery).toLocaleDateString(),
           progress,
           lastUpdate: latestEvent 
             ? `${new Date(latestEvent.date).toLocaleDateString()} - ${latestEvent.description}`
@@ -287,10 +286,6 @@ export const ActiveShipments = () => {
                     <div className="flex items-center mb-1">
                       <ClockIcon className="h-3 w-3 text-gray-500 mr-1" />
                       <span>Departure: {shipment.departureDate}</span>
-                    </div>
-                    <div className="flex items-center mb-1">
-                      <ClockIcon className="h-3 w-3 text-gray-500 mr-1" />
-                      <span>ETA: {shipment.estimatedArrival}</span>
                     </div>
                     <div className="text-xs text-gray-600 mt-2 italic">
                       Last update: {shipment.lastUpdate}

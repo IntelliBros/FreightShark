@@ -270,10 +270,6 @@ export const ShipmentsList = () => {
                       <ClockIcon className="h-3 w-3 text-gray-500 mr-1" />
                       <span>Created: {new Date(shipment.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div className="flex items-center mb-1">
-                      <ClockIcon className="h-3 w-3 text-gray-500 mr-1" />
-                      <span>Est. Delivery: {new Date(shipment.estimatedDelivery).toLocaleDateString()}</span>
-                    </div>
                     {shipment.trackingEvents && shipment.trackingEvents.length > 0 && (
                       <div className="text-xs text-gray-600 mt-2 italic">
                         Last update: {shipment.trackingEvents[shipment.trackingEvents.length - 1].description}

@@ -23,6 +23,8 @@ export const AllQuotes = () => {
   const [filteredQuotes, setFilteredQuotes] = useState<QuoteWithRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [processingQuotes, setProcessingQuotes] = useState<Set<string>>(new Set());
+  const [animatingQuotes, setAnimatingQuotes] = useState<Set<string>>(new Set());
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
@@ -110,6 +112,9 @@ export const AllQuotes = () => {
   };
   const handleAcceptQuote = async (quoteId: string, requestId: string) => {
     try {
+      // Add to processing set to show loading state
+      setProcessingQuotes(prev => new Set([...prev, requestId]));
+      
       // Update quote status to Accepted first
       await DataService.updateQuote(quoteId, {
         status: 'Accepted'
@@ -119,21 +124,44 @@ export const AllQuotes = () => {
       const shipment = await DataService.convertQuoteToShipment(quoteId);
       
       if (shipment) {
-        // Refresh data context to ensure shipments are updated
-        await refreshData();
-        // Update local state to remove the quote from the list (since it's now a shipment)
-        setQuotes(prev => prev.filter(item => item.request.id !== requestId));
+        // Add to animating set for fade-out effect
+        setAnimatingQuotes(prev => new Set([...prev, requestId]));
+        
+        // Show success message immediately
         addToast('Quote accepted successfully! Your shipment has been created and is being processed.', 'success');
+        
+        // Wait for animation to complete before removing from list
+        setTimeout(async () => {
+          // Refresh data context to ensure shipments are updated
+          await refreshData();
+          // Update local state to remove the quote from the list (since it's now a shipment)
+          setQuotes(prev => prev.filter(item => item.request.id !== requestId));
+          setAnimatingQuotes(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(requestId);
+            return newSet;
+          });
+        }, 500);
       } else {
         addToast('Failed to create shipment from quote. Please contact support.', 'error');
       }
     } catch (error) {
       console.error('Error accepting quote:', error);
       addToast('Failed to accept quote. Please try again.', 'error');
+    } finally {
+      // Remove from processing set
+      setProcessingQuotes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
   const handleRejectQuote = async (quoteId: string, requestId: string) => {
     try {
+      // Add to processing set to show loading state
+      setProcessingQuotes(prev => new Set([...prev, requestId]));
+      
       // Update quote status
       await DataService.updateQuote(quoteId, {
         status: 'Rejected'
@@ -142,26 +170,46 @@ export const AllQuotes = () => {
       await DataService.updateQuoteRequest(requestId, {
         status: 'Quote Rejected'
       });
-      // Update local state
-      setQuotes(prev => prev.map(item => {
-        if (item.request.id === requestId) {
-          return {
-            ...item,
-            request: {
-              ...item.request,
-              status: 'Quote Rejected'
-            },
-            quote: item.quote ? {
-              ...item.quote,
-              status: 'Rejected'
-            } : undefined
-          };
-        }
-        return item;
-      }));
+      
+      // Add to animating set for fade effect
+      setAnimatingQuotes(prev => new Set([...prev, requestId]));
+      
+      // Wait for animation before updating state
+      setTimeout(() => {
+        // Update local state
+        setQuotes(prev => prev.map(item => {
+          if (item.request.id === requestId) {
+            return {
+              ...item,
+              request: {
+                ...item.request,
+                status: 'Quote Rejected'
+              },
+              quote: item.quote ? {
+                ...item.quote,
+                status: 'Rejected'
+              } : undefined
+            };
+          }
+          return item;
+        }));
+        setAnimatingQuotes(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(requestId);
+          return newSet;
+        });
+      }, 300);
+      
       addToast('Quote rejected. You can request a new quote if needed.', 'info');
     } catch (error) {
       addToast('Failed to reject quote. Please try again.', 'error');
+    } finally {
+      // Remove from processing set
+      setProcessingQuotes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
   if (isLoading) {
@@ -210,7 +258,7 @@ export const AllQuotes = () => {
             </div>
           </div>
         </Card> : <div className="space-y-4">
-          {filteredQuotes.map(item => <Card key={item.request.id}>
+          {filteredQuotes.map(item => <Card key={item.request.id} className={`transition-all duration-500 ${animatingQuotes.has(item.request.id) ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
               <div className="flex flex-col md:flex-row justify-between">
                 <div className="md:w-1/4 mb-4 md:mb-0">
                   <div className="flex items-center mb-2">
@@ -282,14 +330,37 @@ export const AllQuotes = () => {
                       <ClockIcon className="h-4 w-4 mr-1" />
                       Waiting for quote from our team
                     </div> : item.request.status === 'Quote Provided' && item.quote ? <div className="flex space-x-2">
-                      <Button variant="success" size="sm" onClick={() => handleAcceptQuote(item.quote!.id, item.request.id)}>
-                        <CheckIcon className="h-4 w-4 mr-1" />
-                        Accept
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={() => handleRejectQuote(item.quote!.id, item.request.id)}>
-                        <XIcon className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
+                      <button 
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={() => handleAcceptQuote(item.quote!.id, item.request.id)}
+                        disabled={processingQuotes.has(item.request.id)}
+                      >
+                        {processingQuotes.has(item.request.id) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckIcon className="h-4 w-4 mr-1" />
+                            Accept
+                          </>
+                        )}
+                      </button>
+                      <button 
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={() => handleRejectQuote(item.quote!.id, item.request.id)}
+                        disabled={processingQuotes.has(item.request.id)}
+                      >
+                        {processingQuotes.has(item.request.id) ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                        ) : (
+                          <>
+                            <XIcon className="h-4 w-4 mr-1" />
+                            Reject
+                          </>
+                        )}
+                      </button>
                     </div> : <Link to={`/quotes/${item.request.id}`}>
                       <Button variant="primary" size="sm">
                         View Details

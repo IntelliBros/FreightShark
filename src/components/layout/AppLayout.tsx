@@ -11,13 +11,13 @@ export const AppLayout = () => {
   } = useAuth();
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="w-10 h-10 border-4 border-[#2E3B55] rounded-full border-t-transparent animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-teal-500 rounded-full border-t-transparent animate-spin"></div>
       </div>;
   }
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
-  return <div className="flex h-screen bg-[#F5F7FA]">
+  return <div className="flex h-screen bg-gray-100">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />

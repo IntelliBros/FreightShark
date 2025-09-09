@@ -1,5 +1,6 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
-import { DataService, User, QuoteRequest, Quote, Shipment } from '../services/DataService';
+import { DataService } from '../services/DataService';
+import type { QuoteRequest, Quote, Shipment, User } from '../services/DataService';
 type DataContextType = {
   initialized: boolean;
   quoteRequests: QuoteRequest[];
@@ -34,9 +35,13 @@ export const DataProvider: React.FC<{
   };
   useEffect(() => {
     const initializeData = async () => {
-      DataService.initialize();
-      await fetchAllData();
-      setInitialized(true);
+      try {
+        await fetchAllData();
+        setInitialized(true);
+      } catch (error) {
+        console.error('Failed to initialize data:', error);
+        setInitialized(true); // Still allow app to work
+      }
     };
     initializeData();
   }, []);

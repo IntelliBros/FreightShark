@@ -77,7 +77,6 @@ export const Dashboard = () => {
           status: displayStatus,
           from: 'China', // You can enhance this by adding origin to the data model
           to: firstDest ? firstDest.fbaWarehouse : 'N/A',
-          eta: new Date(shipment.estimatedDelivery).toLocaleDateString(),
           progress
         };
       });
@@ -91,7 +90,7 @@ export const Dashboard = () => {
   }), [activeShipments, userShipments]);
   return <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-[#2E3B55]">
+        <h1 className="text-xl font-bold text-gray-900">
           Welcome back, {user?.name}
         </h1>
         <p className="text-gray-600 text-sm mt-1">
@@ -101,30 +100,30 @@ export const Dashboard = () => {
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
-          <div className="w-12 h-12 rounded-full bg-[#E6EDF8] flex items-center justify-center mr-4">
-            <TruckIcon className="w-5 h-5 text-[#2E3B55]" />
+          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
+            <TruckIcon className="w-5 h-5 text-teal-600" />
           </div>
           <div>
-            <div className="text-3xl font-bold text-[#2E3B55]">{stats.activeShipments}</div>
+            <div className="text-3xl font-bold text-gray-900">{stats.activeShipments}</div>
             <div className="text-sm text-gray-500">Active Shipments</div>
           </div>
         </div>
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
-          <div className="w-12 h-12 rounded-full bg-[#FFF3E0] flex items-center justify-center mr-4">
-            <PackageIcon className="w-5 h-5 text-[#F7941D]" />
+          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
+            <PackageIcon className="w-5 h-5 text-teal-600" />
           </div>
           <div>
-            <div className="text-3xl font-bold text-[#2E3B55]">{stats.sampleShipments}</div>
+            <div className="text-3xl font-bold text-gray-900">{stats.sampleShipments}</div>
             <div className="text-sm text-gray-500">Sample Shipments</div>
           </div>
         </div>
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
-          <div className="w-12 h-12 rounded-full bg-[#E8F5E9] flex items-center justify-center mr-4">
-            <CheckCircleIcon className="w-5 h-5 text-[#4CAF50]" />
+          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
+            <CheckCircleIcon className="w-5 h-5 text-teal-600" />
           </div>
           <div>
-            <div className="text-3xl font-bold text-[#2E3B55]">{stats.completedShipments}</div>
-            <div className="text-sm text-gray-500">Completed Shipments</div>
+            <div className="text-3xl font-bold text-gray-900">{stats.completedShipments}</div>
+            <div className="text-sm text-gray-500">Complete Shipments</div>
           </div>
         </div>
       </div>
@@ -133,7 +132,7 @@ export const Dashboard = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-[#2E3B55]">
+              <h3 className="text-lg font-semibold text-gray-900">
                 New Shipment
               </h3>
               <p className="text-sm text-gray-500 mt-1">
@@ -144,15 +143,15 @@ export const Dashboard = () => {
             <img src="/image.png" alt="Shipping illustration" className="w-24 h-24 object-contain" />
           </div>
           <Link to="/quotes/new">
-            <Button variant="primary" className="mt-2">
+            <button className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
               <span className="mr-1">+</span> New shipment
-            </Button>
+            </button>
           </Link>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-[#2E3B55]">
+              <h3 className="text-lg font-semibold text-gray-900">
                 Sample Shipment
               </h3>
               <p className="text-sm text-gray-500 mt-1">
@@ -163,9 +162,9 @@ export const Dashboard = () => {
             <img src="/image.png" alt="Sample shipping illustration" className="w-24 h-24 object-contain" />
           </div>
           <Link to="/samples">
-            <Button variant="secondary" className="mt-2">
+            <button className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
               <span className="mr-1">+</span> Sample shipment
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
@@ -175,7 +174,7 @@ export const Dashboard = () => {
               {activeShipments.map(shipment => <div key={shipment.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <Link to={`/shipments/${shipment.id}`} className="text-[#2E3B55] hover:underline font-medium text-sm">
+                      <Link to={`/shipments/${shipment.id}`} className="text-gray-900 hover:underline font-medium text-sm">
                         Shipment {shipment.id}
                       </Link>
                       <div className="text-xs text-gray-500 mt-0.5">
@@ -194,18 +193,14 @@ export const Dashboard = () => {
                       </span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div className="bg-[#2E3B55] h-1.5 rounded-full" style={{
+                      <div className="bg-teal-500 h-1.5 rounded-full" style={{
                   width: `${shipment.progress}%`
                 }}></div>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <div className="flex items-center text-gray-500">
-                      <ClockIcon className="w-3 h-3 mr-1" />
-                      <span>ETA: {shipment.eta}</span>
-                    </div>
-                    <Link to={`/shipments/${shipment.id}`} className="flex items-center text-[#2E3B55] hover:text-[#1e2940]">
-                      <span className="mr-1">Details</span>
+                  <div className="flex justify-end items-center text-xs">
+                    <Link to={`/shipments/${shipment.id}`} className="flex items-center text-teal-600 hover:text-teal-700">
+                      <span className="mr-1">View Details</span>
                       <ArrowRightIcon className="w-3 h-3" />
                     </Link>
                   </div>
@@ -225,23 +220,22 @@ export const Dashboard = () => {
               </Link>
             </div>}
         </Card>
-        <Card title="Announcements" subtitle="Latest updates and notifications" color="purple">
+        <Card title="Announcements" subtitle="Latest updates and notifications">
           <div className="space-y-4">
-            <div className="p-4 bg-[#E6EDF8] rounded-lg flex items-start">
-              <div className="mr-3 mt-0.5">
-                <AlertCircleIcon className="w-4 h-4 text-[#2E3B55]" />
-              </div>
+            <div className="p-4 bg-gray-50 rounded-lg flex items-start">
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-[#2E3B55]">
-                  Shipping Agent Update
+                <h4 className="text-sm font-medium text-gray-900">
+                  Angel Zhuang
                 </h4>
-                <p className="text-xs text-[#2E3B55]/80 mt-1">
-                  Some Amazon warehouses are experiencing delays due to capacity
-                  issues. Please check your shipment status regularly.
+                <p className="text-xs text-gray-600 mt-1">
+                  Dear FBA Boss Academy students, Hope you are all doing well. Here is the latest news on US and China agree to slash tariffs for 90 days as following : US to Cut Tariffs on Chinese Goods to 30% From 145% for 90 Days. It has been confirmed. Here is...
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  Posted 2 hours ago
+                  Wednesday, May 14, 2025
                 </p>
+                <button className="mt-2 px-3 py-1 bg-gray-900 text-white text-xs rounded hover:bg-gray-800 transition-colors">
+                  Read more
+                </button>
               </div>
             </div>
             
@@ -281,9 +275,9 @@ export const Dashboard = () => {
               </div>
             </div>
             
-            <Button variant="secondary" fullWidth size="sm">
-              View All Announcements
-            </Button>
+            <button className="w-full px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
+              View all announcements
+            </button>
           </div>
         </Card>
       </div>
