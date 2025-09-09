@@ -439,6 +439,10 @@ export const NewQuote = () => {
         updatedDestinations[index].fbaWarehouse = '';
       }
     }
+    // Clear search when warehouse is selected
+    if (field === 'fbaWarehouse' && value) {
+      setWarehouseSearch('');
+    }
     // Recalculate volumetric and chargeable weights when dimensions, cartons, or gross weight changes
     if (['length', 'width', 'height', 'cartons', 'grossWeight'].includes(field)) {
       const {
@@ -769,24 +773,58 @@ export const NewQuote = () => {
                                 />
                               </div>
 
-                              <select
-                                id={`fba-warehouse-${index}`}
-                                value={destination.fbaWarehouse}
-                                onChange={e => handleDestinationChange(index, 'fbaWarehouse', e.target.value)}
-                                className="w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 max-h-48 overflow-y-auto"
-                              >
-                                <option value="">Select a warehouse ({getFilteredWarehouses().length} available)</option>
-                                {getFilteredWarehouses().map(warehouse => (
-                                  <option key={warehouse.id} value={warehouse.name}>
-                                    {warehouse.name} - {warehouse.city}, {warehouse.state}
-                                  </option>
-                                ))}
-                              </select>
-                              
-                              {getFilteredWarehouses().length === 0 && warehouseSearch && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  No warehouses found for "{warehouseSearch}"
-                                </p>
+                              {/* Selected Warehouse Display */}
+                              {destination.fbaWarehouse && (
+                                <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-blue-900">{destination.fbaWarehouse}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDestinationChange(index, 'fbaWarehouse', '')}
+                                      className="text-blue-600 hover:text-blue-800"
+                                    >
+                                      <XIcon className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                  <div className="text-xs text-blue-700 mt-1">
+                                    {getWarehouseDisplayAddress(destination.fbaWarehouse)}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Warehouse List - Only show when no warehouse is selected */}
+                              {!destination.fbaWarehouse && (
+                                <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
+                                  {warehouseSearch.trim() || getFilteredWarehouses().length <= 20 ? (
+                                    getFilteredWarehouses().length > 0 ? (
+                                      <div className="divide-y divide-gray-100">
+                                        {getFilteredWarehouses().slice(0, 20).map(warehouse => (
+                                          <button
+                                            key={warehouse.id}
+                                            type="button"
+                                            onClick={() => handleDestinationChange(index, 'fbaWarehouse', warehouse.name)}
+                                            className="w-full text-left px-3 py-2 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors"
+                                          >
+                                            <div className="font-medium text-sm text-gray-900">
+                                              {warehouse.name}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                              {warehouse.city}, {warehouse.state}
+                                            </div>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="p-3 text-center text-sm text-gray-500">
+                                        No warehouses found for "{warehouseSearch}"
+                                      </div>
+                                    )
+                                  ) : (
+                                    <div className="p-3 text-center text-sm text-gray-500">
+                                      Start typing to search {availableWarehouses.length} warehouses...
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           ) : (
