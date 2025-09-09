@@ -136,11 +136,20 @@ export const ShipmentTracking = () => {
       // Refresh entire shipment data to show updated invoice status and timeline
       const updatedShipmentData = await DataService.getShipmentById(id!);
       if (updatedShipmentData) {
-        // Fetch related data for complete refresh
-        const quoteData = await DataService.getQuoteById(updatedShipmentData.quoteId);
+        // Fetch related data for complete refresh if quoteId exists
+        let quoteData = null;
         let quoteRequestData: QuoteRequest | null = null;
-        if (quoteData) {
-          quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+        
+        if (updatedShipmentData.quoteId || updatedShipmentData.quote_id) {
+          const quoteId = updatedShipmentData.quoteId || updatedShipmentData.quote_id;
+          try {
+            quoteData = await DataService.getQuoteById(quoteId);
+            if (quoteData) {
+              quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+            }
+          } catch (error) {
+            console.log('Could not fetch quote data:', error);
+          }
         }
         
         const serviceMode = quoteRequestData?.serviceType === 'Air Express' ? 'air-express' : 
@@ -305,11 +314,20 @@ export const ShipmentTracking = () => {
           return;
         }
         
-        // Fetch related quote and quote request
-        const quoteData = await DataService.getQuoteById(shipmentData.quoteId);
+        // Fetch related quote and quote request if quoteId exists
+        let quoteData = null;
         let quoteRequestData: QuoteRequest | null = null;
-        if (quoteData) {
-          quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+        
+        if (shipmentData.quoteId || shipmentData.quote_id) {
+          const quoteId = shipmentData.quoteId || shipmentData.quote_id;
+          try {
+            quoteData = await DataService.getQuoteById(quoteId);
+            if (quoteData) {
+              quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+            }
+          } catch (error) {
+            console.log('Could not fetch quote data:', error);
+          }
         }
         
         // Determine service mode from quote request

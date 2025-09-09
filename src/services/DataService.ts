@@ -333,7 +333,41 @@ export const DataService = {
 
   async getShipmentById(id: string) {
     await simulateDelay(200);
-    return await supabaseService.shipments.getById(id);
+    const shipment = await supabaseService.shipments.getById(id);
+    
+    if (!shipment) return null;
+    
+    // Parse destination data
+    let destinations = [];
+    if (shipment.destination) {
+      try {
+        const parsed = typeof shipment.destination === 'string' 
+          ? JSON.parse(shipment.destination) 
+          : shipment.destination;
+        
+        if (parsed.destinations && Array.isArray(parsed.destinations)) {
+          destinations = parsed.destinations;
+        } else if (Array.isArray(parsed)) {
+          destinations = parsed;
+        }
+      } catch (e) {
+        console.log('Could not parse destination:', shipment.destination);
+      }
+    }
+    
+    // Transform to match frontend format
+    return {
+      ...shipment,
+      shipmentId: shipment.id,
+      customerId: shipment.customer_id,
+      quoteId: shipment.quote_id,
+      destinations: destinations,
+      estimatedTotal: shipment.quotes?.total_cost || 0,
+      invoice: shipment.quotes?.total_cost ? {
+        status: 'Pending',
+        amount: shipment.quotes.total_cost
+      } : null
+    };
   },
 
   async createShipment(shipment: any) {
