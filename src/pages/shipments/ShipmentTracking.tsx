@@ -60,13 +60,13 @@ export const ShipmentTracking = () => {
     
     // If invoice is paid but missing shipment IDs
     if (currentShipment?.invoice?.status === 'Paid' && 
-        currentShipment?.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
+        Array.isArray(currentShipment?.destinations) && currentShipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
       return 30; // Waiting for Pickup (20%) + Invoice Payment (10%)
     }
     
     // If invoice is paid and all IDs are provided
     if (currentShipment?.invoice?.status === 'Paid' && 
-        currentShipment?.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+        Array.isArray(currentShipment?.destinations) && currentShipment.destinations.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
       // Check actual shipment status
       switch (status) {
         case 'Delivered':
@@ -211,7 +211,7 @@ export const ShipmentTracking = () => {
     console.log('Current destinations:', shipment.destinations);
     
     // Validate all IDs are provided
-    const missingIds = shipment.destinations ? shipment.destinations.filter((dest: any) => {
+    const missingIds = Array.isArray(shipment.destinations) ? shipment.destinations.filter((dest: any) => {
       const ids = warehouseIds[dest.id];
       return !ids || !ids.shipmentId || !ids.fbaId;
     }) : [];
@@ -222,7 +222,7 @@ export const ShipmentTracking = () => {
     }
     
     // Validate Amazon Reference ID format (8 alphanumeric characters)
-    const invalidRefIds = shipment.destinations ? shipment.destinations.filter((dest: any) => {
+    const invalidRefIds = Array.isArray(shipment.destinations) ? shipment.destinations.filter((dest: any) => {
       const ids = warehouseIds[dest.id];
       if (!ids?.fbaId) return false;
       // Check if it's exactly 8 characters and alphanumeric
@@ -239,7 +239,7 @@ export const ShipmentTracking = () => {
     
     try {
       // Update shipment with the provided IDs
-      const updatedDestinations = shipment.destinations ? shipment.destinations.map((dest: any) => ({
+      const updatedDestinations = Array.isArray(shipment.destinations) ? shipment.destinations.map((dest: any) => ({
         ...dest,
         amazonShipmentId: warehouseIds[dest.id]?.shipmentId || dest.amazonShipmentId,
         amazonReferenceId: warehouseIds[dest.id]?.fbaId || dest.amazonReferenceId
@@ -371,6 +371,13 @@ export const ShipmentTracking = () => {
             throw new Error('Invalid shipment data');
           }
           
+          console.log('Starting transformation with shipmentData:', shipmentData);
+          console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
+          console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
+          if (shipmentData.invoice) {
+            console.log('warehouseDetails type:', typeof shipmentData.invoice.warehouseDetails, 'isArray:', Array.isArray(shipmentData.invoice.warehouseDetails));
+          }
+          
           transformedShipment = {
           id: shipmentData.id,
           status: shipmentData.status,
@@ -392,8 +399,11 @@ export const ShipmentTracking = () => {
           currentLocation: Array.isArray(shipmentData.trackingEvents) && shipmentData.trackingEvents.length > 0 
             ? shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1].location 
             : quoteRequestData?.supplierDetails?.city || 'Unknown',
-          destinations: (shipmentData.invoice && Array.isArray(shipmentData.invoice.warehouseDetails)) 
-            ? shipmentData.invoice.warehouseDetails.map((warehouseDetail: any) => {
+          destinations: (() => {
+            try {
+              if (shipmentData.invoice && Array.isArray(shipmentData.invoice.warehouseDetails)) {
+                console.log('Mapping warehouseDetails, count:', shipmentData.invoice.warehouseDetails.length);
+                return shipmentData.invoice.warehouseDetails.map((warehouseDetail: any) => {
                 return {
                   id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
                   amazonShipmentId: warehouseDetail.amazonShipmentId || '',
@@ -406,8 +416,10 @@ export const ShipmentTracking = () => {
                   trackingNumber: warehouseDetail.soNumber,
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
-              })
-            : (Array.isArray(shipmentData.destinations) ? shipmentData.destinations : []).map((dest: any) => {
+              });
+              } else if (Array.isArray(shipmentData.destinations)) {
+                console.log('Mapping destinations, count:', shipmentData.destinations.length);
+                return shipmentData.destinations.map((dest: any) => {
                 return {
                   id: dest.id,
                   amazonShipmentId: dest.amazonShipmentId || '',
@@ -420,27 +432,52 @@ export const ShipmentTracking = () => {
                   trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
-              }) || [],
-          timeline: (shipmentData.trackingEvents || []).map((event: any) => {
-            console.log('Processing tracking event:', event);
-            if (!event) {
-              console.warn('Null event in trackingEvents');
-              return {
-                date: 'Date not available',
-                event: 'No description',
-                location: 'Unknown location',
-                status: 'Unknown',
-                type: 'tracking'
-              };
+              });
+              } else {
+                console.log('No destinations or warehouseDetails found');
+                return [];
+              }
+            } catch (destError) {
+              console.error('Error mapping destinations:', destError);
+              return [];
             }
-            return {
-              date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
-              event: event.description || 'No description',
-              location: event.location || 'Unknown location',
-              status: event.status || 'Unknown',
-              type: event.type || 'tracking'
-            };
-          }),
+          })(),
+          timeline: (() => {
+            try {
+              const events = shipmentData.trackingEvents;
+              console.log('Timeline - events type:', typeof events, 'isArray:', Array.isArray(events));
+              
+              if (!Array.isArray(events)) {
+                console.log('Timeline - events is not an array, returning empty array');
+                return [];
+              }
+              
+              console.log('Timeline - mapping', events.length, 'events');
+              return events.map((event: any, index: number) => {
+                console.log(`Processing tracking event ${index}:`, event);
+                if (!event) {
+                  console.warn(`Null event at index ${index} in trackingEvents`);
+                  return {
+                    date: 'Date not available',
+                    event: 'No description',
+                    location: 'Unknown location',
+                    status: 'Unknown',
+                    type: 'tracking'
+                  };
+                }
+                return {
+                  date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
+                  event: event.description || 'No description',
+                  location: event.location || 'Unknown location',
+                  status: event.status || 'Unknown',
+                  type: event.type || 'tracking'
+                };
+              });
+            } catch (timelineError) {
+              console.error('Error mapping timeline:', timelineError);
+              return [];
+            }
+          })(),
           documents: [
             { id: 'doc-1', name: 'Commercial Invoice.pdf', type: 'invoice' },
             { id: 'doc-2', name: 'Packing List.xlsx', type: 'packing-list' },
@@ -474,7 +511,7 @@ export const ShipmentTracking = () => {
           setShipment(transformedShipment);
           
           // Set the first destination as active
-          if (transformedShipment.destinations && transformedShipment.destinations.length > 0) {
+          if (Array.isArray(transformedShipment.destinations) && transformedShipment.destinations.length > 0) {
             setActiveDestination(transformedShipment.destinations[0].id);
           }
         }
@@ -498,7 +535,7 @@ export const ShipmentTracking = () => {
   
   // Initialize warehouseIds with existing values
   useEffect(() => {
-    if (shipment && shipment.destinations) {
+    if (shipment && Array.isArray(shipment.destinations)) {
       const existingIds: Record<string, { shipmentId: string; fbaId: string }> = {};
       shipment.destinations.forEach((dest: any) => {
         if (dest.amazonShipmentId || dest.amazonReferenceId) {
@@ -542,12 +579,12 @@ export const ShipmentTracking = () => {
   const getDisplayStatus = () => {
     // Check if invoice is paid but IDs are missing
     if (shipment?.invoice?.status === 'Paid' && 
-        shipment?.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
+        Array.isArray(shipment?.destinations) && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
       return 'Missing Shipment IDs';
     }
     // If invoice is paid and all IDs are provided, show In Progress
     if (shipment?.invoice?.status === 'Paid' && 
-        shipment?.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+        Array.isArray(shipment?.destinations) && shipment.destinations.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
       return 'In Progress';
     }
     return shipment?.status || 'Unknown';
@@ -595,7 +632,7 @@ export const ShipmentTracking = () => {
     
     // Mark Shipment IDs as completed if all IDs provided
     if (shipment?.invoice?.status === 'Paid' && 
-        shipment?.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+        Array.isArray(shipment?.destinations) && shipment.destinations.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
       steps[2].completed = true;
     }
     
@@ -614,7 +651,7 @@ export const ShipmentTracking = () => {
   };
   
   const progressSteps = getProgressSteps();
-  const activeDestinationData = shipment?.destinations?.find((d: any) => d.id === activeDestination);
+  const activeDestinationData = Array.isArray(shipment?.destinations) ? shipment.destinations.find((d: any) => d.id === activeDestination) : null;
   const currentProgress = getProgressPercentage(shipment?.status || '', shipment);
   
   const handleContactSupport = () => {
@@ -701,7 +738,7 @@ export const ShipmentTracking = () => {
       {activeTab === 'overview' && <div className="space-y-5">
           {/* Required IDs Notice - Show after payment but only if IDs are missing */}
           {shipment.invoice && shipment.invoice.status === 'Paid' && 
-           shipment.destinations && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
+           Array.isArray(shipment.destinations) && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
             <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
               <div className="flex items-start">
                 <AlertCircleIcon className="h-6 w-6 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
@@ -792,14 +829,14 @@ export const ShipmentTracking = () => {
             
             {/* ID Input Section - Show when invoice is paid but IDs are missing */}
             {shipment.invoice && shipment.invoice.status === 'Paid' && 
-             shipment.destinations && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
+             Array.isArray(shipment.destinations) && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
               <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-4">
                 <h4 className="text-sm font-semibold text-red-800 mb-3 flex items-center">
                   <AlertCircleIcon className="h-5 w-5 mr-2" />
                   Required: Enter Amazon IDs for Each Warehouse
                 </h4>
                 <div className="space-y-3">
-                  {shipment.destinations && shipment.destinations.map((dest: any) => (
+                  {Array.isArray(shipment.destinations) && shipment.destinations.map((dest: any) => (
                     <div key={dest.id} className="bg-white p-3 rounded border border-red-200">
                       <h5 className="font-medium text-gray-900 mb-2 text-sm">{dest.fbaWarehouse}</h5>
                       <div className="grid grid-cols-2 gap-3">
@@ -863,7 +900,7 @@ export const ShipmentTracking = () => {
             )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {shipment.destinations && shipment.destinations.map((dest: any) => <div key={dest.id} className={`cursor-pointer transition-all rounded-lg p-4 ${activeDestination === dest.id ? 'bg-blue-50 border-2 border-blue-200 shadow-lg' : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'}`} onClick={() => setActiveDestination(dest.id)}>
+              {Array.isArray(shipment.destinations) && shipment.destinations.map((dest: any) => <div key={dest.id} className={`cursor-pointer transition-all rounded-lg p-4 ${activeDestination === dest.id ? 'bg-blue-50 border-2 border-blue-200 shadow-lg' : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'}`} onClick={() => setActiveDestination(dest.id)}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-start">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 transition-colors ${activeDestination === dest.id ? 'bg-blue-500' : 'bg-gray-100'}`}>
@@ -925,7 +962,7 @@ export const ShipmentTracking = () => {
                       <ClockIcon className="w-3.5 h-3.5 mr-1" />
                       <span>
                         Last updated:{' '}
-                        {shipment.timeline && shipment.timeline.length > 0 
+                        {Array.isArray(shipment.timeline) && shipment.timeline.length > 0 
                           ? shipment.timeline[shipment.timeline.length - 1].date 
                           : 'Date not available'}
                       </span>
@@ -965,7 +1002,7 @@ export const ShipmentTracking = () => {
                         </button>
                       </div>
                       <div className="space-y-0 max-h-[350px] overflow-auto pr-2">
-                        {shipment.timeline && shipment.timeline.length > 0 ? shipment.timeline.map((event: any, index: number) => <div key={index} className="flex">
+                        {Array.isArray(shipment.timeline) && shipment.timeline.length > 0 ? shipment.timeline.map((event: any, index: number) => <div key={index} className="flex">
                             <div className="mr-3">
                               <div className="flex flex-col items-center">
                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
@@ -981,7 +1018,7 @@ export const ShipmentTracking = () => {
                                     <TruckIcon className="h-3.5 w-3.5 text-[#2E3B55]" />
                                   )}
                                 </div>
-                                {shipment.timeline && index < shipment.timeline.length - 1 && <div className="w-0.5 bg-gray-200 h-10"></div>}
+                                {Array.isArray(shipment.timeline) && index < shipment.timeline.length - 1 && <div className="w-0.5 bg-gray-200 h-10"></div>}
                               </div>
                             </div>
                             <div className="pb-6">
@@ -1015,10 +1052,10 @@ export const ShipmentTracking = () => {
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
                                 {(() => {
-                                  const deliveredEvent = shipment.timeline.find((e: any) => 
+                                  const deliveredEvent = Array.isArray(shipment.timeline) ? shipment.timeline.find((e: any) => 
                                     e.event?.toLowerCase().includes('delivered') || 
                                     e.status?.toLowerCase() === 'delivered'
-                                  );
+                                  ) : null;
                                   return deliveredEvent ? deliveredEvent.date : 'Delivered';
                                 })()}
                               </p>
