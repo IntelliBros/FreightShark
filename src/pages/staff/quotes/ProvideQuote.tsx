@@ -324,21 +324,21 @@ export const ProvideQuote = () => {
                   Product Description
                 </h3>
                 <p className="text-gray-900">
-                  {(quoteRequest.cargoDetails as any).productDescription || 'Not provided'}
+                  {(quoteRequest.cargoDetails as any)?.productDescription || 'Not provided'}
                 </p>
               </div>
-              {(quoteRequest.cargoDetails as any).competitorASIN && (
+              {(quoteRequest.cargoDetails as any)?.competitorASIN && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">
                     Competitor ASIN
                   </h3>
                   <a 
-                    href={`https://amazon.com/dp/${(quoteRequest.cargoDetails as any).competitorASIN}`}
+                    href={`https://amazon.com/dp/${(quoteRequest.cargoDetails as any)?.competitorASIN}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 underline"
                   >
-                    {(quoteRequest.cargoDetails as any).competitorASIN}
+                    {(quoteRequest.cargoDetails as any)?.competitorASIN}
                   </a>
                 </div>
               )}
@@ -347,11 +347,11 @@ export const ProvideQuote = () => {
                   Regulated Goods
                 </h3>
                 <p className="text-gray-900">
-                  {(quoteRequest.cargoDetails as any).regulatedGoods === 'fda' ? 'FDA Certified Product' :
-                   (quoteRequest.cargoDetails as any).regulatedGoods === 'wood-bamboo-animal' ? 'Wooden / Bamboo / Animal Product' :
-                   (quoteRequest.cargoDetails as any).regulatedGoods === 'batteries-hazmat' ? 'Batteries or Hazardous Materials' :
-                   (quoteRequest.cargoDetails as any).regulatedGoods === 'cream-liquids-powders' ? 'Cream / Liquids / Powders' :
-                   (quoteRequest.cargoDetails as any).regulatedGoods === 'none' ? 'No regulated goods' : 'Not specified'}
+                  {(quoteRequest.cargoDetails as any)?.regulatedGoods === 'fda' ? 'FDA Certified Product' :
+                   (quoteRequest.cargoDetails as any)?.regulatedGoods === 'wood-bamboo-animal' ? 'Wooden / Bamboo / Animal Product' :
+                   (quoteRequest.cargoDetails as any)?.regulatedGoods === 'batteries-hazmat' ? 'Batteries or Hazardous Materials' :
+                   (quoteRequest.cargoDetails as any)?.regulatedGoods === 'cream-liquids-powders' ? 'Cream / Liquids / Powders' :
+                   (quoteRequest.cargoDetails as any)?.regulatedGoods === 'none' ? 'No regulated goods' : 'Not specified'}
                 </p>
               </div>
               <div>
