@@ -292,12 +292,14 @@ export const ShipmentsList = () => {
                         {shipment.destinations.reduce((sum, d) => sum + (d.estimatedWeight || 0), 0)} kg
                       </span>
                     </div>
-                    <div className="mb-2">
-                      <span className="text-gray-500 block">Est. Total:</span>
-                      <span className="text-gray-900 font-medium">
-                        ${shipment.estimatedTotal.toLocaleString()}
-                      </span>
-                    </div>
+                    {(shipment.invoice?.amount || shipment.estimatedTotal) && (
+                      <div className="mb-2">
+                        <span className="text-gray-500 block">Est. Total:</span>
+                        <span className="text-gray-900 font-medium">
+                          ${(shipment.invoice?.amount || shipment.estimatedTotal || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <Link to={`/shipments/${shipment.id}`}>
                     <Button variant="primary" size="sm" className="w-full">
