@@ -1,12 +1,13 @@
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { TruckIcon, PackageIcon, BuildingIcon, CheckCircleIcon, PlusIcon, MinusIcon, InfoIcon, AlertCircleIcon, XIcon, ChevronRightIcon, CheckIcon, CopyIcon, TrashIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, BuildingIcon, CheckCircleIcon, PlusIcon, MinusIcon, InfoIcon, AlertCircleIcon, XIcon, ChevronRightIcon, CheckIcon, CopyIcon, TrashIcon, SearchIcon } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { DataService } from '../../services/DataService';
 import { useAuth } from '../../context/AuthContext';
+import { amazonWarehouseService, AmazonWarehouse } from '../../services/amazonWarehouseService';
 // Step definitions
 const STEPS = [{
   id: 'supplier',
@@ -32,20 +33,6 @@ const MOCK_SUPPLIERS = [{
   name: 'Shenzhen Tech Manufacturing',
   address: '456 Tech Zone, Shenzhen, China',
   contact: 'Zhang Min'
-}];
-// Mock warehouse data
-const MOCK_WAREHOUSES = [{
-  id: 'fba1',
-  name: 'FBA ONT8',
-  address: '1600 Discovery Drive, Moreno Valley, CA 92551, USA'
-}, {
-  id: 'fba2',
-  name: 'FBA BFI4',
-  address: '2700 Center Dr, DuPont, WA 98327, USA'
-}, {
-  id: 'fba3',
-  name: 'FBA MDW2',
-  address: '1125 Remington Blvd, Bolingbrook, IL 60440, USA'
 }];
 type Supplier = {
   id: string;
@@ -177,6 +164,42 @@ export const NewQuote = () => {
     contact: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Amazon warehouse state
+  const [availableWarehouses, setAvailableWarehouses] = useState<AmazonWarehouse[]>([]);
+  const [warehouseSearch, setWarehouseSearch] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState<'all' | AmazonWarehouse['region']>('all');
+
+  // Load warehouses on component mount
+  useEffect(() => {
+    const warehouses = amazonWarehouseService.getAllWarehouses();
+    setAvailableWarehouses(warehouses);
+  }, []);
+
+  // Filter warehouses based on search and region
+  const getFilteredWarehouses = (): AmazonWarehouse[] => {
+    let warehouses = availableWarehouses;
+
+    // Filter by region
+    if (selectedRegion !== 'all') {
+      warehouses = amazonWarehouseService.getWarehousesByRegion(selectedRegion);
+    }
+
+    // Filter by search query
+    if (warehouseSearch.trim()) {
+      warehouses = amazonWarehouseService.searchWarehouses(warehouseSearch);
+    }
+
+    return warehouses;
+  };
+
+  // Helper function to get warehouse display address
+  const getWarehouseDisplayAddress = (warehouseName: string): string => {
+    const warehouse = amazonWarehouseService.getAllWarehouses().find(w => w.name === warehouseName);
+    if (!warehouse) return 'Warehouse address not found';
+    return `${warehouse.address}, ${warehouse.city}, ${warehouse.state} ${warehouse.zipCode}`;
+  };
+
   const calculateVolumetricWeight = (length: number, width: number, height: number, unit: 'cm' | 'in') => {
     if (unit === 'cm') {
       return length * width * height / 6000;
@@ -743,19 +766,58 @@ export const NewQuote = () => {
                                   </button>
                                 </span>
                               </div>
+                              
+                              {/* Region Filter */}
+                              <div className="mb-2">
+                                <div className="flex gap-1 text-xs">
+                                  {['all', 'US-West', 'US-Central', 'US-East', 'Canada'].map((region) => (
+                                    <button
+                                      key={region}
+                                      type="button"
+                                      onClick={() => setSelectedRegion(region as any)}
+                                      className={`px-2 py-1 rounded transition-colors ${
+                                        selectedRegion === region 
+                                          ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      {region === 'all' ? 'All Regions' : region}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Search Input */}
+                              <div className="relative mb-2">
+                                <SearchIcon className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Search warehouses..."
+                                  value={warehouseSearch}
+                                  onChange={e => setWarehouseSearch(e.target.value)}
+                                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+
                               <select
                                 id={`fba-warehouse-${index}`}
                                 value={destination.fbaWarehouse}
                                 onChange={e => handleDestinationChange(index, 'fbaWarehouse', e.target.value)}
-                                className="w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 max-h-48 overflow-y-auto"
                               >
-                                <option value="">Select a warehouse</option>
-                                {MOCK_WAREHOUSES.map(warehouse => (
+                                <option value="">Select a warehouse ({getFilteredWarehouses().length} available)</option>
+                                {getFilteredWarehouses().map(warehouse => (
                                   <option key={warehouse.id} value={warehouse.name}>
-                                    {warehouse.name} - {warehouse.address}
+                                    {warehouse.name} - {warehouse.city}, {warehouse.state} ({warehouse.region})
                                   </option>
                                 ))}
                               </select>
+                              
+                              {getFilteredWarehouses().length === 0 && warehouseSearch && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  No warehouses found for "{warehouseSearch}"
+                                </p>
+                              )}
                             </div>
                           ) : (
                             <div>
@@ -1521,7 +1583,7 @@ export const NewQuote = () => {
                               </div>
                               <div className="text-sm text-gray-500 mt-1">
                                 {dest.isAmazon 
-                                  ? (dest.fbaWarehouse ? MOCK_WAREHOUSES.find(w => w.name === dest.fbaWarehouse)?.address || 'Warehouse address' : 'No warehouse selected')
+                                  ? (dest.fbaWarehouse ? getWarehouseDisplayAddress(dest.fbaWarehouse) : 'No warehouse selected')
                                   : (dest.customAddress || 'No address specified')}
                               </div>
                             </div>
