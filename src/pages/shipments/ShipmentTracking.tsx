@@ -285,7 +285,7 @@ export const ShipmentTracking = () => {
       // Verify the save worked
       const verifyShipment = await DataService.getShipmentById(id!);
       console.log('Verification - reloaded shipment:', verifyShipment);
-      console.log('Verification - destinations have IDs:', verifyShipment?.destinations.map((d: any) => ({
+      console.log('Verification - destinations have IDs:', verifyShipment?.destinations?.map((d: any) => ({
         id: d.id,
         shipmentId: d.amazonShipmentId,
         referenceId: d.amazonReferenceId
@@ -460,21 +460,23 @@ export const ShipmentTracking = () => {
           return;
         }
         
-        console.log('=== Shipment Data Debug ===');
-        console.log('Original shipmentData from backend:', shipmentData);
-        console.log('Transformed shipment destinations:', transformedShipment.destinations);
-        console.log('IDs in destinations:', transformedShipment.destinations.map((d: any) => ({
-          id: d.id,
-          warehouse: d.fbaWarehouse,
-          shipmentId: d.amazonShipmentId,
-          referenceId: d.amazonReferenceId
-        })));
-        
-        setShipment(transformedShipment);
-        
-        // Set the first destination as active
-        if (transformedShipment.destinations && transformedShipment.destinations.length > 0) {
-          setActiveDestination(transformedShipment.destinations[0].id);
+        if (transformedShipment) {
+          console.log('=== Shipment Data Debug ===');
+          console.log('Original shipmentData from backend:', shipmentData);
+          console.log('Transformed shipment destinations:', transformedShipment.destinations);
+          console.log('IDs in destinations:', transformedShipment.destinations?.map((d: any) => ({
+            id: d.id,
+            warehouse: d.fbaWarehouse,
+            shipmentId: d.amazonShipmentId,
+            referenceId: d.amazonReferenceId
+          })));
+          
+          setShipment(transformedShipment);
+          
+          // Set the first destination as active
+          if (transformedShipment.destinations && transformedShipment.destinations.length > 0) {
+            setActiveDestination(transformedShipment.destinations[0].id);
+          }
         }
       } catch (error) {
         console.error('Error fetching shipment data:', error);
