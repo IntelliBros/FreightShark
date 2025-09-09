@@ -392,7 +392,7 @@ export const ShipmentTracking = () => {
           currentLocation: Array.isArray(shipmentData.trackingEvents) && shipmentData.trackingEvents.length > 0 
             ? shipmentData.trackingEvents[shipmentData.trackingEvents.length - 1].location 
             : quoteRequestData?.supplierDetails?.city || 'Unknown',
-          destinations: (shipmentData.invoice && shipmentData.invoice.warehouseDetails) 
+          destinations: (shipmentData.invoice && Array.isArray(shipmentData.invoice.warehouseDetails)) 
             ? shipmentData.invoice.warehouseDetails.map((warehouseDetail: any) => {
                 return {
                   id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
@@ -407,7 +407,7 @@ export const ShipmentTracking = () => {
                   progress: getProgressPercentage(shipmentData.status, shipmentData)
                 };
               })
-            : (shipmentData.destinations || []).map((dest: any) => {
+            : (Array.isArray(shipmentData.destinations) ? shipmentData.destinations : []).map((dest: any) => {
                 return {
                   id: dest.id,
                   amazonShipmentId: dest.amazonShipmentId || '',
@@ -792,7 +792,7 @@ export const ShipmentTracking = () => {
             
             {/* ID Input Section - Show when invoice is paid but IDs are missing */}
             {shipment.invoice && shipment.invoice.status === 'Paid' && 
-             shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
+             shipment.destinations && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
               <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-4">
                 <h4 className="text-sm font-semibold text-red-800 mb-3 flex items-center">
                   <AlertCircleIcon className="h-5 w-5 mr-2" />
