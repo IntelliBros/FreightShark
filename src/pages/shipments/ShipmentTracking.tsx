@@ -387,51 +387,63 @@ export const ShipmentTracking = () => {
           console.log('Starting transformation with shipmentData:', shipmentData);
           
           // Safely check trackingEvents
-          let safeTrackingEvents = [];
+          let safeTrackingEvents: any[] = [];
           try {
-            if (shipmentData.trackingEvents) {
+            if (shipmentData && shipmentData.trackingEvents) {
               console.log('trackingEvents type:', typeof shipmentData.trackingEvents, 'isArray:', Array.isArray(shipmentData.trackingEvents));
               if (Array.isArray(shipmentData.trackingEvents)) {
                 safeTrackingEvents = shipmentData.trackingEvents;
                 console.log('safeTrackingEvents length:', safeTrackingEvents.length);
               } else {
                 console.warn('trackingEvents exists but is not an array:', shipmentData.trackingEvents);
+                safeTrackingEvents = [];
               }
+            } else {
+              safeTrackingEvents = [];
             }
           } catch (e) {
             console.error('Error processing trackingEvents:', e);
+            safeTrackingEvents = [];
           }
           
           // Safely check destinations
-          let safeDestinations = [];
+          let safeDestinations: any[] = [];
           try {
-            if (shipmentData.destinations) {
+            if (shipmentData && shipmentData.destinations) {
               console.log('destinations type:', typeof shipmentData.destinations, 'isArray:', Array.isArray(shipmentData.destinations));
               if (Array.isArray(shipmentData.destinations)) {
                 safeDestinations = shipmentData.destinations;
                 console.log('safeDestinations length:', safeDestinations.length);
               } else {
                 console.warn('destinations exists but is not an array:', shipmentData.destinations);
+                safeDestinations = [];
               }
+            } else {
+              safeDestinations = [];
             }
           } catch (e) {
             console.error('Error processing destinations:', e);
+            safeDestinations = [];
           }
           
           // Safely check warehouseDetails
-          let safeWarehouseDetails = [];
+          let safeWarehouseDetails: any[] = [];
           try {
-            if (shipmentData.invoice && shipmentData.invoice.warehouseDetails) {
+            if (shipmentData && shipmentData.invoice && shipmentData.invoice.warehouseDetails) {
               console.log('warehouseDetails type:', typeof shipmentData.invoice.warehouseDetails, 'isArray:', Array.isArray(shipmentData.invoice.warehouseDetails));
               if (Array.isArray(shipmentData.invoice.warehouseDetails)) {
                 safeWarehouseDetails = shipmentData.invoice.warehouseDetails;
                 console.log('safeWarehouseDetails length:', safeWarehouseDetails.length);
               } else {
                 console.warn('warehouseDetails exists but is not an array:', shipmentData.invoice.warehouseDetails);
+                safeWarehouseDetails = [];
               }
+            } else {
+              safeWarehouseDetails = [];
             }
           } catch (e) {
             console.error('Error processing warehouseDetails:', e);
+            safeWarehouseDetails = [];
           }
           
           transformedShipment = {
@@ -454,8 +466,9 @@ export const ShipmentTracking = () => {
           serviceMode: serviceMode,
           currentLocation: (() => {
             try {
-              if (safeTrackingEvents && safeTrackingEvents.length > 0) {
-                const lastEvent = safeTrackingEvents[safeTrackingEvents.length - 1];
+              const events = safeTrackingEvents || [];
+              if (events.length > 0) {
+                const lastEvent = events[events.length - 1];
                 return lastEvent?.location || quoteRequestData?.supplierDetails?.city || 'Unknown';
               }
             } catch (e) {
@@ -465,9 +478,12 @@ export const ShipmentTracking = () => {
           })(),
           destinations: (() => {
             try {
-              if (safeWarehouseDetails && safeWarehouseDetails.length > 0) {
-                console.log('Mapping warehouseDetails, count:', safeWarehouseDetails.length);
-                return safeWarehouseDetails.map((warehouseDetail: any) => {
+              const warehouses = safeWarehouseDetails || [];
+              const dests = safeDestinations || [];
+              
+              if (warehouses.length > 0) {
+                console.log('Mapping warehouseDetails, count:', warehouses.length);
+                return warehouses.map((warehouseDetail: any) => {
                   return {
                     id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
                     amazonShipmentId: warehouseDetail.amazonShipmentId || '',
@@ -481,9 +497,9 @@ export const ShipmentTracking = () => {
                     progress: getProgressPercentage(shipmentData.status, shipmentData)
                   };
                 });
-              } else if (safeDestinations && safeDestinations.length > 0) {
-                console.log('Mapping destinations, count:', safeDestinations.length);
-                return safeDestinations.map((dest: any) => {
+              } else if (dests.length > 0) {
+                console.log('Mapping destinations, count:', dests.length);
+                return dests.map((dest: any) => {
                   return {
                     id: dest.id,
                     amazonShipmentId: dest.amazonShipmentId || '',
@@ -508,14 +524,15 @@ export const ShipmentTracking = () => {
           })(),
           timeline: (() => {
             try {
-              if (!safeTrackingEvents || safeTrackingEvents.length === 0) {
+              const events = safeTrackingEvents || [];
+              if (events.length === 0) {
                 console.log('Timeline - no events, returning empty array');
                 return [];
               }
               
-              console.log('Timeline - using safeTrackingEvents, length:', safeTrackingEvents.length);
+              console.log('Timeline - using safeTrackingEvents, length:', events.length);
               
-              return safeTrackingEvents.map((event: any, index: number) => {
+              return events.map((event: any, index: number) => {
                 console.log(`Processing tracking event ${index}:`, event);
                 if (!event) {
                   console.warn(`Null event at index ${index} in trackingEvents`);
