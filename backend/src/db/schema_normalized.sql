@@ -335,3 +335,28 @@ INSERT INTO system_settings (key, value, description) VALUES
 ('default_commission_rate', '0.025', 'Default commission rate (2.5%)'),
 ('quote_validity_days', '30', 'Default quote validity period in days'),
 ('max_file_upload_size', '10485760', 'Maximum file upload size in bytes (10MB)');
+
+-- =====================================================
+-- FUNCTIONS FOR ID GENERATION
+-- =====================================================
+
+-- Function to increment sequence
+CREATE OR REPLACE FUNCTION increment_sequence(seq_type VARCHAR)
+RETURNS INTEGER AS $$
+DECLARE
+    new_value INTEGER;
+BEGIN
+    UPDATE id_sequences 
+    SET current_value = current_value + 1 
+    WHERE name = seq_type
+    RETURNING current_value INTO new_value;
+    
+    IF new_value IS NULL THEN
+        INSERT INTO id_sequences (name, current_value) 
+        VALUES (seq_type, 1)
+        RETURNING current_value INTO new_value;
+    END IF;
+    
+    RETURN new_value;
+END;
+$$ language 'plpgsql';

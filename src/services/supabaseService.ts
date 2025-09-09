@@ -67,17 +67,21 @@ export interface User {
 }
 
 // Helper function to get next sequence ID
-async function getNextSequenceId(type: 'quote' | 'shipment'): Promise<string> {
+async function getNextSequenceId(type: 'quote' | 'shipment' | 'quote_request'): Promise<string> {
   const { data, error } = await supabase.rpc('increment_sequence', { seq_type: type });
   
   if (error || !data) {
     // Fallback to timestamp-based ID
     const timestamp = Date.now().toString().slice(-5);
-    return type === 'quote' ? `Q-${timestamp}` : `FS-${timestamp}`;
+    if (type === 'quote') return `Q-${timestamp}`;
+    if (type === 'shipment') return `FS-${timestamp}`;
+    return `QR-${timestamp}`;
   }
   
   const paddedNumber = data.toString().padStart(5, '0');
-  return type === 'quote' ? `Q-${paddedNumber}` : `FS-${paddedNumber}`;
+  if (type === 'quote') return `Q-${paddedNumber}`;
+  if (type === 'shipment') return `FS-${paddedNumber}`;
+  return `QR-${paddedNumber}`;
 }
 
 // Supabase Service
@@ -180,8 +184,8 @@ export const supabaseService = {
     },
 
     async create(request: Partial<QuoteRequest>) {
-      // Generate ID
-      const requestId = `QR-${Date.now().toString().slice(-5)}`;
+      // Generate sequential ID
+      const requestId = await getNextSequenceId('quote_request');
       
       const newRequest = {
         ...request,
@@ -314,8 +318,9 @@ export const supabaseService = {
       // Update quote status
       await this.update(id, { status: 'Accepted' });
       
-      // Create shipment
-      const shipmentId = await getNextSequenceId('shipment');
+      // Create shipment using the same number as the quote (Q-12345 -> FS-12345)
+      const quoteNumber = id.replace('Q-', '');
+      const shipmentId = `FS-${quoteNumber}`;
       const shipment = await supabaseService.shipments.create({
         id: shipmentId,
         quote_id: id,
