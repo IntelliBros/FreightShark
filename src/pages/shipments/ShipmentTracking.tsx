@@ -166,9 +166,9 @@ export const ShipmentTracking = () => {
           ...shipment,
           invoice: updatedShipmentData.invoice,
           timeline: (updatedShipmentData.trackingEvents || []).map((event: any) => ({
-            date: new Date(event.timestamp || event.date).toLocaleString(),
-            event: event.description,
-            location: event.location,
+            date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
+            event: event.description || 'No description',
+            location: event.location || 'Unknown location',
             status: event.status,
             type: event.type || 'tracking'
           }))
@@ -350,7 +350,7 @@ export const ShipmentTracking = () => {
           id: shipmentData.id,
           status: shipmentData.status,
           quoteId: shipmentData.quoteId,
-          createdAt: new Date(shipmentData.createdAt).toLocaleDateString(),
+          createdAt: shipmentData.createdAt || shipmentData.created_at ? new Date(shipmentData.createdAt || shipmentData.created_at).toLocaleDateString() : 'Date not available',
           customer: shipmentData.customer,
           supplier: {
             name: quoteRequestData?.supplierDetails?.name || 'Unknown Supplier',
@@ -397,9 +397,9 @@ export const ShipmentTracking = () => {
                 };
               }),
           timeline: (shipmentData.trackingEvents || []).map((event: any) => ({
-            date: new Date(event.timestamp || event.date).toLocaleString(),
-            event: event.description,
-            location: event.location,
+            date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
+            event: event.description || 'No description',
+            location: event.location || 'Unknown location',
             status: event.status,
             type: event.type || 'tracking'
           })),
@@ -410,8 +410,8 @@ export const ShipmentTracking = () => {
             { id: 'doc-4', name: 'Customs Clearance.pdf', type: 'customs' }
           ],
           photos: [
-            { id: 'photo-1', name: 'Cargo at pickup.jpg', timestamp: new Date(shipmentData.createdAt).toLocaleString() },
-            { id: 'photo-2', name: 'Packaging verification.jpg', timestamp: new Date(shipmentData.createdAt).toLocaleString() }
+            { id: 'photo-1', name: 'Cargo at pickup.jpg', timestamp: shipmentData.createdAt || shipmentData.created_at ? new Date(shipmentData.createdAt || shipmentData.created_at).toLocaleString() : 'Date not available' },
+            { id: 'photo-2', name: 'Packaging verification.jpg', timestamp: shipmentData.createdAt || shipmentData.created_at ? new Date(shipmentData.createdAt || shipmentData.created_at).toLocaleString() : 'Date not available' }
           ],
           invoice: shipmentData.invoice || null
         };
@@ -1165,7 +1165,7 @@ export const ShipmentTracking = () => {
               </h2>
               <p className="text-sm text-gray-500">
                 Invoice #{shipment.invoice.id} • Created on{' '}
-                {new Date(shipment.invoice.createdAt).toLocaleDateString()}{' '}
+                {shipment.invoice.createdAt ? new Date(shipment.invoice.createdAt).toLocaleDateString() : 'Date not available'}{' '}
                 • Due by {shipment.invoice.dueDate}
               </p>
             </div>
