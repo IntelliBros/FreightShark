@@ -359,7 +359,7 @@ export const ProvideQuote = () => {
                   Special Notes
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {quoteRequest.cargoDetails.notes || 'None provided'}
+                  {quoteRequest.cargoDetails?.notes || 'None provided'}
                 </p>
               </div>
             </div>
