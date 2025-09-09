@@ -453,15 +453,19 @@ export const ShipmentTracking = () => {
           },
           serviceMode: serviceMode,
           currentLocation: (() => {
-            if (safeTrackingEvents.length > 0) {
-              const lastEvent = safeTrackingEvents[safeTrackingEvents.length - 1];
-              return lastEvent?.location || quoteRequestData?.supplierDetails?.city || 'Unknown';
+            try {
+              if (safeTrackingEvents && safeTrackingEvents.length > 0) {
+                const lastEvent = safeTrackingEvents[safeTrackingEvents.length - 1];
+                return lastEvent?.location || quoteRequestData?.supplierDetails?.city || 'Unknown';
+              }
+            } catch (e) {
+              console.error('Error getting currentLocation:', e);
             }
             return quoteRequestData?.supplierDetails?.city || 'Unknown';
           })(),
           destinations: (() => {
             try {
-              if (safeWarehouseDetails.length > 0) {
+              if (safeWarehouseDetails && safeWarehouseDetails.length > 0) {
                 console.log('Mapping warehouseDetails, count:', safeWarehouseDetails.length);
                 return safeWarehouseDetails.map((warehouseDetail: any) => {
                   return {
@@ -477,7 +481,7 @@ export const ShipmentTracking = () => {
                     progress: getProgressPercentage(shipmentData.status, shipmentData)
                   };
                 });
-              } else if (safeDestinations.length > 0) {
+              } else if (safeDestinations && safeDestinations.length > 0) {
                 console.log('Mapping destinations, count:', safeDestinations.length);
                 return safeDestinations.map((dest: any) => {
                   return {
@@ -504,12 +508,12 @@ export const ShipmentTracking = () => {
           })(),
           timeline: (() => {
             try {
-              console.log('Timeline - using safeTrackingEvents, length:', safeTrackingEvents.length);
-              
-              if (safeTrackingEvents.length === 0) {
+              if (!safeTrackingEvents || safeTrackingEvents.length === 0) {
                 console.log('Timeline - no events, returning empty array');
                 return [];
               }
+              
+              console.log('Timeline - using safeTrackingEvents, length:', safeTrackingEvents.length);
               
               return safeTrackingEvents.map((event: any, index: number) => {
                 console.log(`Processing tracking event ${index}:`, event);
