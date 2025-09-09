@@ -301,14 +301,14 @@ export const ProvideQuote = () => {
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Supplier</h3>
                 <p className="text-gray-900">
-                  {quoteRequest.supplierDetails.name}
+                  {quoteRequest.supplierDetails?.name || 'Unknown Supplier'}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {quoteRequest.supplierDetails.address}
+                  {quoteRequest.supplierDetails?.address || 'No address'}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {quoteRequest.supplierDetails.city},{' '}
-                  {quoteRequest.supplierDetails.country}
+                  {quoteRequest.supplierDetails?.city || 'Unknown'},{' '}
+                  {quoteRequest.supplierDetails?.country || 'Unknown'}
                 </p>
               </div>
             </div>

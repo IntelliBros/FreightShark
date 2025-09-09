@@ -40,7 +40,7 @@ export const QuoteRequests = () => {
       filtered = filtered.filter(request => 
         request.id.toLowerCase().includes(search) || 
         (request.customer?.company?.toLowerCase().includes(search)) || 
-        request.supplierDetails.name.toLowerCase().includes(search)
+        (request.supplierDetails?.name?.toLowerCase().includes(search))
       );
     }
     if (statusFilter !== 'all') {
@@ -136,8 +136,8 @@ export const QuoteRequests = () => {
                     {request.cargoDetails?.cbm || 0} CBM
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    From: {request.supplierDetails.city},{' '}
-                    {request.supplierDetails.country}
+                    From: {request.supplierDetails?.city || 'Unknown'},{' '}
+                    {request.supplierDetails?.country || 'Unknown'}
                   </p>
                 </div>
                 <div className="md:w-1/4 mb-4 md:mb-0">
