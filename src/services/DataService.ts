@@ -80,6 +80,11 @@ export const DataService = {
     return await supabaseService.quoteRequests.getById(id);
   },
 
+  async getQuoteRequestsByCustomerId(customerId: string) {
+    await simulateDelay(400);
+    return await supabaseService.quoteRequests.getByCustomerId(customerId);
+  },
+
   async createQuoteRequest(request: any) {
     await simulateDelay(500);
     console.log('Creating quote request:', request);
