@@ -276,10 +276,58 @@ export const DataService = {
   // Shipment methods
   async getShipments(customerId?: string) {
     await simulateDelay(400);
+    let shipments;
     if (customerId) {
-      return await supabaseService.shipments.getByCustomerId(customerId);
+      shipments = await supabaseService.shipments.getByCustomerId(customerId);
+    } else {
+      shipments = await supabaseService.shipments.getAll();
     }
-    return await supabaseService.shipments.getAll();
+    
+    // Transform shipments to match expected frontend format
+    return shipments.map(shipment => {
+      // Parse destination data
+      let destinations = [];
+      if (shipment.destination) {
+        try {
+          const parsed = typeof shipment.destination === 'string' 
+            ? JSON.parse(shipment.destination) 
+            : shipment.destination;
+          
+          if (parsed.destinations && Array.isArray(parsed.destinations)) {
+            destinations = parsed.destinations;
+          } else if (Array.isArray(parsed)) {
+            destinations = parsed;
+          }
+        } catch (e) {
+          console.log('Could not parse destination:', shipment.destination);
+        }
+      }
+      
+      // Parse cargo_details if it exists
+      let cargoDetails = null;
+      if (shipment.cargo_details) {
+        try {
+          cargoDetails = typeof shipment.cargo_details === 'string'
+            ? JSON.parse(shipment.cargo_details)
+            : shipment.cargo_details;
+        } catch (e) {
+          cargoDetails = shipment.cargo_details;
+        }
+      }
+      
+      return {
+        ...shipment,
+        shipmentId: shipment.id,
+        customerId: shipment.customer_id,
+        quoteId: shipment.quote_id,
+        destinations: destinations,
+        cargoDetails: cargoDetails,
+        invoice: shipment.quotes?.total_cost ? {
+          status: 'Pending',
+          amount: shipment.quotes.total_cost
+        } : null
+      };
+    });
   },
 
   async getShipmentById(id: string) {

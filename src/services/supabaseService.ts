@@ -335,6 +335,17 @@ export const supabaseService = {
       
       console.log('Accepting quote:', quote);
       
+      // Check if already accepted
+      if (quote.status === 'Accepted') {
+        console.log('Quote already accepted, checking for existing shipment');
+        // Check if shipment already exists
+        const existingShipments = await supabaseService.shipments.getByQuoteId(id);
+        if (existingShipments && existingShipments.length > 0) {
+          console.log('Shipment already exists for this quote');
+          return { quote, shipment: existingShipments[0] };
+        }
+      }
+      
       // Update quote status
       await this.update(id, { status: 'Accepted' });
       
@@ -344,9 +355,9 @@ export const supabaseService = {
         quoteRequest = await supabaseService.quoteRequests.getById(quote.request_id);
       }
       
-      // Create shipment using the same number as the quote (Q-12345 -> FS-12345)
-      const quoteNumber = id.replace('Q-', '');
-      const shipmentId = `FS-${quoteNumber}`;
+      // Generate unique shipment ID with timestamp to avoid duplicates
+      const timestamp = Date.now().toString().slice(-5);
+      const shipmentId = `FS-${timestamp}`;
       
       // Prepare destination data
       let destinationData = '';
@@ -426,6 +437,16 @@ export const supabaseService = {
         `)
         .eq('id', id)
         .single();
+      
+      if (error) throw error;
+      return data;
+    },
+
+    async getByQuoteId(quoteId: string) {
+      const { data, error } = await supabase
+        .from('shipments')
+        .select('*')
+        .eq('quote_id', quoteId);
       
       if (error) throw error;
       return data;

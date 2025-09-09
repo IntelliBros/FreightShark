@@ -49,7 +49,7 @@ export const AllQuotes = () => {
           };
         }).filter(item => {
           // Filter out quotes that have been converted to shipments
-          return !item.quote || item.quote.status !== 'Shipped';
+          return !item.quote || (item.quote.status !== 'Shipped' && item.quote.status !== 'Accepted');
         });
         
         console.log('Combined data:', combinedData);
@@ -79,7 +79,7 @@ export const AllQuotes = () => {
             quote: matchingQuote
           };
         }).filter(item => {
-          return !item.quote || item.quote.status !== 'Shipped';
+          return !item.quote || (item.quote.status !== 'Shipped' && item.quote.status !== 'Accepted');
         });
         setQuotes(combinedData);
         setFilteredQuotes(combinedData);
