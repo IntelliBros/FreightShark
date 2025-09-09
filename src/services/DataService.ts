@@ -1,8 +1,24 @@
 import { supabaseService } from './supabaseService';
 import { authService } from './authService';
+import type { QuoteRequest as BaseQuoteRequest, Quote, Shipment, User } from './supabaseService';
 
-// Re-export types from supabaseService
-export type { QuoteRequest, Quote, Shipment, User } from './supabaseService';
+// Extended QuoteRequest with additional fields used in the app
+export interface QuoteRequest extends BaseQuoteRequest {
+  customerId?: string;
+  destinations?: DestinationWarehouse[];
+  supplierDetails?: {
+    name?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    contactName?: string;
+    contactPhone?: string;
+  };
+  cargoDetails?: any;
+}
+
+// Re-export other types from supabaseService
+export type { Quote, Shipment, User } from './supabaseService';
 
 // Legacy types for backward compatibility
 export type CartonDetail = {
@@ -83,7 +99,34 @@ export const DataService = {
 
   async getQuoteRequestById(id: string) {
     await simulateDelay(200);
-    return await supabaseService.quoteRequests.getById(id);
+    const request = await supabaseService.quoteRequests.getById(id);
+    if (request) {
+      // Extract extended data from destination_warehouses JSONB
+      let destinations = [];
+      let supplierDetails = null;
+      let cargoDetails = null;
+      
+      if (typeof request.destination_warehouses === 'object' && request.destination_warehouses) {
+        if (request.destination_warehouses.destinations) {
+          destinations = request.destination_warehouses.destinations;
+        } else if (Array.isArray(request.destination_warehouses)) {
+          // Old format - just an array of destinations
+          destinations = request.destination_warehouses;
+        }
+        supplierDetails = request.destination_warehouses.supplierDetails || null;
+        cargoDetails = request.destination_warehouses.cargoDetails || null;
+      }
+      
+      // Map customer_id to customerId for compatibility
+      return {
+        ...request,
+        customerId: request.customer_id,
+        destinations,
+        supplierDetails,
+        cargoDetails
+      };
+    }
+    return null;
   },
 
   async getQuoteRequestsByCustomerId(customerId: string) {
@@ -95,6 +138,13 @@ export const DataService = {
     await simulateDelay(500);
     console.log('Creating quote request:', request);
     
+    // Store supplierDetails and cargoDetails in destination_warehouses JSONB
+    const extendedData = {
+      destinations: request.destinations || [],
+      supplierDetails: request.supplierDetails || null,
+      cargoDetails: request.cargoDetails || null
+    };
+    
     // Transform data to match database schema
     const transformedRequest = {
       customer_id: request.customerId || request.customer_id,
@@ -102,7 +152,7 @@ export const DataService = {
       pickup_location: request.supplierDetails ? 
         `${request.supplierDetails.name}, ${request.supplierDetails.address}, ${request.supplierDetails.city}, ${request.supplierDetails.country}` : 
         request.pickup_location || '',
-      destination_warehouses: request.destinations || request.destination_warehouses || [],
+      destination_warehouses: extendedData, // Store all extended data in JSONB
       cargo_ready_date: request.requestedDate || request.cargo_ready_date || new Date().toISOString().split('T')[0],
       total_weight: request.cargoDetails?.grossWeight || request.total_weight,
       total_volume: request.cargoDetails?.cbm || request.total_volume,

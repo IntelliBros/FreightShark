@@ -4,7 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { FileTextIcon, PlusIcon, MinusIcon, InfoIcon, ArrowLeftIcon, BuildingIcon, TruckIcon, DollarSignIcon } from 'lucide-react';
-import { DataService, QuoteRequest } from '../../../services/DataService';
+import { DataService, QuoteRequest, User } from '../../../services/DataService';
 import { useToast } from '../../../context/ToastContext';
 import { useData } from '../../../context/DataContext';
 export const ProvideQuote = () => {
@@ -21,6 +21,7 @@ export const ProvideQuote = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest | null>(null);
+  const [customer, setCustomer] = useState<User | null>(null);
   const [showOtherCharges, setShowOtherCharges] = useState(false);
   const [showDiscounts, setShowDiscounts] = useState(false);
   // Track string values for rate inputs to allow decimal typing
@@ -55,6 +56,17 @@ export const ProvideQuote = () => {
           return;
         }
         setQuoteRequest(request);
+        
+        // Fetch customer data if we have a customer_id
+        if (request.customerId) {
+          try {
+            const customerData = await DataService.getUserById(request.customerId);
+            setCustomer(customerData);
+          } catch (error) {
+            console.error('Failed to fetch customer data:', error);
+          }
+        }
+        
         // Initialize warehouse rates based on destinations
         const initialRates = (request.destinations || []).map(dest => ({
           warehouseId: dest.id,
@@ -293,9 +305,9 @@ export const ProvideQuote = () => {
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Customer</h3>
-                <p className="text-gray-900">{quoteRequest.customer?.company || 'Unknown Company'}</p>
+                <p className="text-gray-900">{customer?.company || 'Unknown Company'}</p>
                 <p className="text-sm text-gray-600">
-                  {quoteRequest.customer?.name || 'Unknown Customer'}
+                  {customer?.name || 'Unknown Customer'}
                 </p>
               </div>
               <div>
