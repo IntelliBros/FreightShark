@@ -79,12 +79,15 @@ export const SignUp = () => {
           DDP Freight
         </h1>
         <h2 className="mt-2 text-center text-2xl font-bold text-gray-900">
-          Create your account
+          Create your customer account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
+          Join as a freight customer. Staff and admin accounts require an invitation.
+        </p>
+        <p className="mt-1 text-center text-sm text-gray-600">
+          Already have an account?{' '}
           <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            sign in to your existing account
+            sign in here
           </Link>
         </p>
       </div>

@@ -2,14 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { UsersIcon, PlusIcon, SearchIcon, FilterIcon, MoreHorizontalIcon, EditIcon, Trash2Icon, KeyIcon, UserCheckIcon, UserXIcon } from 'lucide-react';
+import { UsersIcon, PlusIcon, SearchIcon, FilterIcon, MoreHorizontalIcon, EditIcon, Trash2Icon, KeyIcon, UserCheckIcon, UserXIcon, XIcon, MailIcon } from 'lucide-react';
 import { DataService, User } from '../../services/DataService';
+import { useToast } from '../../context/ToastContext';
 export const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'admin' | 'staff' | 'user'>('all');
   const [showActions, setShowActions] = useState<string | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    name: '',
+    email: '',
+    role: 'staff' as 'staff' | 'admin',
+    staffPosition: ''
+  });
+  const [isInviting, setIsInviting] = useState(false);
+  const { addToast } = useToast();
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -45,6 +55,43 @@ export const UserManagement = () => {
         return 'default';
     }
   };
+
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsInviting(true);
+    
+    try {
+      // Generate a temporary password for invited users
+      const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      
+      const newUser = {
+        name: inviteForm.name,
+        email: inviteForm.email,
+        password: tempPassword,
+        company: 'FreightShark', // Admin/Staff work for FreightShark
+        role: inviteForm.role,
+        staffPosition: inviteForm.role === 'staff' ? inviteForm.staffPosition : undefined
+      };
+      
+      const createdUser = await DataService.createUser(newUser);
+      setUsers(prevUsers => [...prevUsers, createdUser]);
+      
+      addToast(`User ${inviteForm.name} has been invited successfully. Temporary password: ${tempPassword}`, 'success');
+      setShowInviteModal(false);
+      setInviteForm({ name: '', email: '', role: 'staff', staffPosition: '' });
+    } catch (error: any) {
+      addToast(error.message || 'Failed to invite user', 'error');
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleInviteFormChange = (field: string, value: string) => {
+    setInviteForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-[#1E293B] rounded-full border-t-transparent animate-spin"></div>
@@ -58,9 +105,9 @@ export const UserManagement = () => {
             View and manage all users in the system
           </p>
         </div>
-        <Button variant="primary">
-          <PlusIcon className="h-4 w-4 mr-1" />
-          Add User
+        <Button variant="primary" onClick={() => setShowInviteModal(true)}>
+          <MailIcon className="h-4 w-4 mr-1" />
+          Invite User
         </Button>
       </div>
       <Card>
@@ -172,5 +219,96 @@ export const UserManagement = () => {
           </table>
         </div>
       </Card>
+      
+      {/* Invite User Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Invite User</h3>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <form onSubmit={handleInviteSubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="invite-name" className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="invite-name"
+                  value={inviteForm.name}
+                  onChange={(e) => handleInviteFormChange('name', e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="invite-email" className="block text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="invite-email"
+                  value={inviteForm.email}
+                  onChange={(e) => handleInviteFormChange('email', e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="invite-role" className="block text-sm font-medium text-gray-700">
+                  Role
+                </label>
+                <select
+                  id="invite-role"
+                  value={inviteForm.role}
+                  onChange={(e) => handleInviteFormChange('role', e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              {inviteForm.role === 'staff' && (
+                <div>
+                  <label htmlFor="invite-position" className="block text-sm font-medium text-gray-700">
+                    Staff Position
+                  </label>
+                  <input
+                    type="text"
+                    id="invite-position"
+                    value={inviteForm.staffPosition}
+                    onChange={(e) => handleInviteFormChange('staffPosition', e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Shipping Agent, Operations Manager"
+                  />
+                </div>
+              )}
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowInviteModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isLoading={isInviting}
+                >
+                  Send Invitation
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>;
 };

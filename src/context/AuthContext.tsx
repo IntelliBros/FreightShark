@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{
         email: userData.email || '',
         password: userData.password,
         company: userData.company || '',
-        role: userData.role || 'user',
+        role: 'user', // Only customers can self-register
         amazonSellerId: userData.amazonSellerId,
         einTaxId: userData.einTaxId,
         staffPosition: userData.staffPosition
@@ -141,14 +141,8 @@ export const AuthProvider: React.FC<{
         setUser(result.user);
         setToken(result.token);
         localStorage.setItem('authToken', result.token);
-        // Navigate based on role
-        if (result.user.role === 'admin') {
-          navigate('/admin');
-        } else if (result.user.role === 'staff') {
-          navigate('/staff');
-        } else {
-          navigate('/');
-        }
+        // Navigate to customer dashboard (only customers can self-register)
+        navigate('/');
       }
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Registration failed');
