@@ -789,7 +789,17 @@ export const ShipmentTracking = () => {
           </span>
         </div>
         <div className="flex space-x-2">
-          <Button variant="secondary" size="sm">
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={() => {
+              if (shipment.quoteId) {
+                navigate(`/quotes/${shipment.quoteId}`);
+              } else {
+                addToast('Quote information not available', 'error');
+              }
+            }}
+          >
             <FileTextIcon className="h-3.5 w-3.5 mr-1" />
             View Quote
           </Button>
@@ -1046,9 +1056,19 @@ export const ShipmentTracking = () => {
                       <span>
                         Last updated:{' '}
                         {(() => {
+                          // First check for timeline events
                           if (Array.isArray(shipment.timeline) && shipment.timeline.length > 0) {
                             const lastEvent = shipment.timeline[shipment.timeline.length - 1];
-                            return lastEvent?.date || 'Date not available';
+                            if (lastEvent?.date) {
+                              return new Date(lastEvent.date).toLocaleDateString();
+                            }
+                          }
+                          // Fallback to updated_at or created_at
+                          if (shipment.updated_at || shipment.updatedAt) {
+                            return new Date(shipment.updated_at || shipment.updatedAt).toLocaleDateString();
+                          }
+                          if (shipment.created_at || shipment.createdAt) {
+                            return new Date(shipment.created_at || shipment.createdAt).toLocaleDateString();
                           }
                           return 'Date not available';
                         })()}
