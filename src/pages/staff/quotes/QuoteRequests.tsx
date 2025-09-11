@@ -125,11 +125,8 @@ export const QuoteRequests = () => {
                 </div>
                 <div className="md:w-1/4 mb-4 md:mb-0">
                   <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                    Service & Cargo
+                    Cargo Details
                   </h4>
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    {request.serviceType}
-                  </p>
                   <p className="text-sm text-gray-600">
                     {request.cargoDetails?.cartonCount || 0} cartons •{' '}
                     {(request.cargoDetails?.grossWeight || 0).toFixed(2)} kg •{' '}

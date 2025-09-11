@@ -538,7 +538,6 @@ export const NewQuote = () => {
       const quoteRequest = {
         customerId: user?.id || 'user-1',
         status: 'Awaiting Quote',
-        serviceType: 'Air Freight', // Default service type since we removed service preferences
         requestedDate: new Date().toISOString().split('T')[0],
         dueBy: formData.shipmentDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         cargoDetails: {

@@ -180,10 +180,6 @@ export const ApprovedQuotes = () => {
                     <span className="text-gray-500 block">Expires:</span>
                     <span className="text-gray-900">{new Date(item.quote.expiresAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="text-sm mt-2">
-                    <span className="text-gray-500 block">Service Type:</span>
-                    <span className="text-gray-900">{item.request?.serviceType || 'Unknown'}</span>
-                  </div>
                 </div>
                 <div>
                   <div className="text-sm">

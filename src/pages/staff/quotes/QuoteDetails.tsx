@@ -228,18 +228,13 @@ export const QuoteDetails = () => {
             </h2>
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-500 mb-2">
-                Service Information
+                Rate Information
               </h3>
               <div className="flex items-center bg-gray-50 p-3 rounded-lg mb-4">
                 <TruckIcon className="h-5 w-5 text-gray-500 mr-2" />
-                <span className="text-gray-900 font-medium">
-                  {quoteRequest.serviceType}
-                </span>
-                <div className="ml-auto">
-                  <Badge variant="info">
-                    {quote.rateType === 'per-kg' ? 'Per Kg Rate' : 'Flat Rate'}
-                  </Badge>
-                </div>
+                <Badge variant="info">
+                  {quote.rateType === 'per-kg' ? 'Per Kg Rate' : 'Flat Rate'}
+                </Badge>
               </div>
               <h3 className="text-sm font-medium text-gray-500 mb-2">
                 Cargo Information

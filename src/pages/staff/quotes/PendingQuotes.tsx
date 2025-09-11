@@ -81,15 +81,6 @@ export const PendingQuotes = () => {
     });
   };
 
-  const getServiceTypeName = (serviceType: string) => {
-    switch (serviceType) {
-      case 'Air Express': return 'Air Express';
-      case 'Air Freight': return 'Air Freight';
-      case 'Ocean FCL': return 'Ocean FCL';
-      case 'Ocean LCL': return 'Ocean LCL';
-      default: return serviceType;
-    }
-  };
 
   if (loading) {
     return (
@@ -250,14 +241,6 @@ export const PendingQuotes = () => {
                     <span className="text-gray-500 block">Expires:</span>
                     <span className="text-gray-900">{formatDate(item.quote.expiresAt)}</span>
                   </div>
-                  {item.request && (
-                    <div className="text-sm mt-2">
-                      <span className="text-gray-500 block">Service Type:</span>
-                      <span className="text-gray-900">
-                        {getServiceTypeName(item.request.serviceType)}
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <div>
                   {item.request && (

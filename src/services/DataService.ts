@@ -133,7 +133,6 @@ export const DataService = {
           company: customer.company,
           email: customer.email
         } : null,
-        serviceType: request.service_type || 'Air Freight',
         requestedDate: request.cargo_ready_date || request.created_at, // Map cargo_ready_date to requestedDate
         dueBy: request.cargo_ready_date ? 
           new Date(new Date(request.cargo_ready_date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() : // Add 3 days for due date
@@ -184,7 +183,6 @@ export const DataService = {
           company: customer.company,
           email: customer.email
         } : null,
-        serviceType: request.service_type || 'Air Freight',
         requestedDate: request.cargo_ready_date || request.created_at,
         dueBy: request.cargo_ready_date ? 
           new Date(new Date(request.cargo_ready_date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() :
@@ -237,7 +235,6 @@ export const DataService = {
           company: customer.company,
           email: customer.email
         } : null,
-        serviceType: request.service_type || 'Air Freight',
         requestedDate: request.cargo_ready_date || request.created_at,
         dueBy: request.cargo_ready_date ? 
           new Date(new Date(request.cargo_ready_date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() :

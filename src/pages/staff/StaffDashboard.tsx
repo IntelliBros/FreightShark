@@ -140,7 +140,7 @@ export const StaffDashboard = () => {
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {request.serviceType} • {request.destinations?.length || 0}{' '}
+                    {request.destinations?.length || 0}{' '}
                     destination{(request.destinations?.length || 0) > 1 ? 's' : ''}
                   </div>
                 </div>
