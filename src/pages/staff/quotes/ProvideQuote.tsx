@@ -328,9 +328,35 @@ export const ProvideQuote = () => {
 
           <Card>
             <h2 className="text-lg font-medium text-gray-900 mb-4">
-              Product Details
+              Product & Cargo Details
             </h2>
             <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">
+                    Total Cartons
+                  </h3>
+                  <p className="text-gray-900 font-medium">
+                    {quoteRequest.cargoDetails?.cartonCount || 0}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">
+                    Gross Weight
+                  </h3>
+                  <p className="text-gray-900 font-medium">
+                    {(quoteRequest.cargoDetails?.grossWeight || 0).toFixed(2)} kg
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">
+                    Volume (CBM)
+                  </h3>
+                  <p className="text-gray-900 font-medium">
+                    {quoteRequest.cargoDetails?.cbm || 0}
+                  </p>
+                </div>
+              </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500">
                   Product Description
@@ -371,7 +397,7 @@ export const ProvideQuote = () => {
                   Special Notes
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {quoteRequest.cargoDetails?.notes || 'None provided'}
+                  {quoteRequest.specialRequirements || quoteRequest.cargoDetails?.notes || 'None provided'}
                 </p>
               </div>
             </div>
