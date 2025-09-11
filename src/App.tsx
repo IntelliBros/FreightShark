@@ -15,9 +15,7 @@ import { Analytics } from './pages/analytics/Analytics';
 import { Announcements } from './pages/Announcements';
 import { AnnouncementDetail } from './pages/AnnouncementDetail';
 import { Settings } from './pages/settings/Settings';
-import { Login } from './pages/auth/Login';
-import { StaffLogin } from './pages/auth/StaffLogin';
-import { AdminLogin } from './pages/auth/AdminLogin';
+import { UnifiedLogin } from './pages/auth/UnifiedLogin';
 import { SignUp } from './pages/auth/SignUp';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { CreateInvoice } from './pages/staff/invoices/CreateInvoice';
@@ -48,9 +46,7 @@ export function App() {
           <ToastProvider>
             <Routes>
               {/* Auth routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/staff-login" element={<StaffLogin />} />
-              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/login" element={<UnifiedLogin />} />
               <Route path="/signup" element={<SignUp />} />
               {/* Customer dashboard */}
               <Route path="/" element={<AppLayout />}>

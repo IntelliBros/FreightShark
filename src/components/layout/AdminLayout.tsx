@@ -14,9 +14,9 @@ export const AdminLayout = () => {
         <div className="w-10 h-10 border-4 border-[#1E293B] rounded-full border-t-transparent animate-spin"></div>
       </div>;
   }
-  // Redirect to admin login if not authenticated or not an admin
+  // Redirect to login if not authenticated or not an admin
   if (!isAuthenticated || user?.role !== 'admin') {
-    return <Navigate to="/admin-login" />;
+    return <Navigate to="/login" />;
   }
   return <div className="flex h-screen bg-[#F5F7FA]">
       <AdminSidebar />

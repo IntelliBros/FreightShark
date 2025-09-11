@@ -171,14 +171,8 @@ export const AuthProvider: React.FC<{
     setUser(null);
     setToken(null);
     localStorage.removeItem('authToken');
-    // Redirect based on user role
-    if (user?.role === 'staff') {
-      navigate('/staff-login');
-    } else if (user?.role === 'admin') {
-      navigate('/admin-login');
-    } else {
-      navigate('/login');
-    }
+    // Redirect to unified login
+    navigate('/login');
   };
   return <AuthContext.Provider value={{
     user,

@@ -14,9 +14,9 @@ export const StaffLayout = () => {
         <div className="w-10 h-10 border-4 border-[#1E2A45] rounded-full border-t-transparent animate-spin"></div>
       </div>;
   }
-  // Redirect to staff login if not authenticated or not a staff member
+  // Redirect to login if not authenticated or not a staff member
   if (!isAuthenticated || user?.role !== 'staff') {
-    return <Navigate to="/staff-login" />;
+    return <Navigate to="/login" />;
   }
   return <div className="flex h-screen bg-[#F5F7FA]">
       <StaffSidebar />
