@@ -285,7 +285,15 @@ export const supabaseService = {
     },
 
     async create(quote: Partial<Quote>) {
-      const quoteId = await getNextSequenceId('quote');
+      // Extract the number from the request_id (e.g., QR-00006 -> 00006)
+      let quoteId: string;
+      if (quote.request_id && quote.request_id.startsWith('QR-')) {
+        const requestNumber = quote.request_id.substring(3); // Remove 'QR-' prefix
+        quoteId = `Q-${requestNumber}`;
+      } else {
+        // Fallback to sequence ID if request_id doesn't follow expected format
+        quoteId = await getNextSequenceId('quote');
+      }
       
       // Ensure all required fields are present and properly formatted
       const newQuote = {
@@ -367,9 +375,16 @@ export const supabaseService = {
         quoteRequest = await supabaseService.quoteRequests.getById(quote.request_id);
       }
       
-      // Generate unique shipment ID with timestamp to avoid duplicates
-      const timestamp = Date.now().toString().slice(-5);
-      const shipmentId = `FS-${timestamp}`;
+      // Extract the number from the quote ID (e.g., Q-00006 -> 00006)
+      let shipmentId: string;
+      if (id && id.startsWith('Q-')) {
+        const quoteNumber = id.substring(2); // Remove 'Q-' prefix
+        shipmentId = `FS-${quoteNumber}`;
+      } else {
+        // Fallback to timestamp-based ID if quote ID doesn't follow expected format
+        const timestamp = Date.now().toString().slice(-5);
+        shipmentId = `FS-${timestamp}`;
+      }
       
       // Prepare destination data
       let destinationData = '';
