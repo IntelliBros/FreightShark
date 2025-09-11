@@ -235,11 +235,11 @@ export const PendingQuotes = () => {
                 <div>
                   <div className="text-sm">
                     <span className="text-gray-500 block">Created:</span>
-                    <span className="text-gray-900">{formatDate(item.quote.createdAt)}</span>
+                    <span className="text-gray-900">{item.quote.created_at ? formatDate(item.quote.created_at) : 'N/A'}</span>
                   </div>
                   <div className="text-sm mt-2">
                     <span className="text-gray-500 block">Expires:</span>
-                    <span className="text-gray-900">{formatDate(item.quote.expiresAt)}</span>
+                    <span className="text-gray-900">{item.quote.valid_until ? formatDate(item.quote.valid_until) : 'N/A'}</span>
                   </div>
                 </div>
                 <div>

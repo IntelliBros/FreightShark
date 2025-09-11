@@ -174,11 +174,11 @@ export const ApprovedQuotes = () => {
                 <div>
                   <div className="text-sm">
                     <span className="text-gray-500 block">Created:</span>
-                    <span className="text-gray-900">{new Date(item.quote.createdAt).toLocaleDateString()}</span>
+                    <span className="text-gray-900">{item.quote.created_at ? new Date(item.quote.created_at).toLocaleDateString() : 'N/A'}</span>
                   </div>
                   <div className="text-sm mt-2">
                     <span className="text-gray-500 block">Expires:</span>
-                    <span className="text-gray-900">{new Date(item.quote.expiresAt).toLocaleDateString()}</span>
+                    <span className="text-gray-900">{item.quote.valid_until ? new Date(item.quote.valid_until).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
                 <div>
