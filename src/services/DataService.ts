@@ -91,16 +91,72 @@ export const DataService = {
   // Quote Request methods
   async getQuoteRequests(customerId?: string) {
     await simulateDelay(400);
+    let requests;
     if (customerId) {
-      return await supabaseService.quoteRequests.getByCustomerId(customerId);
+      requests = await supabaseService.quoteRequests.getByCustomerId(customerId);
+    } else {
+      requests = await supabaseService.quoteRequests.getAll();
     }
-    return await supabaseService.quoteRequests.getAll();
+    
+    // Get all users to map customer details
+    const users = await supabaseService.users.getAll();
+    const userMap = new Map(users.map(u => [u.id, u]));
+    
+    // Transform each request to extract extended data from JSONB
+    return requests.map(request => {
+      let destinations = [];
+      let supplierDetails = null;
+      let cargoDetails = null;
+      
+      if (typeof request.destination_warehouses === 'object' && request.destination_warehouses) {
+        if (request.destination_warehouses.destinations) {
+          destinations = request.destination_warehouses.destinations;
+        } else if (Array.isArray(request.destination_warehouses)) {
+          // Old format - just an array of destinations
+          destinations = request.destination_warehouses;
+        }
+        supplierDetails = request.destination_warehouses.supplierDetails || null;
+        cargoDetails = request.destination_warehouses.cargoDetails || null;
+      }
+      
+      // Get customer details
+      const customer = userMap.get(request.customer_id);
+      
+      // Map database fields to frontend format
+      return {
+        ...request,
+        id: request.id,
+        customerId: request.customer_id,
+        customer: customer ? { 
+          id: customer.id,
+          name: customer.name,
+          company: customer.company,
+          email: customer.email
+        } : null,
+        serviceType: request.service_type || 'Air Freight',
+        requestedDate: request.cargo_ready_date || request.created_at, // Map cargo_ready_date to requestedDate
+        dueBy: request.cargo_ready_date ? 
+          new Date(new Date(request.cargo_ready_date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() : // Add 3 days for due date
+          new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        destinations,
+        supplierDetails,
+        cargoDetails: cargoDetails || {
+          cartonCount: request.total_cartons || 0,
+          grossWeight: request.total_weight || 0,
+          cbm: request.total_volume || 0
+        },
+        status: request.status || 'Awaiting Quote'
+      };
+    });
   },
 
   async getQuoteRequestById(id: string) {
     await simulateDelay(200);
     const request = await supabaseService.quoteRequests.getById(id);
     if (request) {
+      // Get customer details
+      const customer = await supabaseService.users.getById(request.customer_id);
+      
       // Extract extended data from destination_warehouses JSONB
       let destinations = [];
       let supplierDetails = null;
@@ -117,13 +173,30 @@ export const DataService = {
         cargoDetails = request.destination_warehouses.cargoDetails || null;
       }
       
-      // Map customer_id to customerId for compatibility
+      // Map database fields to frontend format
       return {
         ...request,
+        id: request.id,
         customerId: request.customer_id,
+        customer: customer ? { 
+          id: customer.id,
+          name: customer.name,
+          company: customer.company,
+          email: customer.email
+        } : null,
+        serviceType: request.service_type || 'Air Freight',
+        requestedDate: request.cargo_ready_date || request.created_at,
+        dueBy: request.cargo_ready_date ? 
+          new Date(new Date(request.cargo_ready_date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() :
+          new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         destinations,
         supplierDetails,
-        cargoDetails
+        cargoDetails: cargoDetails || {
+          cartonCount: request.total_cartons || 0,
+          grossWeight: request.total_weight || 0,
+          cbm: request.total_volume || 0
+        },
+        status: request.status || 'Awaiting Quote'
       };
     }
     return null;
@@ -132,6 +205,9 @@ export const DataService = {
   async getQuoteRequestsByCustomerId(customerId: string) {
     await simulateDelay(400);
     const requests = await supabaseService.quoteRequests.getByCustomerId(customerId);
+    
+    // Get customer details
+    const customer = await supabaseService.users.getById(customerId);
     
     // Transform each request to extract extended data from JSONB
     return requests.map(request => {
@@ -153,11 +229,27 @@ export const DataService = {
       // Map database fields to frontend format
       return {
         ...request,
+        id: request.id,
         customerId: request.customer_id,
-        requestedDate: request.cargo_ready_date, // Map cargo_ready_date to requestedDate
+        customer: customer ? { 
+          id: customer.id,
+          name: customer.name,
+          company: customer.company,
+          email: customer.email
+        } : null,
+        serviceType: request.service_type || 'Air Freight',
+        requestedDate: request.cargo_ready_date || request.created_at,
+        dueBy: request.cargo_ready_date ? 
+          new Date(new Date(request.cargo_ready_date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() :
+          new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         destinations,
         supplierDetails,
-        cargoDetails
+        cargoDetails: cargoDetails || {
+          cartonCount: request.total_cartons || 0,
+          grossWeight: request.total_weight || 0,
+          cbm: request.total_volume || 0
+        },
+        status: request.status || 'Awaiting Quote'
       };
     });
   },
