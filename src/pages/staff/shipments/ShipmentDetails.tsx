@@ -92,7 +92,7 @@ export const ShipmentDetails = () => {
       
       setIsLoading(true);
       try {
-        // Fetch shipment
+        // Fetch shipment first
         const shipmentData = await DataService.getShipmentById(id);
         console.log('Staff ShipmentDetails - fetched shipmentData:', shipmentData);
         
@@ -102,8 +102,12 @@ export const ShipmentDetails = () => {
           return;
         }
         
-        // Fetch related quote
-        const quoteData = await DataService.getQuoteById(shipmentData.quoteId);
+        // Fetch related data in parallel for better performance
+        const [quoteData, customerData] = await Promise.all([
+          DataService.getQuoteById(shipmentData.quoteId),
+          DataService.getUserById(shipmentData.customerId)
+        ]);
+        
         console.log('Staff ShipmentDetails - fetched quoteData:', quoteData);
         
         let quoteRequestData: QuoteRequest | null = null;
@@ -111,9 +115,6 @@ export const ShipmentDetails = () => {
           quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
           console.log('Staff ShipmentDetails - fetched quoteRequestData:', quoteRequestData);
         }
-        
-        // Fetch customer
-        const customerData = await DataService.getUserById(shipmentData.customerId);
         
         // Transform shipment data to match component's expected format
         const transformedShipment = {
