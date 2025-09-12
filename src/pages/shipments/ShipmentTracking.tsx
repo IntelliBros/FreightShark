@@ -571,9 +571,24 @@ export const ShipmentTracking = () => {
           console.error('Error transforming shipment data:', error);
           console.error('Error stack:', error.stack);
           console.error('ShipmentData at error:', shipmentData);
-          addToast('Error processing shipment data', 'error');
-          setIsLoading(false);
-          return;
+          // Don't show toast for transformation errors, just log them
+          // Set a basic shipment object to prevent infinite loading
+          transformedShipment = {
+            id: shipmentData?.id || id,
+            status: shipmentData?.status || 'Unknown',
+            quoteId: shipmentData?.quoteId || shipmentData?.quote_id,
+            createdAt: 'Date not available',
+            customer: shipmentData?.customer || {},
+            supplier: { name: 'Unknown Supplier', address: 'Unknown Address' },
+            masterCargo: { grossWeight: 0, cartonCount: 0, chargeableWeight: 0 },
+            serviceMode: 'ocean-lcl',
+            currentLocation: 'Unknown',
+            destinations: [],
+            timeline: [],
+            documents: [],
+            photos: [],
+            invoice: shipmentData?.invoice || null
+          };
         }
         
         if (transformedShipment) {
