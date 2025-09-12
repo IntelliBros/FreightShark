@@ -324,10 +324,10 @@ export const QuoteDetails = () => {
                   {warehouseRates.map((rate: any, index: number) => (
                     <div key={index} className="flex justify-between text-sm">
                       <span className="text-gray-600">
-                        {rate.warehouse || `Warehouse ${index + 1}`} - Base Rate ({rate.weight || 0} kg @ ${formatCurrency(rate.ratePerKg || 0)}/kg)
+                        {rate.warehouse || `Warehouse ${index + 1}`} - Base Rate ({rate.weight || rate.chargeableWeight || 0} kg @ {formatCurrency(rate.ratePerKg || 0)}/kg)
                       </span>
                       <span className="text-gray-900">
-                        {formatCurrency((rate.weight || 0) * (rate.ratePerKg || 0))}
+                        {formatCurrency((rate.weight || rate.chargeableWeight || 0) * (rate.ratePerKg || 0))}
                       </span>
                     </div>
                   ))}
@@ -399,25 +399,25 @@ export const QuoteDetails = () => {
                         <div>
                           <span className="text-gray-500">Cartons</span>
                           <p className="text-gray-900 font-medium">
-                            {dest.cartonCount || 0}
+                            {dest.cartonCount || dest.cartons || 0}
                           </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Gross Weight</span>
                           <p className="text-gray-900 font-medium">
-                            {dest.weight || 0} kg
+                            {dest.weight || dest.grossWeight || 0} kg
                           </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Vol. Weight</span>
                           <p className="text-gray-900 font-medium">
-                            {Math.round((dest.cbm || 0) * 167)} kg
+                            {dest.volumetricWeight || Math.round((dest.cbm || 0) * 167)} kg
                           </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Chargeable</span>
                           <p className="text-blue-600 font-medium">
-                            {Math.max(dest.weight || 0, Math.round((dest.cbm || 0) * 167))} kg
+                            {dest.chargeableWeight || Math.max(dest.weight || dest.grossWeight || 0, dest.volumetricWeight || Math.round((dest.cbm || 0) * 167))} kg
                           </p>
                         </div>
                       </div>
