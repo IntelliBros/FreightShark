@@ -71,16 +71,28 @@ export const ProvideQuote = () => {
         }
         
         // Initialize warehouse rates based on destinations
-        const initialRates = (request.destinations || []).map(dest => ({
-          warehouseId: dest.id,
-          warehouse: dest.fbaWarehouse,
-          ratePerKg: 0,
-          weight: dest.weight || dest.grossWeight || 0,
-          chargeableWeight: Math.max(
-            dest.weight || dest.grossWeight || 0,
-            dest.volumetricWeight || Math.round((dest.cbm || 0) * 167)
-          )
-        }));
+        console.log('Request destinations:', request.destinations);
+        console.log('Request cargo details:', request.cargoDetails);
+        // Calculate weight per destination
+        const totalWeight = request.cargoDetails?.grossWeight || 0;
+        const totalCbm = request.cargoDetails?.cbm || 0;
+        const destinationCount = (request.destinations || []).length || 1;
+        
+        const initialRates = (request.destinations || []).map(dest => {
+          // Use destination weight if available, otherwise distribute total weight evenly
+          const destWeight = dest.weight || dest.grossWeight || 
+                           (totalWeight > 0 ? totalWeight / destinationCount : 0);
+          const destCbm = dest.cbm || (totalCbm > 0 ? totalCbm / destinationCount : 0);
+          const volumetricWeight = Math.round(destCbm * 167);
+          
+          return {
+            warehouseId: dest.id,
+            warehouse: dest.fbaWarehouse,
+            ratePerKg: 0,
+            weight: destWeight,
+            chargeableWeight: Math.max(destWeight, volumetricWeight)
+          };
+        });
         setQuoteForm(prev => ({
           ...prev,
           warehouseRates: initialRates
@@ -261,6 +273,7 @@ export const ProvideQuote = () => {
       };
       
       console.log('Quote object being created:', quote);
+      console.log('Warehouse rates with weights:', quote.warehouseRates);
       await DataService.createQuote(quote);
       // Update the quote request status
       await DataService.updateQuoteRequest(requestId, {
