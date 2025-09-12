@@ -561,7 +561,7 @@ export const ShipmentDetails = () => {
         // Preserve customer data from original shipment since update doesn't return it
         const updatedShipmentWithCustomer = {
           ...savedShipment,
-          customer: shipment.customer
+          customer: shipment?.customer || null
         };
         setShipment(updatedShipmentWithCustomer);
         setIsEditingCargo(false);
