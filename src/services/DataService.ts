@@ -310,7 +310,20 @@ export const DataService = {
 
   async getQuoteById(id: string) {
     await simulateDelay(200);
-    return await supabaseService.quotes.getById(id);
+    const quote = await supabaseService.quotes.getById(id);
+    if (!quote) return null;
+    
+    // Transform quote to match expected frontend format
+    return {
+      ...quote,
+      requestId: quote.request_id, // Map request_id to requestId
+      customerId: quote.customer_id, // Map customer_id to customerId
+      staffId: quote.staff_id, // Map staff_id to staffId
+      total: quote.total_cost, // Map total_cost to total for backwards compatibility
+      warehouseRates: quote.per_warehouse_costs || [], // Ensure warehouseRates exists
+      otherCharges: quote.additional_charges?.otherCharges || [],
+      discounts: quote.additional_charges?.discounts || []
+    };
   },
 
   async createQuote(quote: any) {

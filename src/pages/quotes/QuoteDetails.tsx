@@ -50,6 +50,7 @@ export const QuoteDetails = () => {
           if (quoteData.requestId) {
             const requestData = await DataService.getQuoteRequestById(quoteData.requestId);
             console.log('Quote request data:', requestData);
+            console.log('Destination warehouses:', requestData?.destination_warehouses);
             setQuoteRequest(requestData);
           }
           
@@ -183,9 +184,11 @@ export const QuoteDetails = () => {
   }
   
   // Extract data from quote and related objects
-  const supplier = quoteRequest?.supplierDetails || {};
-  const destinations = quoteRequest?.destinations || [];
-  const cargoDetails = quoteRequest?.cargoDetails || {};
+  // Handle both formats - nested in destination_warehouses or direct properties
+  const warehouseData = quoteRequest?.destination_warehouses || {};
+  const supplier = quoteRequest?.supplierDetails || warehouseData?.supplierDetails || {};
+  const destinations = quoteRequest?.destinations || warehouseData?.destinations || [];
+  const cargoDetails = quoteRequest?.cargoDetails || warehouseData?.cargoDetails || {};
   const warehouseRates = quote.warehouseRates || quote.per_warehouse_costs || [];
   const otherCharges = quote.otherCharges || quote.additional_charges?.otherCharges || [];
   const discounts = quote.discounts || quote.additional_charges?.discounts || [];
@@ -297,18 +300,6 @@ export const QuoteDetails = () => {
                       {Math.max(cargoDetails.grossWeight || 0, Math.round((cargoDetails.cbm || 0) * 167))} kg
                     </p>
                   </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">
-                  Service Mode
-                </h3>
-                <div className="flex items-center">
-                  <TruckIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-gray-900">Air Express</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    • 5-7 days transit time
-                  </span>
                 </div>
               </div>
             </div>
