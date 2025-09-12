@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import { useData } from '../../context/DataContext';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export const QuoteDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -164,7 +164,7 @@ export const QuoteDetails = () => {
   
   const generateQuotePDF = () => {
     try {
-      const doc = new jsPDF() as any; // Type assertion for autotable
+      const doc = new jsPDF();
       
       // Colors matching the website
       const primaryColor = [37, 99, 235]; // Blue
@@ -234,7 +234,7 @@ export const QuoteDetails = () => {
         ['Chargeable Weight', `${Math.max(cargoDetails.grossWeight || 0, Math.round((cargoDetails.cbm || 0) * 167))} kg`]
       ];
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 105,
         head: [],
         body: cargoData,
@@ -254,7 +254,7 @@ export const QuoteDetails = () => {
       if (destinations && destinations.length > 0) {
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text('Destinations', 20, doc.lastAutoTable.finalY + 15);
+        doc.text('Destinations', 20, (doc as any).lastAutoTable.finalY + 15);
         
         const destData = destinations.map((dest: any) => [
           dest.fbaWarehouse || 'N/A',
@@ -264,8 +264,8 @@ export const QuoteDetails = () => {
           formatDate(dest.eta || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString())
         ]);
         
-        doc.autoTable({
-          startY: doc.lastAutoTable.finalY + 20,
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 20,
           head: [['Warehouse', 'Cartons', 'Weight', 'Vol. Weight', 'ETA']],
           body: destData,
           theme: 'striped',
@@ -286,7 +286,7 @@ export const QuoteDetails = () => {
       // Pricing Breakdown section
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      const pricingY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 150;
+      const pricingY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 150;
       doc.text('Pricing Breakdown', 20, pricingY);
       
       const pricingData = [];
@@ -334,7 +334,7 @@ export const QuoteDetails = () => {
         ]);
       });
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: pricingY + 5,
         head: [['Description', 'Details', 'Amount']],
         body: pricingData,
@@ -356,7 +356,7 @@ export const QuoteDetails = () => {
       });
       
       // Total section
-      const totalY = doc.lastAutoTable.finalY + 5;
+      const totalY = (doc as any).lastAutoTable.finalY + 5;
       doc.setDrawColor(...primaryColor);
       doc.setLineWidth(0.5);
       doc.line(20, totalY, 190, totalY);
