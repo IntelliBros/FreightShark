@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import { useData } from '../../context/DataContext';
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export const QuoteDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -163,50 +164,134 @@ export const QuoteDetails = () => {
   
   const generateQuotePDF = () => {
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF() as any; // Type assertion for autotable
       
-      // Add header
-      doc.setFontSize(20);
+      // Colors matching the website
+      const primaryColor = [37, 99, 235]; // Blue
+      const secondaryColor = [107, 114, 128]; // Gray
+      const accentColor = [16, 185, 129]; // Green
+      
+      // Header background
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, 210, 40, 'F');
+      
+      // Logo and title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont(undefined, 'bold');
       doc.text('FREIGHT SHARK', 20, 20);
-      doc.setFontSize(16);
-      doc.text(`Quote ${id}`, 20, 30);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Quote ${id}`, 20, 32);
       
-      // Add status
+      // Status badge
+      const statusColor = quote.status === 'Accepted' ? accentColor : 
+                         quote.status === 'Pending' ? [251, 191, 36] : secondaryColor;
+      doc.setFillColor(...statusColor);
+      doc.roundedRect(150, 15, 40, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text(quote.status.toUpperCase(), 170, 22, { align: 'center' });
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      
+      // Quote info section
+      doc.setFontSize(10);
+      doc.setTextColor(...secondaryColor);
+      doc.text(`Created: ${formatDate(quote.created_at || quote.createdAt)}`, 20, 50);
+      doc.text(`Expires: ${formatDate(quote.valid_until || quote.expiresAt)}`, 100, 50);
+      
+      // Customer & Supplier section
+      doc.setTextColor(0, 0, 0);
       doc.setFontSize(12);
-      doc.text(`Status: ${quote.status}`, 20, 40);
-      doc.text(`Created: ${formatDate(quote.created_at || quote.createdAt)}`, 20, 47);
-      doc.text(`Expires: ${formatDate(quote.valid_until || quote.expiresAt)}`, 20, 54);
+      doc.setFont(undefined, 'bold');
+      doc.text('Customer Information', 20, 65);
+      doc.text('Supplier Information', 110, 65);
       
-      // Add customer info
-      doc.setFontSize(14);
-      doc.text('Customer Information', 20, 70);
-      doc.setFontSize(11);
-      doc.text(`Company: ${customer?.company || 'N/A'}`, 20, 80);
-      doc.text(`Name: ${customer?.name || 'N/A'}`, 20, 87);
-      doc.text(`Email: ${customer?.email || 'N/A'}`, 20, 94);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      doc.text(customer?.company || 'N/A', 20, 73);
+      doc.text(customer?.name || 'N/A', 20, 79);
+      doc.text(customer?.email || 'N/A', 20, 85);
       
-      // Add supplier info
-      doc.setFontSize(14);
-      doc.text('Supplier Information', 20, 110);
-      doc.setFontSize(11);
-      doc.text(`Name: ${supplier.name || 'Unknown Supplier'}`, 20, 120);
-      doc.text(`Address: ${supplier.address || 'No address provided'}`, 20, 127);
+      doc.text(supplier.name || 'Unknown Supplier', 110, 73);
+      const addressLines = (supplier.address || 'No address provided').match(/.{1,40}/g) || [];
+      addressLines.forEach((line: string, index: number) => {
+        doc.text(line, 110, 79 + (index * 6));
+      });
       
-      // Add cargo details
-      doc.setFontSize(14);
-      doc.text('Cargo Details', 20, 143);
-      doc.setFontSize(11);
-      doc.text(`Gross Weight: ${cargoDetails.grossWeight || 0} kg`, 20, 153);
-      doc.text(`Carton Count: ${cargoDetails.cartonCount || 0}`, 20, 160);
-      doc.text(`Volumetric Weight: ${Math.round((cargoDetails.cbm || 0) * 167)} kg`, 20, 167);
-      doc.text(`Chargeable Weight: ${Math.max(cargoDetails.grossWeight || 0, Math.round((cargoDetails.cbm || 0) * 167))} kg`, 20, 174);
+      // Cargo Details section with table
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Cargo Details', 20, 100);
       
-      // Add pricing
-      doc.setFontSize(14);
-      doc.text('Pricing Breakdown', 20, 190);
-      doc.setFontSize(11);
-      let yPos = 200;
+      const cargoData = [
+        ['Gross Weight', `${cargoDetails.grossWeight || 0} kg`],
+        ['Carton Count', `${cargoDetails.cartonCount || 0}`],
+        ['CBM', `${cargoDetails.cbm || 0} m³`],
+        ['Volumetric Weight', `${Math.round((cargoDetails.cbm || 0) * 167)} kg`],
+        ['Chargeable Weight', `${Math.max(cargoDetails.grossWeight || 0, Math.round((cargoDetails.cbm || 0) * 167))} kg`]
+      ];
       
+      doc.autoTable({
+        startY: 105,
+        head: [],
+        body: cargoData,
+        theme: 'plain',
+        styles: {
+          fontSize: 10,
+          cellPadding: 2
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { cellWidth: 40 }
+        },
+        margin: { left: 20, right: 110 }
+      });
+      
+      // Destinations section
+      if (destinations && destinations.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Destinations', 20, doc.lastAutoTable.finalY + 15);
+        
+        const destData = destinations.map((dest: any) => [
+          dest.fbaWarehouse || 'N/A',
+          `${dest.cartonCount || dest.cartons || 0}`,
+          `${dest.weight || dest.grossWeight || 0} kg`,
+          `${dest.volumetricWeight || Math.round((dest.cbm || 0) * 167)} kg`,
+          formatDate(dest.eta || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString())
+        ]);
+        
+        doc.autoTable({
+          startY: doc.lastAutoTable.finalY + 20,
+          head: [['Warehouse', 'Cartons', 'Weight', 'Vol. Weight', 'ETA']],
+          body: destData,
+          theme: 'striped',
+          headStyles: {
+            fillColor: primaryColor,
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold'
+          },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3
+          },
+          margin: { left: 20, right: 20 }
+        });
+      }
+      
+      // Pricing Breakdown section
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      const pricingY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 150;
+      doc.text('Pricing Breakdown', 20, pricingY);
+      
+      const pricingData = [];
+      
+      // Add warehouse rates
       warehouseRates.forEach((rate: any, index: number) => {
         let weight = rate.weight || rate.chargeableWeight;
         if (!weight && destinations && destinations[index]) {
@@ -224,23 +309,73 @@ export const QuoteDetails = () => {
           );
         }
         
-        doc.text(`${rate.warehouse || `Warehouse ${index + 1}`}: ${weight} kg @ ${formatCurrency(rate.ratePerKg || 0)}/kg = ${formatCurrency(weight * (rate.ratePerKg || 0))}`, 20, yPos);
-        yPos += 7;
+        pricingData.push([
+          `${rate.warehouse || `Warehouse ${index + 1}`} - Base Rate`,
+          `${weight} kg @ ${formatCurrency(rate.ratePerKg || 0)}/kg`,
+          formatCurrency(weight * (rate.ratePerKg || 0))
+        ]);
       });
       
+      // Add other charges
       otherCharges.forEach((charge: any) => {
-        doc.text(`${charge.description || charge.name}: ${formatCurrency(charge.amount || 0)}`, 20, yPos);
-        yPos += 7;
+        pricingData.push([
+          charge.description || charge.name,
+          '',
+          formatCurrency(charge.amount || 0)
+        ]);
       });
       
+      // Add discounts
       discounts.forEach((discount: any) => {
-        doc.text(`${discount.description || discount.name}: -${formatCurrency(discount.amount || 0)}`, 20, yPos);
-        yPos += 7;
+        pricingData.push([
+          discount.description || discount.name,
+          '',
+          `-${formatCurrency(discount.amount || 0)}`
+        ]);
       });
       
-      // Add total
-      doc.setFontSize(12);
-      doc.text(`Total: ${formatCurrency(quote.total_cost || quote.total || 0)}`, 20, yPos + 10);
+      doc.autoTable({
+        startY: pricingY + 5,
+        head: [['Description', 'Details', 'Amount']],
+        body: pricingData,
+        theme: 'plain',
+        headStyles: {
+          fillColor: [243, 244, 246],
+          textColor: [0, 0, 0],
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3
+        },
+        columnStyles: {
+          2: { halign: 'right', fontStyle: 'bold' }
+        },
+        margin: { left: 20, right: 20 }
+      });
+      
+      // Total section
+      const totalY = doc.lastAutoTable.finalY + 5;
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.5);
+      doc.line(20, totalY, 190, totalY);
+      
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Total:', 140, totalY + 8);
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(16);
+      doc.text(formatCurrency(quote.total_cost || quote.total || 0), 190, totalY + 8, { align: 'right' });
+      
+      // Footer
+      doc.setTextColor(...secondaryColor);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      const pageHeight = doc.internal.pageSize.height;
+      doc.text('This quote is valid until ' + formatDate(quote.valid_until || quote.expiresAt), 105, pageHeight - 20, { align: 'center' });
+      doc.text('Thank you for choosing Freight Shark', 105, pageHeight - 15, { align: 'center' });
+      doc.text('© 2025 Freight Shark. All rights reserved.', 105, pageHeight - 10, { align: 'center' });
       
       // Save the PDF
       doc.save(`Quote-${id}.pdf`);
