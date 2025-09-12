@@ -325,16 +325,36 @@ export const QuoteDetails = () => {
               </button>
               {expandedSections.pricing && (
                 <div className="space-y-3">
-                  {warehouseRates.map((rate: any, index: number) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        {rate.warehouse || `Warehouse ${index + 1}`} - Base Rate ({rate.weight || rate.chargeableWeight || 0} kg @ {formatCurrency(rate.ratePerKg || 0)}/kg)
-                      </span>
-                      <span className="text-gray-900">
-                        {formatCurrency((rate.weight || rate.chargeableWeight || 0) * (rate.ratePerKg || 0))}
-                      </span>
-                    </div>
-                  ))}
+                  {warehouseRates.map((rate: any, index: number) => {
+                    // Calculate weight fallback from destinations if not in rate
+                    let weight = rate.weight || rate.chargeableWeight;
+                    if (!weight && destinations && destinations[index]) {
+                      const dest = destinations[index];
+                      const destWeight = dest.weight || dest.grossWeight || 
+                                       (cargoDetails.grossWeight ? cargoDetails.grossWeight / destinations.length : 0);
+                      const destVolumetric = dest.volumetricWeight || 
+                                           Math.round((dest.cbm || (cargoDetails.cbm ? cargoDetails.cbm / destinations.length : 0)) * 167);
+                      weight = Math.max(destWeight, destVolumetric);
+                    }
+                    // If still no weight, use total cargo weight
+                    if (!weight) {
+                      weight = Math.max(
+                        cargoDetails.grossWeight || 0,
+                        Math.round((cargoDetails.cbm || 0) * 167)
+                      );
+                    }
+                    
+                    return (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {rate.warehouse || `Warehouse ${index + 1}`} - Base Rate ({weight} kg @ {formatCurrency(rate.ratePerKg || 0)}/kg)
+                        </span>
+                        <span className="text-gray-900">
+                          {formatCurrency(weight * (rate.ratePerKg || 0))}
+                        </span>
+                      </div>
+                    );
+                  })}
                   
                   {otherCharges.map((charge: any, index: number) => (
                     <div key={`charge-${index}`} className="flex justify-between text-sm">
