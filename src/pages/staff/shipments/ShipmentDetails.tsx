@@ -90,6 +90,7 @@ export const ShipmentDetails = () => {
     const fetchShipmentData = async () => {
       if (!id) return;
       
+      console.log('fetchShipmentData called for id:', id, 'at', new Date().toISOString());
       setIsLoading(true);
       try {
         // Fetch shipment first

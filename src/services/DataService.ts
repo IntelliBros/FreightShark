@@ -50,9 +50,8 @@ export type Announcement = {
   updatedAt: string;
 };
 
-// Simulate network delay for development
-// Reduced delays for better performance - only add minimal delay for UI feedback
-const simulateDelay = (ms: number = 50) => new Promise(resolve => setTimeout(resolve, Math.min(ms, 100)));
+// Remove all artificial delays for production
+const simulateDelay = (ms: number = 0) => Promise.resolve();
 
 // Data Service using Supabase
 export const DataService = {
