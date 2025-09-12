@@ -349,8 +349,8 @@ export const ShipmentTracking = () => {
         let quoteData = null;
         let quoteRequestData: QuoteRequest | null = null;
         
-        if (shipmentData.quoteId || shipmentData.quote_id) {
-          const quoteId = shipmentData.quoteId || shipmentData.quote_id;
+        if (shipmentData?.quoteId || shipmentData?.quote_id) {
+          const quoteId = shipmentData?.quoteId || shipmentData?.quote_id;
           try {
             quoteData = await DataService.getQuoteById(quoteId);
             if (quoteData && (quoteData.requestId || quoteData.request_id)) {
@@ -445,11 +445,11 @@ export const ShipmentTracking = () => {
           }
           
           transformedShipment = {
-          id: shipmentData.id,
-          status: shipmentData.status,
-          quoteId: shipmentData.quoteId,
-          createdAt: shipmentData.createdAt || shipmentData.created_at ? new Date(shipmentData.createdAt || shipmentData.created_at).toLocaleDateString() : 'Date not available',
-          customer: shipmentData.customer,
+          id: shipmentData?.id,
+          status: shipmentData?.status,
+          quoteId: shipmentData?.quoteId,
+          createdAt: shipmentData?.createdAt || shipmentData?.created_at ? new Date(shipmentData?.createdAt || shipmentData?.created_at).toLocaleDateString() : 'Date not available',
+          customer: shipmentData?.customer,
           supplier: {
             name: quoteRequestData?.supplierDetails?.name || 'Unknown Supplier',
             address: quoteRequestData?.supplierDetails ? 
@@ -490,9 +490,9 @@ export const ShipmentTracking = () => {
                     address: getWarehouseAddress(warehouseDetail.warehouse),
                     cartons: warehouseDetail.cartons,
                     chargeableWeight: warehouseDetail.chargeableWeight,
-                    status: shipmentData.status,
+                    status: shipmentData?.status,
                     trackingNumber: warehouseDetail.soNumber,
-                    progress: getProgressPercentage(shipmentData.status, shipmentData)
+                    progress: getProgressPercentage(shipmentData?.status, shipmentData)
                   };
                 });
               } else if (dests.length > 0) {
@@ -506,9 +506,9 @@ export const ShipmentTracking = () => {
                     address: getWarehouseAddress(dest.fbaWarehouse),
                     cartons: dest.cartons,
                     chargeableWeight: dest.estimatedWeight || dest.weight || 0,
-                    status: shipmentData.status,
+                    status: shipmentData?.status,
                     trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-                    progress: getProgressPercentage(shipmentData.status, shipmentData)
+                    progress: getProgressPercentage(shipmentData?.status, shipmentData)
                   };
                 });
               } else {
@@ -562,10 +562,10 @@ export const ShipmentTracking = () => {
             { id: 'doc-4', name: 'Customs Clearance.pdf', type: 'customs' }
           ],
           photos: [
-            { id: 'photo-1', name: 'Cargo at pickup.jpg', timestamp: shipmentData.createdAt || shipmentData.created_at ? new Date(shipmentData.createdAt || shipmentData.created_at).toLocaleString() : 'Date not available' },
-            { id: 'photo-2', name: 'Packaging verification.jpg', timestamp: shipmentData.createdAt || shipmentData.created_at ? new Date(shipmentData.createdAt || shipmentData.created_at).toLocaleString() : 'Date not available' }
+            { id: 'photo-1', name: 'Cargo at pickup.jpg', timestamp: shipmentData?.createdAt || shipmentData?.created_at ? new Date(shipmentData?.createdAt || shipmentData?.created_at).toLocaleString() : 'Date not available' },
+            { id: 'photo-2', name: 'Packaging verification.jpg', timestamp: shipmentData?.createdAt || shipmentData?.created_at ? new Date(shipmentData?.createdAt || shipmentData?.created_at).toLocaleString() : 'Date not available' }
           ],
-          invoice: shipmentData.invoice || null
+          invoice: shipmentData?.invoice || null
         };
         } catch (error: any) {
           console.error('Error transforming shipment data:', error);
