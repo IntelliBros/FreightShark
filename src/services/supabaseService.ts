@@ -473,6 +473,12 @@ export const supabaseService = {
             *,
             quotes (
               total_cost
+            ),
+            users!customer_id (
+              id,
+              name,
+              email,
+              company
             )
           `)
           .eq('id', id)

@@ -105,9 +105,8 @@ export const ShipmentDetails = () => {
           return;
         }
         
-        // Fetch quote data (removed customer fetch - was causing 20-second delay)
+        // Fetch quote data (customer data comes from shipmentData.customer)
         const quoteData = await DataService.getQuoteById(shipmentData.quoteId);
-        const customerData = null; // We'll use the customer data from shipmentData instead
         
         console.log('Staff ShipmentDetails - fetched quoteData:', quoteData);
         
@@ -121,11 +120,11 @@ export const ShipmentDetails = () => {
         // Transform shipment data to match component's expected format
         const transformedShipment = {
           id: shipmentData.id,
-          customer: customerData ? {
-            id: customerData.id,
-            name: customerData.name,
-            email: customerData.email,
-            company: customerData.company || 'Unknown Company'
+          customer: shipmentData.customer ? {
+            id: shipmentData.customer.id,
+            name: shipmentData.customer.name || 'Unknown',
+            email: shipmentData.customer.email || 'unknown@example.com',
+            company: shipmentData.customer.company || 'Unknown Company'
           } : {
             id: shipmentData.customerId,
             name: 'Unknown',

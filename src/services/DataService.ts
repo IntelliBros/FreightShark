@@ -547,6 +547,7 @@ export const DataService = {
       shipmentId: shipment.id,
       customerId: shipment.customer_id,
       quoteId: shipment.quote_id,
+      customer: shipment.users || null, // Include customer data from join
       destinations: destinations,
       trackingEvents: trackingEvents, // Add tracking events
       estimatedTotal: shipment.quotes?.total_cost || 0,
