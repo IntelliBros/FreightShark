@@ -455,6 +455,76 @@ export const DataService = {
       }
     }
     
+    // Create default tracking events based on shipment status
+    const trackingEvents = [];
+    const createdDate = shipment.created_at || shipment.createdAt;
+    
+    // Always add shipment created event
+    if (createdDate) {
+      trackingEvents.push({
+        date: createdDate,
+        timestamp: createdDate,
+        status: 'Awaiting Pickup',
+        location: 'System',
+        description: 'Shipment created and awaiting pickup',
+        type: 'tracking'
+      });
+    }
+    
+    // Add payment event if invoice is paid
+    if (shipment.invoice?.status === 'Paid' && shipment.invoice?.paidAt) {
+      trackingEvents.push({
+        date: shipment.invoice.paidAt,
+        timestamp: shipment.invoice.paidAt,
+        status: 'Payment Received',
+        location: 'System',
+        description: 'Invoice payment received',
+        type: 'payment'
+      });
+    }
+    
+    // Add in progress event if status is beyond awaiting pickup
+    if (shipment.status === 'In Progress' || shipment.status === 'In Transit' || shipment.status === 'Customs' || shipment.status === 'Delivered') {
+      const progressDate = new Date(createdDate);
+      progressDate.setHours(progressDate.getHours() + 24);
+      trackingEvents.push({
+        date: progressDate.toISOString(),
+        timestamp: progressDate.toISOString(),
+        status: 'In Progress',
+        location: 'Origin Warehouse',
+        description: 'Shipment picked up and in progress',
+        type: 'tracking'
+      });
+    }
+    
+    // Add in transit event if applicable
+    if (shipment.status === 'In Transit' || shipment.status === 'Customs' || shipment.status === 'Delivered') {
+      const transitDate = new Date(createdDate);
+      transitDate.setHours(transitDate.getHours() + 48);
+      trackingEvents.push({
+        date: transitDate.toISOString(),
+        timestamp: transitDate.toISOString(),
+        status: 'In Transit',
+        location: 'En Route',
+        description: 'Shipment in transit to destination',
+        type: 'tracking'
+      });
+    }
+    
+    // Add delivered event if delivered
+    if (shipment.status === 'Delivered') {
+      const deliveredDate = new Date(createdDate);
+      deliveredDate.setHours(deliveredDate.getHours() + 96);
+      trackingEvents.push({
+        date: deliveredDate.toISOString(),
+        timestamp: deliveredDate.toISOString(),
+        status: 'Delivered',
+        location: 'Destination Warehouse',
+        description: 'Shipment delivered successfully',
+        type: 'tracking'
+      });
+    }
+    
     // Transform to match frontend format
     return {
       ...shipment,
@@ -462,6 +532,7 @@ export const DataService = {
       customerId: shipment.customer_id,
       quoteId: shipment.quote_id,
       destinations: destinations,
+      trackingEvents: trackingEvents, // Add tracking events
       estimatedTotal: shipment.quotes?.total_cost || 0,
       invoice: shipment.invoice || null, // Only show invoice if explicitly created
       createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt

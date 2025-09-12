@@ -52,10 +52,8 @@ export const ShipmentTracking = () => {
     
     // If invoice not paid yet
     if (currentShipment?.invoice?.status !== 'Paid') {
-      if (status === 'Awaiting Pickup') {
-        return 20; // Waiting for Pickup only
-      }
-      return 0;
+      // Show 20% for waiting for pickup when invoice is not paid
+      return 20; // Waiting for Pickup only
     }
     
     // If invoice is paid but missing shipment IDs
