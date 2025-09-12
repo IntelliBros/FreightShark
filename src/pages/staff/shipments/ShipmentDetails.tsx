@@ -122,9 +122,9 @@ export const ShipmentDetails = () => {
           id: shipmentData.id,
           customer: shipmentData.customer ? {
             id: shipmentData.customer.id,
-            name: shipmentData.customer.name || 'Unknown',
-            email: shipmentData.customer.email || 'unknown@example.com',
-            company: shipmentData.customer.company || 'Unknown Company'
+            name: shipmentData.customer?.name || 'Unknown',
+            email: shipmentData.customer?.email || 'unknown@example.com',
+            company: shipmentData.customer?.company || 'Unknown Company'
           } : {
             id: shipmentData.customerId,
             name: 'Unknown',
@@ -1436,10 +1436,10 @@ export const ShipmentDetails = () => {
                       {shipment.customer?.company || 'Unknown Company'}
                     </p>
                     <p className="text-sm text-gray-700">
-                      {shipment.customer.name}
+                      {shipment.customer?.name || 'Unknown'}
                     </p>
                     <p className="text-sm text-gray-700">
-                      {shipment.customer.email}
+                      {shipment.customer?.email || 'No email'}
                     </p>
                   </div>
                   <div>
