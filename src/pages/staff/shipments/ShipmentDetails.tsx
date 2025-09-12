@@ -415,7 +415,7 @@ export const ShipmentDetails = () => {
         weight: 0,
         volumetricWeight: 0,
         chargeableWeight: 0,
-        ratePerKg: shipment.estimatedTotal / shipment.masterCargo.estimatedGrossWeight,
+        ratePerKg: shipment.estimatedTotal / (shipment.masterCargo?.estimatedGrossWeight || 1),
         subtotal: 0,
         isNew: true
       }]
@@ -1111,7 +1111,7 @@ export const ShipmentDetails = () => {
                           Carton Count
                         </span>
                         <span className="text-sm font-medium text-gray-900">
-                          {shipment.masterCargo.estimatedCartonCount}
+                          {shipment.masterCargo?.estimatedCartonCount || 0}
                         </span>
                       </div>
                       <div>
@@ -1119,7 +1119,7 @@ export const ShipmentDetails = () => {
                           Gross Weight
                         </span>
                         <span className="text-sm font-medium text-gray-900">
-                          {shipment.masterCargo.estimatedGrossWeight} kg
+                          {shipment.masterCargo?.estimatedGrossWeight || 0} kg
                         </span>
                       </div>
                       <div>
@@ -1127,7 +1127,7 @@ export const ShipmentDetails = () => {
                           Volumetric Weight
                         </span>
                         <span className="text-sm font-medium text-gray-900">
-                          {shipment.masterCargo.estimatedChargeableWeight} kg
+                          {shipment.masterCargo?.estimatedChargeableWeight || 0} kg
                         </span>
                       </div>
                       <div>
@@ -1135,7 +1135,7 @@ export const ShipmentDetails = () => {
                           Chargeable Weight
                         </span>
                         <span className="text-sm font-medium text-gray-900">
-                          {shipment.masterCargo.estimatedChargeableWeight} kg
+                          {shipment.masterCargo?.estimatedChargeableWeight || 0} kg
                         </span>
                       </div>
                     </div>
@@ -1194,7 +1194,7 @@ export const ShipmentDetails = () => {
                     </div>
                   </div>
                 )}
-                {shipment.masterCargo.actualGrossWeight && !shipment.invoice && <div className="mb-6">
+                {shipment.masterCargo?.actualGrossWeight && !shipment.invoice && <div className="mb-6">
                     <h3 className="text-sm font-medium text-gray-700 mb-3">
                       Actual Cargo
                     </h3>
@@ -1205,7 +1205,7 @@ export const ShipmentDetails = () => {
                             Carton Count
                           </span>
                           <span className="text-sm font-medium text-gray-900">
-                            {shipment.masterCargo.actualCartonCount}
+                            {shipment.masterCargo?.actualCartonCount || 0}
                           </span>
                         </div>
                         <div>
@@ -1213,7 +1213,7 @@ export const ShipmentDetails = () => {
                             Gross Weight
                           </span>
                           <span className="text-sm font-medium text-gray-900">
-                            {shipment.masterCargo.actualGrossWeight} kg
+                            {shipment.masterCargo?.actualGrossWeight || 0} kg
                           </span>
                         </div>
                         <div>
@@ -1221,7 +1221,7 @@ export const ShipmentDetails = () => {
                             Volumetric Weight
                           </span>
                           <span className="text-sm font-medium text-gray-900">
-                            {shipment.masterCargo.actualChargeableWeight} kg
+                            {shipment.masterCargo?.actualChargeableWeight || 0} kg
                           </span>
                         </div>
                         <div>
@@ -1229,7 +1229,7 @@ export const ShipmentDetails = () => {
                             Chargeable Weight
                           </span>
                           <span className="text-sm font-medium text-gray-900">
-                            {shipment.masterCargo.actualChargeableWeight} kg
+                            {shipment.masterCargo?.actualChargeableWeight || 0} kg
                           </span>
                         </div>
                       </div>
