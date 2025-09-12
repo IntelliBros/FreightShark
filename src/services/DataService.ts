@@ -432,10 +432,17 @@ export const DataService = {
   },
 
   async getShipmentById(id: string) {
+    console.log('DataService.getShipmentById called with id:', id);
     await simulateDelay(200);
-    const shipment = await supabaseService.shipments.getById(id);
     
-    if (!shipment) return null;
+    try {
+      const shipment = await supabaseService.shipments.getById(id);
+      console.log('DataService received shipment:', shipment);
+      
+      if (!shipment) {
+        console.log('No shipment found for id:', id);
+        return null;
+      }
     
     // Parse destination data
     let destinations = [];
@@ -537,6 +544,10 @@ export const DataService = {
       invoice: shipment.invoice || null, // Only show invoice if explicitly created
       createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
     };
+    } catch (error) {
+      console.error('Error in getShipmentById:', error);
+      throw error;
+    }
   },
 
   async createShipment(shipment: any) {

@@ -454,24 +454,25 @@ export const supabaseService = {
         return null;
       }
       
+      console.log('Fetching shipment by ID:', id);
+      
       const { data, error } = await supabase
         .from('shipments')
         .select(`
           *,
           quotes (
             total_cost
-          ),
-          tracking_events (
-            *
-          ),
-          documents (
-            *
           )
         `)
         .eq('id', id)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shipment:', error);
+        throw error;
+      }
+      
+      console.log('Fetched shipment data:', data);
       return data;
     },
 
