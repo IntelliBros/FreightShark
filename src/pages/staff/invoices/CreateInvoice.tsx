@@ -150,10 +150,10 @@ export const CreateInvoice = () => {
       },
       originalQuoteAmount: shipment.estimatedTotal,
       actualCargoDetails: {
-        cartonCount: shipment.cargoDetails.actualCartonCount || shipment.cargoDetails.estimatedCartonCount,
-        weight: shipment.cargoDetails.actualWeight || shipment.cargoDetails.estimatedWeight,
+        cartonCount: shipment?.cargoDetails?.actualCartonCount || shipment?.cargoDetails?.estimatedCartonCount || 0,
+        weight: shipment?.cargoDetails?.actualWeight || shipment?.cargoDetails?.estimatedWeight || 0,
         dimensions: {
-          changed: shipment.cargoDetails.dimensionChanges || false,
+          changed: shipment?.cargoDetails?.dimensionChanges || false,
           notes: ''
         }
       },
@@ -402,7 +402,7 @@ export const CreateInvoice = () => {
                       Estimated Carton Count
                     </span>
                     <span className="text-sm font-medium text-gray-900">
-                      {selectedShipment.cargoDetails.estimatedCartonCount}
+                      {selectedShipment?.cargoDetails?.estimatedCartonCount || 0}
                     </span>
                   </div>
                   <div>
@@ -410,7 +410,7 @@ export const CreateInvoice = () => {
                       Estimated Weight
                     </span>
                     <span className="text-sm font-medium text-gray-900">
-                      {selectedShipment.cargoDetails.estimatedWeight} kg
+                      {selectedShipment?.cargoDetails?.estimatedWeight || 0} kg
                     </span>
                   </div>
                   <div>

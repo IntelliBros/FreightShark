@@ -137,17 +137,17 @@ export const ShipmentDetails = () => {
               'Unknown Address'
           },
           masterCargo: {
-            estimatedGrossWeight: shipmentData.cargoDetails.estimatedWeight,
-            estimatedCartonCount: shipmentData.cargoDetails.estimatedCartonCount,
-            estimatedChargeableWeight: shipmentData.cargoDetails.estimatedWeight,
-            actualGrossWeight: shipmentData.cargoDetails.actualWeight || null,
-            actualCartonCount: shipmentData.cargoDetails.actualCartonCount || null,
-            actualChargeableWeight: shipmentData.cargoDetails.actualWeight || null
+            estimatedGrossWeight: shipmentData?.cargoDetails?.estimatedWeight || 0,
+            estimatedCartonCount: shipmentData?.cargoDetails?.estimatedCartonCount || 0,
+            estimatedChargeableWeight: shipmentData?.cargoDetails?.estimatedWeight || 0,
+            actualGrossWeight: shipmentData?.cargoDetails?.actualWeight || null,
+            actualCartonCount: shipmentData?.cargoDetails?.actualCartonCount || null,
+            actualChargeableWeight: shipmentData?.cargoDetails?.actualWeight || null
           },
           serviceMode: quoteRequestData?.serviceType === 'Air Express' ? 'air-express' : 
                       quoteRequestData?.serviceType === 'Air Freight' ? 'air-freight' : 
                       'ocean-lcl',
-          destinations: shipmentData.destinations.map(dest => ({
+          destinations: (shipmentData?.destinations || []).map(dest => ({
             id: dest.id,
             amazonShipmentId: dest.amazonShipmentId,
             amazonReferenceId: dest.amazonReferenceId || '',
