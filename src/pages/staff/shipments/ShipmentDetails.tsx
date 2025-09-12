@@ -558,10 +558,18 @@ export const ShipmentDetails = () => {
       const savedShipment = await DataService.updateShipment(shipment.id, updatedShipment);
       
       if (savedShipment) {
-        // Preserve customer data from original shipment since update doesn't return it
+        // Preserve customer and invoice data from original shipment since update doesn't return it
         const updatedShipmentWithCustomer = {
           ...savedShipment,
-          customer: shipment?.customer || null
+          customer: shipment?.customer || null,
+          invoice: invoice, // Add the invoice data
+          destinations: allDestinations, // Add the updated destinations
+          masterCargo: {
+            ...shipment.masterCargo,
+            actualGrossWeight: actualGrossWeight,
+            actualCartonCount: actualCartonCount,
+            actualChargeableWeight: actualChargeableWeight
+          }
         };
         setShipment(updatedShipmentWithCustomer);
         setIsEditingCargo(false);
