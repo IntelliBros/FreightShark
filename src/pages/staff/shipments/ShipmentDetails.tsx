@@ -567,8 +567,8 @@ export const ShipmentDetails = () => {
         setIsEditingCargo(false);
         addToast('Invoice generated successfully! The customer has been notified.', 'success');
         
-        // Refresh the data context to ensure all components have latest data
-        refreshData();
+        // Don't refresh data context - it causes re-fetch without customer join
+        // refreshData();
       } else {
         throw new Error('Failed to save shipment');
       }
