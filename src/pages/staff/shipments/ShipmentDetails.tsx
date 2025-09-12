@@ -1312,7 +1312,7 @@ export const ShipmentDetails = () => {
                     ))
                   ) : (
                     // Show original destinations when no invoice
-                    shipment.destinations.map(dest => (
+                    shipment.destinations?.map(dest => (
                       <div key={dest.id} className="border border-gray-200 rounded-lg p-4">
                         <h4 className="font-medium text-gray-900 mb-2">
                           {dest.fbaWarehouse}
@@ -1371,7 +1371,7 @@ export const ShipmentDetails = () => {
                   Shipment Timeline
                 </h2>
                 <div className="space-y-4">
-                  {shipment.timeline.map((event, index) => <div key={index} className="flex">
+                  {shipment.timeline?.map((event, index) => <div key={index} className="flex">
                       <div className="mr-3">
                         <div className="flex flex-col items-center">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
