@@ -119,6 +119,7 @@ export const ShipmentDetails = () => {
           console.log('Staff ShipmentDetails - fetched quoteRequestData:', quoteRequestData);
         }
         
+        console.log('Starting data transformation at:', new Date().toISOString());
         // Transform shipment data to match component's expected format
         const transformedShipment = {
           id: shipmentData.id,
@@ -165,7 +166,7 @@ export const ShipmentDetails = () => {
           serviceMode: quoteRequestData?.serviceType === 'Air Express' ? 'air-express' : 
                       quoteRequestData?.serviceType === 'Air Freight' ? 'air-freight' : 
                       'ocean-lcl',
-          destinations: (shipmentData?.destinations && shipmentData.destinations.length > 0 ? shipmentData.destinations : [{
+          destinations: (console.log('Processing destinations at:', new Date().toISOString()), (shipmentData?.destinations && shipmentData.destinations.length > 0 ? shipmentData.destinations : [{
             id: 'MDW6',
             fbaWarehouse: 'MDW6',
             amazonShipmentId: '',
@@ -174,7 +175,7 @@ export const ShipmentDetails = () => {
             weight: 135,
             grossWeight: 135,
             estimatedWeight: 135
-          }]).map((dest: any) => ({
+          }])).map((dest: any) => ({
             id: dest.id,
             amazonShipmentId: dest.amazonShipmentId,
             amazonReferenceId: dest.amazonReferenceId || '',
@@ -194,6 +195,8 @@ export const ShipmentDetails = () => {
             location: event.location
           }))
         };
+        
+        console.log('Transformation object created at:', new Date().toISOString());
         
         // Check if shipment already has an invoice
         if (shipmentData.invoice) {
