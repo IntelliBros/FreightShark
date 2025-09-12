@@ -23,6 +23,8 @@ const getWarehouseAddress = (fbaWarehouse: string): string => {
 };
 
 export const ShipmentDetails = () => {
+  console.log('ShipmentDetails component rendered at:', new Date().toISOString());
+  
   const {
     id
   } = useParams<{
@@ -198,7 +200,9 @@ export const ShipmentDetails = () => {
           transformedShipment.invoice = shipmentData.invoice;
         }
         
+        console.log('About to setShipment at:', new Date().toISOString());
         setShipment(transformedShipment);
+        console.log('setShipment completed at:', new Date().toISOString());
         
         // Initialize actual cargo data with per-warehouse rates
         const baseRatePerKg = transformedShipment.estimatedTotal / transformedShipment.masterCargo.estimatedGrossWeight;
@@ -262,7 +266,9 @@ export const ShipmentDetails = () => {
         console.error('Error fetching shipment data:', error);
         addToast('Failed to load shipment data', 'error');
       } finally {
+        console.log('Finally block - about to setIsLoading(false) at:', new Date().toISOString());
         setIsLoading(false);
+        console.log('Loading state set to false at:', new Date().toISOString());
       }
     };
     
