@@ -556,7 +556,7 @@ export const supabaseService = {
       if (updates.estimated_delivery !== undefined) dbUpdates.estimated_delivery = updates.estimated_delivery;
       if (updates.actual_delivery !== undefined) dbUpdates.actual_delivery = updates.actual_delivery;
       if (updates.cargo_details !== undefined) dbUpdates.cargo_details = updates.cargo_details;
-      if (updates.invoice !== undefined) dbUpdates.invoice = updates.invoice;
+      // Note: invoice field doesn't exist in database - handle separately if needed
       if (updates.destination !== undefined) dbUpdates.destination = updates.destination;
       if (updates.destinations !== undefined) dbUpdates.destination = updates.destinations; // Map destinations to destination field
       
