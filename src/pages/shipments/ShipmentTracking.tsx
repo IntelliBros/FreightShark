@@ -457,9 +457,9 @@ export const ShipmentTracking = () => {
               'Unknown Address'
           },
           masterCargo: {
-            grossWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0,
-            cartonCount: shipmentData.cargoDetails?.estimatedCartonCount || shipmentData.cargoDetails?.cartonCount || 0,
-            chargeableWeight: shipmentData.cargoDetails?.estimatedWeight || shipmentData.estimated_weight || 0
+            grossWeight: shipmentData?.cargoDetails?.estimatedWeight || shipmentData?.estimated_weight || 0,
+            cartonCount: shipmentData?.cargoDetails?.estimatedCartonCount || shipmentData?.cargoDetails?.cartonCount || 0,
+            chargeableWeight: shipmentData?.cargoDetails?.estimatedWeight || shipmentData?.estimated_weight || 0
           },
           serviceMode: serviceMode,
           currentLocation: (() => {
