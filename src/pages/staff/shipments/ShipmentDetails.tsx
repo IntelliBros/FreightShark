@@ -121,7 +121,7 @@ export const ShipmentDetails = () => {
         const transformedShipment = {
           id: shipmentData.id,
           customer: shipmentData.customer ? {
-            id: shipmentData.customer.id,
+            id: shipmentData.customer?.id || shipmentData.customerId,
             name: shipmentData.customer?.name || 'Unknown',
             email: shipmentData.customer?.email || 'unknown@example.com',
             company: shipmentData.customer?.company || 'Unknown Company'
