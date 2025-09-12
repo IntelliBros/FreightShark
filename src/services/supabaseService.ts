@@ -515,15 +515,35 @@ export const supabaseService = {
       return data;
     },
 
-    async update(id: string, updates: Partial<Shipment>) {
+    async update(id: string, updates: any) {
+      console.log('Updating shipment:', id, 'with updates:', updates);
+      
+      // Extract only the fields that exist in the database
+      const dbUpdates: any = {};
+      
+      // Only update fields that exist in the shipments table
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.current_location !== undefined) dbUpdates.current_location = updates.current_location;
+      if (updates.estimated_delivery !== undefined) dbUpdates.estimated_delivery = updates.estimated_delivery;
+      if (updates.actual_delivery !== undefined) dbUpdates.actual_delivery = updates.actual_delivery;
+      if (updates.cargo_details !== undefined) dbUpdates.cargo_details = updates.cargo_details;
+      if (updates.invoice !== undefined) dbUpdates.invoice = updates.invoice;
+      
+      console.log('Filtered updates for database:', dbUpdates);
+      
       const { data, error } = await supabase
         .from('shipments')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating shipment:', error);
+        throw error;
+      }
+      
+      console.log('Shipment updated successfully:', data);
       return data;
     }
   },
