@@ -557,6 +557,8 @@ export const supabaseService = {
       if (updates.actual_delivery !== undefined) dbUpdates.actual_delivery = updates.actual_delivery;
       if (updates.cargo_details !== undefined) dbUpdates.cargo_details = updates.cargo_details;
       if (updates.invoice !== undefined) dbUpdates.invoice = updates.invoice;
+      if (updates.destination !== undefined) dbUpdates.destination = updates.destination;
+      if (updates.destinations !== undefined) dbUpdates.destination = updates.destinations; // Map destinations to destination field
       
       console.log('Filtered updates for database:', dbUpdates);
       
