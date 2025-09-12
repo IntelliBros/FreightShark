@@ -641,9 +641,6 @@ export const QuoteDetails = () => {
                             </p>
                           )}
                         </div>
-                        <Badge variant="info">
-                          ETA: {formatDate(dest.eta || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString())}
-                        </Badge>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div>
