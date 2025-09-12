@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import { useData } from '../../context/DataContext';
+import jsPDF from 'jspdf';
 
 export const QuoteDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -158,6 +159,96 @@ export const QuoteDetails = () => {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  };
+  
+  const generateQuotePDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Add header
+      doc.setFontSize(20);
+      doc.text('FREIGHT SHARK', 20, 20);
+      doc.setFontSize(16);
+      doc.text(`Quote ${id}`, 20, 30);
+      
+      // Add status
+      doc.setFontSize(12);
+      doc.text(`Status: ${quote.status}`, 20, 40);
+      doc.text(`Created: ${formatDate(quote.created_at || quote.createdAt)}`, 20, 47);
+      doc.text(`Expires: ${formatDate(quote.valid_until || quote.expiresAt)}`, 20, 54);
+      
+      // Add customer info
+      doc.setFontSize(14);
+      doc.text('Customer Information', 20, 70);
+      doc.setFontSize(11);
+      doc.text(`Company: ${customer?.company || 'N/A'}`, 20, 80);
+      doc.text(`Name: ${customer?.name || 'N/A'}`, 20, 87);
+      doc.text(`Email: ${customer?.email || 'N/A'}`, 20, 94);
+      
+      // Add supplier info
+      doc.setFontSize(14);
+      doc.text('Supplier Information', 20, 110);
+      doc.setFontSize(11);
+      doc.text(`Name: ${supplier.name || 'Unknown Supplier'}`, 20, 120);
+      doc.text(`Address: ${supplier.address || 'No address provided'}`, 20, 127);
+      
+      // Add cargo details
+      doc.setFontSize(14);
+      doc.text('Cargo Details', 20, 143);
+      doc.setFontSize(11);
+      doc.text(`Gross Weight: ${cargoDetails.grossWeight || 0} kg`, 20, 153);
+      doc.text(`Carton Count: ${cargoDetails.cartonCount || 0}`, 20, 160);
+      doc.text(`Volumetric Weight: ${Math.round((cargoDetails.cbm || 0) * 167)} kg`, 20, 167);
+      doc.text(`Chargeable Weight: ${Math.max(cargoDetails.grossWeight || 0, Math.round((cargoDetails.cbm || 0) * 167))} kg`, 20, 174);
+      
+      // Add pricing
+      doc.setFontSize(14);
+      doc.text('Pricing Breakdown', 20, 190);
+      doc.setFontSize(11);
+      let yPos = 200;
+      
+      warehouseRates.forEach((rate: any, index: number) => {
+        let weight = rate.weight || rate.chargeableWeight;
+        if (!weight && destinations && destinations[index]) {
+          const dest = destinations[index];
+          const destWeight = dest.weight || dest.grossWeight || 
+                           (cargoDetails.grossWeight ? cargoDetails.grossWeight / destinations.length : 0);
+          const destVolumetric = dest.volumetricWeight || 
+                               Math.round((dest.cbm || (cargoDetails.cbm ? cargoDetails.cbm / destinations.length : 0)) * 167);
+          weight = Math.max(destWeight, destVolumetric);
+        }
+        if (!weight) {
+          weight = Math.max(
+            cargoDetails.grossWeight || 0,
+            Math.round((cargoDetails.cbm || 0) * 167)
+          );
+        }
+        
+        doc.text(`${rate.warehouse || `Warehouse ${index + 1}`}: ${weight} kg @ ${formatCurrency(rate.ratePerKg || 0)}/kg = ${formatCurrency(weight * (rate.ratePerKg || 0))}`, 20, yPos);
+        yPos += 7;
+      });
+      
+      otherCharges.forEach((charge: any) => {
+        doc.text(`${charge.description || charge.name}: ${formatCurrency(charge.amount || 0)}`, 20, yPos);
+        yPos += 7;
+      });
+      
+      discounts.forEach((discount: any) => {
+        doc.text(`${discount.description || discount.name}: -${formatCurrency(discount.amount || 0)}`, 20, yPos);
+        yPos += 7;
+      });
+      
+      // Add total
+      doc.setFontSize(12);
+      doc.text(`Total: ${formatCurrency(quote.total_cost || quote.total || 0)}`, 20, yPos + 10);
+      
+      // Save the PDF
+      doc.save(`Quote-${id}.pdf`);
+      addToast('Quote PDF downloaded successfully', 'success');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      addToast('Failed to generate PDF', 'error');
+    }
   };
   
   if (isLoading) {
@@ -623,7 +714,7 @@ export const QuoteDetails = () => {
                   <p className="text-xs text-gray-500">PDF • Generated on {formatDate(quote.created_at || quote.createdAt)}</p>
                 </div>
               </div>
-              <Button variant="tertiary" size="sm">
+              <Button variant="tertiary" size="sm" onClick={generateQuotePDF}>
                 <DownloadIcon className="h-4 w-4 mr-1" />
                 Download
               </Button>
