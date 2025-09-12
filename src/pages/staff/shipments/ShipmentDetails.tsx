@@ -558,7 +558,12 @@ export const ShipmentDetails = () => {
       const savedShipment = await DataService.updateShipment(shipment.id, updatedShipment);
       
       if (savedShipment) {
-        setShipment(savedShipment);
+        // Preserve customer data from original shipment since update doesn't return it
+        const updatedShipmentWithCustomer = {
+          ...savedShipment,
+          customer: shipment.customer
+        };
+        setShipment(updatedShipmentWithCustomer);
         setIsEditingCargo(false);
         addToast('Invoice generated successfully! The customer has been notified.', 'success');
         
@@ -635,7 +640,7 @@ export const ShipmentDetails = () => {
               {shipment.status}
             </Badge>
             <span className="text-sm text-gray-600">
-              Customer: {shipment.customer.company || 'Unknown Company'} ({shipment.customer.name || 'Unknown Customer'})
+              Customer: {shipment.customer?.company || 'Unknown Company'} ({shipment.customer?.name || 'Unknown Customer'})
             </span>
           </div>
         </div>
@@ -1050,13 +1055,13 @@ export const ShipmentDetails = () => {
                       Customer Information
                     </h3>
                     <p className="font-medium text-gray-900">
-                      {shipment.customer.company || 'Unknown Company'}
+                      {shipment.customer?.company || 'Unknown Company'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {shipment.customer.name || 'Unknown Customer'}
+                      {shipment.customer?.name || 'Unknown Customer'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {shipment.customer.email || 'No email'}
+                      {shipment.customer?.email || 'No email'}
                     </p>
                   </div>
                   <div>
@@ -1428,7 +1433,7 @@ export const ShipmentDetails = () => {
                       Bill To
                     </h4>
                     <p className="text-sm font-medium text-gray-900">
-                      {shipment.customer.company || 'Unknown Company'}
+                      {shipment.customer?.company || 'Unknown Company'}
                     </p>
                     <p className="text-sm text-gray-700">
                       {shipment.customer.name}
