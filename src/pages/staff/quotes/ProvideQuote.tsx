@@ -31,7 +31,10 @@ export const ProvideQuote = () => {
     rateType: 'per-kg' as 'per-kg' | 'flat-rate',
     warehouseRates: [] as {
       warehouseId: string;
+      warehouse?: string;
       ratePerKg: number;
+      weight?: number;
+      chargeableWeight?: number;
     }[],
     otherCharges: [] as {
       id: string;
@@ -70,7 +73,13 @@ export const ProvideQuote = () => {
         // Initialize warehouse rates based on destinations
         const initialRates = (request.destinations || []).map(dest => ({
           warehouseId: dest.id,
-          ratePerKg: 0
+          warehouse: dest.fbaWarehouse,
+          ratePerKg: 0,
+          weight: dest.weight || dest.grossWeight || 0,
+          chargeableWeight: Math.max(
+            dest.weight || dest.grossWeight || 0,
+            dest.volumetricWeight || Math.round((dest.cbm || 0) * 167)
+          )
         }));
         setQuoteForm(prev => ({
           ...prev,
@@ -100,7 +109,11 @@ export const ProvideQuote = () => {
         ...prev,
         warehouseRates: prev.warehouseRates.map(wr => wr.warehouseId === warehouseId ? {
           ...wr,
-          ratePerKg: numericValue
+          ratePerKg: numericValue,
+          // Preserve weight and chargeableWeight
+          weight: wr.weight,
+          chargeableWeight: wr.chargeableWeight,
+          warehouse: wr.warehouse
         } : wr)
       }));
     }

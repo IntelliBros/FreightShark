@@ -189,6 +189,10 @@ export const QuoteDetails = () => {
   const supplier = quoteRequest?.supplierDetails || warehouseData?.supplierDetails || {};
   const destinations = quoteRequest?.destinations || warehouseData?.destinations || [];
   const cargoDetails = quoteRequest?.cargoDetails || warehouseData?.cargoDetails || {};
+  
+  // Debug destinations data
+  console.log('Destinations data:', destinations);
+  console.log('Cargo details:', cargoDetails);
   const warehouseRates = quote.warehouseRates || quote.per_warehouse_costs || [];
   const otherCharges = quote.otherCharges || quote.additional_charges?.otherCharges || [];
   const discounts = quote.discounts || quote.additional_charges?.discounts || [];
@@ -411,13 +415,23 @@ export const QuoteDetails = () => {
                         <div>
                           <span className="text-gray-500">Vol. Weight</span>
                           <p className="text-gray-900 font-medium">
-                            {dest.volumetricWeight || Math.round((dest.cbm || 0) * 167)} kg
+                            {dest.volumetricWeight || 
+                             (dest.cbm ? Math.round(dest.cbm * 167) : 
+                              (cargoDetails.cbm && destinations.length > 0 ? 
+                               Math.round((cargoDetails.cbm / destinations.length) * 167) : 0))} kg
                           </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Chargeable</span>
                           <p className="text-blue-600 font-medium">
-                            {dest.chargeableWeight || Math.max(dest.weight || dest.grossWeight || 0, dest.volumetricWeight || Math.round((dest.cbm || 0) * 167))} kg
+                            {dest.chargeableWeight || 
+                             Math.max(
+                               dest.weight || dest.grossWeight || 0, 
+                               dest.volumetricWeight || 
+                               (dest.cbm ? Math.round(dest.cbm * 167) : 
+                                (cargoDetails.cbm && destinations.length > 0 ? 
+                                 Math.round((cargoDetails.cbm / destinations.length) * 167) : 0))
+                             )} kg
                           </p>
                         </div>
                       </div>
