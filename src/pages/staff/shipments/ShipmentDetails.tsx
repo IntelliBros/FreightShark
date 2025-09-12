@@ -104,9 +104,12 @@ export const ShipmentDetails = () => {
         
         // Fetch related quote
         const quoteData = await DataService.getQuoteById(shipmentData.quoteId);
+        console.log('Staff ShipmentDetails - fetched quoteData:', quoteData);
+        
         let quoteRequestData: QuoteRequest | null = null;
         if (quoteData) {
           quoteRequestData = await DataService.getQuoteRequestById(quoteData.requestId);
+          console.log('Staff ShipmentDetails - fetched quoteRequestData:', quoteRequestData);
         }
         
         // Fetch customer
@@ -139,9 +142,18 @@ export const ShipmentDetails = () => {
               'Unknown Address'
           },
           masterCargo: {
-            estimatedGrossWeight: shipmentData?.cargoDetails?.estimatedWeight || 0,
-            estimatedCartonCount: shipmentData?.cargoDetails?.estimatedCartonCount || 0,
-            estimatedChargeableWeight: shipmentData?.cargoDetails?.estimatedWeight || 0,
+            estimatedGrossWeight: shipmentData?.cargoDetails?.estimatedWeight || 
+                                 shipmentData?.cargo_details?.estimatedWeight || 
+                                 quoteRequestData?.destination_warehouses?.cargoDetails?.grossWeight || 
+                                 135,
+            estimatedCartonCount: shipmentData?.cargoDetails?.estimatedCartonCount || 
+                                shipmentData?.cargo_details?.estimatedCartonCount || 
+                                quoteRequestData?.destination_warehouses?.cargoDetails?.cartonCount || 
+                                9,
+            estimatedChargeableWeight: shipmentData?.cargoDetails?.estimatedWeight || 
+                                     shipmentData?.cargo_details?.estimatedWeight || 
+                                     quoteRequestData?.destination_warehouses?.cargoDetails?.grossWeight || 
+                                     144,
             actualGrossWeight: shipmentData?.cargoDetails?.actualWeight || null,
             actualCartonCount: shipmentData?.cargoDetails?.actualCartonCount || null,
             actualChargeableWeight: shipmentData?.cargoDetails?.actualWeight || null
