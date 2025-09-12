@@ -150,11 +150,17 @@ export const DataService = {
   },
 
   async getQuoteRequestById(id: string) {
+    const startTime = Date.now();
+    console.log('getQuoteRequestById START:', id, new Date().toISOString());
     await simulateDelay(200);
+    console.log('About to fetch quote request after:', Date.now() - startTime, 'ms');
     const request = await supabaseService.quoteRequests.getById(id);
+    console.log('Quote request fetched after:', Date.now() - startTime, 'ms');
     if (request) {
       // Get customer details
+      console.log('About to fetch customer after:', Date.now() - startTime, 'ms');
       const customer = await supabaseService.users.getById(request.customer_id);
+      console.log('Customer fetched after:', Date.now() - startTime, 'ms');
       
       // Extract extended data from destination_warehouses JSONB
       let destinations = [];

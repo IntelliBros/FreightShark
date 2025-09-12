@@ -174,17 +174,23 @@ export const supabaseService = {
     },
 
     async getById(id: string) {
+      const startTime = Date.now();
+      console.log('supabaseService.quoteRequests.getById START:', id, new Date().toISOString());
+      
       // Validate ID before making the request
       if (!id || id === 'undefined' || id === 'null') {
         console.warn('Invalid quote request ID provided:', id);
         return null;
       }
       
+      console.log('About to query Supabase for quote request');
       const { data, error } = await supabase
         .from('quote_requests')
         .select('*')
         .eq('id', id)
         .single();
+      
+      console.log('Quote request query completed after:', Date.now() - startTime, 'ms');
       
       if (error) throw error;
       return data;
