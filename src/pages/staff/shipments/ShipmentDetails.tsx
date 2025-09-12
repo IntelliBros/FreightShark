@@ -1088,10 +1088,10 @@ export const ShipmentDetails = () => {
                       Supplier Information
                     </h3>
                     <p className="font-medium text-gray-900">
-                      {shipment.supplier.name}
+                      {shipment.supplier?.name || 'Unknown Supplier'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {shipment.supplier.address}
+                      {shipment.supplier?.address || 'No address'}
                     </p>
                   </div>
                 </div>
