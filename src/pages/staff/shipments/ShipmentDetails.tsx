@@ -105,11 +105,9 @@ export const ShipmentDetails = () => {
           return;
         }
         
-        // Fetch related data in parallel for better performance
-        const [quoteData, customerData] = await Promise.all([
-          DataService.getQuoteById(shipmentData.quoteId),
-          DataService.getUserById(shipmentData.customerId)
-        ]);
+        // Fetch quote data (removed customer fetch - was causing 20-second delay)
+        const quoteData = await DataService.getQuoteById(shipmentData.quoteId);
+        const customerData = null; // We'll use the customer data from shipmentData instead
         
         console.log('Staff ShipmentDetails - fetched quoteData:', quoteData);
         
