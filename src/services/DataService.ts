@@ -157,10 +157,11 @@ export const DataService = {
     const request = await supabaseService.quoteRequests.getById(id);
     console.log('Quote request fetched after:', Date.now() - startTime, 'ms');
     if (request) {
-      // Get customer details
-      console.log('About to fetch customer after:', Date.now() - startTime, 'ms');
-      const customer = await supabaseService.users.getById(request.customer_id);
-      console.log('Customer fetched after:', Date.now() - startTime, 'ms');
+      // Skip fetching customer details - not needed and causing 20-second delay
+      // console.log('About to fetch customer after:', Date.now() - startTime, 'ms');
+      // const customer = await supabaseService.users.getById(request.customer_id);
+      // console.log('Customer fetched after:', Date.now() - startTime, 'ms');
+      const customer = null; // We don't actually use this in the response
       
       // Extract extended data from destination_warehouses JSONB
       let destinations = [];
