@@ -1509,7 +1509,7 @@ export const ShipmentDetails = () => {
                         </tr>
                       ))}
                       {/* Additional services */}
-                      {shipment.invoice.additionalServices.map((service, index) => <tr key={index}>
+                      {shipment.invoice.additionalServices?.map((service, index) => <tr key={index}>
                             <td className="px-3 py-4 text-sm text-gray-700">
                               {service.description}
                             </td>
@@ -1518,7 +1518,7 @@ export const ShipmentDetails = () => {
                             </td>
                           </tr>)}
                       {/* Adjustments */}
-                      {shipment.invoice.adjustments.map((adjustment, index) => <tr key={index}>
+                      {shipment.invoice.adjustments?.map((adjustment, index) => <tr key={index}>
                           <td className="px-3 py-4 text-sm text-gray-700">
                             {adjustment.description}
                           </td>
