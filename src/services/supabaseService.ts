@@ -448,32 +448,49 @@ export const supabaseService = {
     },
 
     async getById(id: string) {
+      const startTime = Date.now();
+      console.log('supabaseService.getById START at:', new Date().toISOString());
+      
       // Validate ID before making the request
       if (!id || id === 'undefined' || id === 'null') {
         console.warn('Invalid shipment ID provided:', id);
         return null;
       }
       
-      console.log('Fetching shipment by ID:', id);
+      console.log('About to query Supabase for shipment:', id);
       
-      const { data, error } = await supabase
-        .from('shipments')
-        .select(`
-          *,
-          quotes (
-            total_cost
-          )
-        `)
-        .eq('id', id)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching shipment:', error);
+      try {
+        // Add timeout to prevent hanging
+        const queryPromise = supabase
+          .from('shipments')
+          .select(`
+            *,
+            quotes (
+              total_cost
+            )
+          `)
+          .eq('id', id)
+          .single();
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout after 5 seconds')), 5000)
+        );
+        
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+        
+        console.log('Supabase query completed after:', Date.now() - startTime, 'ms');
+        
+        if (error) {
+          console.error('Error fetching shipment:', error);
+          throw error;
+        }
+        
+        console.log('Returning shipment data after:', Date.now() - startTime, 'ms');
+        return data;
+      } catch (error) {
+        console.error('Supabase query failed after:', Date.now() - startTime, 'ms', error);
         throw error;
       }
-      
-      console.log('Fetched shipment data:', data);
-      return data;
     },
 
     async getByQuoteId(quoteId: string) {

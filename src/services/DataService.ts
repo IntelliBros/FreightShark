@@ -432,12 +432,14 @@ export const DataService = {
   },
 
   async getShipmentById(id: string) {
-    console.log('DataService.getShipmentById called with id:', id);
+    const startTime = Date.now();
+    console.log('DataService.getShipmentById START:', id, new Date().toISOString());
     await simulateDelay(200);
     
     try {
+      console.log('About to call supabaseService.shipments.getById at:', Date.now() - startTime, 'ms');
       const shipment = await supabaseService.shipments.getById(id);
-      console.log('DataService received shipment:', shipment);
+      console.log('DataService received shipment after:', Date.now() - startTime, 'ms');
       
       if (!shipment) {
         console.log('No shipment found for id:', id);
