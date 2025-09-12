@@ -491,9 +491,8 @@ export const QuoteDetails = () => {
                   <h3 className="text-sm font-medium text-gray-500 mb-2">
                     Pickup Details
                   </h3>
-                  <p className="text-gray-900">{formatDate(quoteRequest?.cargo_ready_date)}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Location: {quoteRequest?.pickup_location || 'Not specified'}
+                  <p className="text-gray-900">
+                    {quoteRequest?.pickup_location || 'Location not specified'}
                   </p>
                 </div>
               </div>
