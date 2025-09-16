@@ -46,11 +46,11 @@ class EmailService {
     this.initializeTransporter();
   }
 
-  private getLogoUrl(format: 'svg' | 'png' = 'png'): string {
+  private getLogoUrl(format: 'svg' | 'png' = 'svg'): string {
     // Use environment variable or default to production URL
     const baseUrl = process.env.FRONTEND_URL || 'https://freight-shark.vercel.app';
-    // PNG is more compatible with email clients
-    const filename = format === 'png' ? 'freight-shark-logo.png' : 'freight-shark-logo.svg';
+    // Using SVG as default per request
+    const filename = format === 'svg' ? 'freight-shark-logo.svg' : 'freight-shark-logo.png';
     return `${baseUrl}/${filename}`;
   }
 

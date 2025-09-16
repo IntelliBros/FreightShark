@@ -63,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%); padding: 20px; text-align: center; color: white;">
-            <h1 style="margin: 0;">🦈 Freight Shark</h1>
+            <img src="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/freight-shark-logo.svg" alt="Freight Shark" width="200" height="60" style="display: block; border: none; margin: 0 auto 10px;" />
             <p style="margin: 5px 0 0 0;">Email Configuration Test</p>
           </div>
           <div style="padding: 30px; background: #f9f9f9;">

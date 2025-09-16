@@ -1,15 +1,14 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 function createEmailTemplate(templateId: string, variables: Record<string, string>) {
-  // Freight Shark logo as base64 image for better email client compatibility
-  // Freight Shark logo SVG
-  const logoBase64 = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjAwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICA8IS0tIFNoYXJrIEZpbiAtLT4KICAgIDxwYXRoIGQ9Ik0yNSAxNUMzMCAxNSAzNSAyMCAzNSAyNUMzNSAyNyAzNCAyOSAzMiAzMEwzNSAzNUMzOCAzNCA0MCAzMSA0MCAyNUM0MCAxNyAzMyAxMCAyNSAxMFYxNVoiIGZpbGw9IiMwMGI0ZDgiLz4KICAgIDxwYXRoIGQ9Ik0yNSAyNUMzMCAyNSAzMiAyNyAzMiAzMEMyOSAzMCAyNyAyOCAyNSAyNVoiIGZpbGw9IiMwMDk2YzciLz4KICAgIDwhLS0gU2hhcmsgQm9keSBXYXZlIC0tPgogICAgPHBhdGggZD0iTTEwIDM1QzEyIDMyIDE1IDMwIDIwIDMwQzI1IDMwIDI4IDMyIDMwIDM1QzI4IDM4IDI1IDQwIDIwIDQwQzE1IDQwIDEyIDM4IDEwIDM1WiIgZmlsbD0iIzAwYjRkOCIvPgogICAgCiAgICA8IS0tIFRleHQgLSBGcmVpZ2h0IFNoYXJrIC0tPgogICAgPHRleHQgeD0iNTUiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjZmZmZmZmIj4KICAgICAgRnJlaWdodCBTaGFyawogICAgPC90ZXh0PgogIDwvZz4KPC9zdmc+`;
+  // Use hosted SVG logo for better email delivery
+  const logoUrl = `${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/freight-shark-logo.svg`;
 
   const header = `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #1f2c39;">
       <tr>
         <td style="padding: 30px; text-align: center; background-color: #1f2c39;">
-          <img src="${logoBase64}" alt="Freight Shark" width="200" height="60" style="display: block; border: none; margin: 0 auto;" />
+          <img src="${logoUrl}" alt="Freight Shark" width="200" height="60" style="display: block; border: none; margin: 0 auto;" />
         </td>
       </tr>
     </table>
@@ -22,7 +21,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; max-width: 400px;">
             <tr>
               <td style="text-align: center;">
-                <img src="${logoBase64}" alt="Freight Shark Logo" width="30" height="30" style="display: inline-block; border: none; margin-bottom: 10px; opacity: 0.6;" />
+                <img src="${logoUrl}" alt="Freight Shark Logo" width="30" height="30" style="display: inline-block; border: none; margin-bottom: 10px; opacity: 0.6;" />
                 <p style="color: #64748b !important; font-size: 14px; margin: 0 0 15px 0; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
                   <strong style="color: #1e293b !important;">Freight Shark</strong><br>
                   Your trusted partner in global logistics
