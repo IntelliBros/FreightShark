@@ -2,27 +2,14 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 function createEmailTemplate(templateId: string, variables: Record<string, string>) {
   // Freight Shark logo as base64 image for better email client compatibility
-  const logoBase64 = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDE2VjhhMiAyIDAgMDAtMS0xLjczbC03LTRhMiAyIDAgMDAtMiAwbC03IDRBMiAyIDAgMDAzIDh2OGEyIDIgMCAwMDEgMS43M2w3IDRhMiAyIDAgMDAyIDBsNy00QTIgMiAwIDAwMjEgMTZ6IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+CjxwYXRoIGQ9Ik0zLjI3IDYuOTZMMTIgMTIuMDFsOC43My01LjA1TTEyIDIyLjA4VjEyIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K`;
+  // Freight Shark logo SVG
+  const logoBase64 = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjAwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICA8IS0tIFNoYXJrIEZpbiAtLT4KICAgIDxwYXRoIGQ9Ik0yNSAxNUMzMCAxNSAzNSAyMCAzNSAyNUMzNSAyNyAzNCAyOSAzMiAzMEwzNSAzNUMzOCAzNCA0MCAzMSA0MCAyNUM0MCAxNyAzMyAxMCAyNSAxMFYxNVoiIGZpbGw9IiMwMGI0ZDgiLz4KICAgIDxwYXRoIGQ9Ik0yNSAyNUMzMCAyNSAzMiAyNyAzMiAzMEMyOSAzMCAyNyAyOCAyNSAyNVoiIGZpbGw9IiMwMDk2YzciLz4KICAgIDwhLS0gU2hhcmsgQm9keSBXYXZlIC0tPgogICAgPHBhdGggZD0iTTEwIDM1QzEyIDMyIDE1IDMwIDIwIDMwQzI1IDMwIDI4IDMyIDMwIDM1QzI4IDM4IDI1IDQwIDIwIDQwQzE1IDQwIDEyIDM4IDEwIDM1WiIgZmlsbD0iIzAwYjRkOCIvPgogICAgCiAgICA8IS0tIFRleHQgLSBGcmVpZ2h0IFNoYXJrIC0tPgogICAgPHRleHQgeD0iNTUiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjZmZmZmZmIj4KICAgICAgRnJlaWdodCBTaGFyawogICAgPC90ZXh0PgogIDwvZz4KPC9zdmc+`;
 
   const header = `
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #00b4d8;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #1f2c39;">
       <tr>
-        <td style="padding: 40px 30px; text-align: center; background-color: #00b4d8;">
-          <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-            <tr>
-              <td style="vertical-align: middle; padding-right: 15px;">
-                <img src="${logoBase64}" alt="Freight Shark Logo" width="50" height="50" style="display: block; border: none; vertical-align: middle;" />
-              </td>
-              <td style="vertical-align: middle;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold; font-family: Arial, sans-serif;">
-                  Freight Shark
-                </h1>
-                <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px; font-family: Arial, sans-serif;">
-                  Global Freight Solutions
-                </p>
-              </td>
-            </tr>
-          </table>
+        <td style="padding: 30px; text-align: center; background-color: #1f2c39;">
+          <img src="${logoBase64}" alt="Freight Shark" width="200" height="60" style="display: block; border: none; margin: 0 auto;" />
         </td>
       </tr>
     </table>
@@ -92,7 +79,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
 
   const templates: Record<string, any> = {
     'welcome': {
-      subject: `Welcome to Freight Shark! 🦈`,
+      subject: `Welcome to Freight Shark!`,
       html: wrapTemplate(`
         <!-- Welcome Header -->
         <table cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -211,36 +198,6 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           </tr>
         </table>
 
-        <!-- Support Section -->
-        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-          <tr>
-            <td style="padding: 20px; background-color: #f8f9fa;">
-              <h3 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0; font-family: Arial, sans-serif;">
-                Need Help?
-              </h3>
-              <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
-                Our support team is ready to assist you:
-              </p>
-              <p style="color: #666666; font-size: 14px; margin: 5px 0; font-family: Arial, sans-serif;">
-                • Email: support@freightshark.com<br>
-                • Live Chat: Available in your dashboard<br>
-                • Phone: 1-800-FREIGHT (24/7)
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Footer -->
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px;">
-          <tr>
-            <td align="center" style="padding: 20px; border-top: 1px solid #dddddd;">
-              <p style="color: #999999; font-size: 14px; margin: 0; font-family: Arial, sans-serif;">
-                Best regards,<br>
-                The Freight Shark Team
-              </p>
-            </td>
-          </tr>
-        </table>
       `),
       text: `Welcome to Freight Shark! Dear ${variables.customerName}, we're thrilled to have you join our family! Your account has been successfully created and you're ready to start shipping. Visit your dashboard to get started with quotes, tracking, and more. Need help? Contact us at support@freightshark.com`
     },
@@ -394,17 +351,6 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           </tr>
         </table>
 
-        <!-- Footer -->
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px;">
-          <tr>
-            <td align="center" style="padding: 20px; border-top: 1px solid #dddddd;">
-              <p style="color: #999999; font-size: 14px; margin: 0; font-family: Arial, sans-serif;">
-                Thank you for choosing Freight Shark!<br>
-                The Freight Shark Team
-              </p>
-            </td>
-          </tr>
-        </table>
       `),
       text: `Quote Request #${variables.quoteId} Received! Dear ${variables.customerName}, we have successfully received your quote request and our experts are working on it. You'll receive your detailed quote within 1 business day. Track your quote status in your dashboard or contact us at quotes@freightshark.com`
     }
