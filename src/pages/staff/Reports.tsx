@@ -25,6 +25,7 @@ export const Reports = () => {
     const rows: any[] = [];
     
     shipments.forEach(shipment => {
+      
       const customer = users.find(u => u.id === shipment.customerId);
       const quoteRequest = quoteRequests.find(req => 
         req.customerId === shipment.customerId && 
@@ -35,17 +36,83 @@ export const Reports = () => {
       const acceptedQuote = quotes.find((q: any) => 
         q.id === shipment.quoteId && q.status === 'Accepted'
       );
+      if (!acceptedQuote && shipment.quoteId) {
+        console.log('No accepted quote found for shipment:', shipment.id, 'with quoteId:', shipment.quoteId);
+      }
       const commissionRatePerKg = acceptedQuote?.commissionRatePerKg || 0.50; // Default to $0.50 if not found
       
       const origin = quoteRequest?.supplierDetails?.city 
         ? `${quoteRequest.supplierDetails.city}, ${quoteRequest.supplierDetails.country}`
         : 'China';
       
-      const invoiceStatus = shipment.invoice?.status || 'Not Created';
-      const invoiceAmount = shipment.invoice?.totalAmount || 0;
+      // Determine invoice status based on invoice data
+      let invoiceStatus = 'Not Created';
+      if (shipment.invoice) {
+        // Check the actual status field first
+        if (shipment.invoice.status) {
+          invoiceStatus = shipment.invoice.status;
+        } else if (shipment.invoice.id && shipment.invoice.createdAt) {
+          // If invoice exists but no explicit status, it's pending
+          invoiceStatus = 'Pending';
+        }
+      }
+      
+      // Determine display status - override with "Missing Shipment IDs" if invoice is paid but IDs are missing
+      let displayStatus = shipment.status;
+      if (invoiceStatus === 'Paid' && shipment.status !== 'In Transit' && shipment.status !== 'Delivered') {
+        // Check if any destination is missing shipment IDs
+        const hasMissingIds = (shipment.destinations || []).some((d: any) => 
+          !d.amazonShipmentId || d.amazonShipmentId === ''
+        );
+        if (hasMissingIds) {
+          displayStatus = 'Missing Shipment IDs';
+        }
+      }
+      
+      const invoiceAmount = shipment.invoice?.totalAmount || shipment.invoice?.amount || 0;
+      
+      // Debug logging for FS-00013
+      if (shipment.id === 'FS-00013') {
+        console.log('FS-00013 Debug:', {
+          shipment,
+          invoice: shipment.invoice,
+          destinations: shipment.destinations,
+          invoiceStatus,
+          displayStatus
+        });
+      }
+      
+      // If shipment has no destinations, create a single row with data from invoice if available
+      let destinations = shipment.destinations && shipment.destinations.length > 0 
+        ? shipment.destinations 
+        : null;
+      
+      // If no destinations, try to get data from invoice warehouse details
+      if (!destinations) {
+        let placeholderDestination: any = {
+          fbaWarehouse: '-',
+          id: null,
+          cartons: 0,
+          estimatedWeight: 0,
+          actualWeight: null,
+          soNumber: null,
+          amazonReferenceId: null,
+          amazonShipmentId: null
+        };
+        
+        // If invoice exists with warehouse details, use that data
+        if (shipment.invoice?.warehouseDetails?.[0]) {
+          const firstWarehouse = shipment.invoice.warehouseDetails[0];
+          placeholderDestination.cartons = firstWarehouse.cartons || firstWarehouse.totalCartons || 0;
+          placeholderDestination.estimatedWeight = firstWarehouse.chargeableWeight || firstWarehouse.actualWeight || 0;
+          placeholderDestination.actualWeight = firstWarehouse.actualWeight || null;
+        }
+        
+        destinations = [placeholderDestination];
+      }
       
       // Create a row for each destination warehouse
-      (shipment.destinations || []).forEach((dest: any, index: number) => {
+      destinations.forEach((dest: any, index: number) => {
         const warehouseSuffix = (shipment.destinations?.length || 0) > 1 ? `-${index + 1}` : '';
         
         // Find the delivered event if status is Delivered
@@ -67,31 +134,155 @@ export const Reports = () => {
         let warehouseInvoiceAmount = null;
         let chargeableWeight = null;
         let invoicedActualWeight = null;
+        
+        // Debug logging for FS-00013
+        if (shipment.id === 'FS-00013') {
+          console.log('FS-00013 Invoice extraction for dest:', dest, {
+            hasInvoice: !!shipment.invoice,
+            invoiceId: shipment.invoice?.id,
+            invoiceCreatedAt: shipment.invoice?.createdAt,
+            warehouseDetails: shipment.invoice?.warehouseDetails
+          });
+        }
+        
         if (shipment.invoice && shipment.invoice.id && shipment.invoice.createdAt) {
           if (shipment.invoice.warehouseDetails && shipment.invoice.warehouseDetails.length > 0) {
-            // Find matching warehouse detail by FBA warehouse name
-            const warehouseDetail = shipment.invoice.warehouseDetails.find((wd: any) => 
-              wd.warehouse === dest.fbaWarehouse || 
-              wd.warehouseId === dest.id
-            );
+            // Debug log for FS-00013
+            if (shipment.id === 'FS-00013') {
+              console.log('FS-00013 Processing warehouse details:', {
+                destFbaWarehouse: dest.fbaWarehouse,
+                destId: dest.id,
+                index,
+                warehouseDetailsCount: shipment.invoice.warehouseDetails.length,
+                firstWarehouseDetail: shipment.invoice.warehouseDetails[0]
+              });
+            }
+            
+            // Always use invoice data, regardless of destination matching
+            // This handles cases where destinations were added after invoice creation
+            let warehouseDetail = null;
+            
+            // If there's only one warehouse detail in invoice, always use it
+            if (shipment.invoice.warehouseDetails.length === 1) {
+              warehouseDetail = shipment.invoice.warehouseDetails[0];
+              if (shipment.id === 'FS-00013') {
+                console.log('FS-00013: Using single warehouse detail from invoice');
+              }
+            } else {
+              // For multiple warehouse details, try to match first
+              warehouseDetail = shipment.invoice.warehouseDetails.find((wd: any) => 
+                wd.warehouse === dest.fbaWarehouse || 
+                wd.warehouseId === dest.id
+              );
+              
+              // If no match, use index-based fallback
+              if (!warehouseDetail && index < shipment.invoice.warehouseDetails.length) {
+                warehouseDetail = shipment.invoice.warehouseDetails[index];
+                if (shipment.id === 'FS-00013') {
+                  console.log('FS-00013: Using index-based warehouse detail');
+                }
+              }
+            }
+            
             if (warehouseDetail) {
               warehouseInvoiceAmount = warehouseDetail.subtotal || warehouseDetail.amount || null;
-              // Use chargeable weight from invoice (max of actual weight and volumetric weight)
               chargeableWeight = warehouseDetail.chargeableWeight || null;
-              // Also get the actual weight from invoice for display
               invoicedActualWeight = warehouseDetail.actualWeight || null;
+              
+              if (shipment.id === 'FS-00013') {
+                console.log('FS-00013: Extracted from warehouse detail:', {
+                  warehouseInvoiceAmount,
+                  chargeableWeight,
+                  invoicedActualWeight
+                });
+              }
             }
-          } else if ((shipment.destinations?.length || 0) === 1) {
-            // If only one destination, use the full invoice amount
-            warehouseInvoiceAmount = shipment.invoice.amount || shipment.invoice.total || null;
-            // For single destination, try to get chargeable weight from invoice
-            chargeableWeight = shipment.invoice.totalChargeableWeight || null;
-            invoicedActualWeight = shipment.invoice.totalActualWeight || null;
           }
+          
+          // If still no invoice amount found, check the invoice totals directly
+          if (!warehouseInvoiceAmount && shipment.invoice) {
+            warehouseInvoiceAmount = shipment.invoice.amount || shipment.invoice.total || shipment.invoice.totalAmount || null;
+            
+            // Try to get total chargeable weight from invoice
+            if (!chargeableWeight) {
+              chargeableWeight = shipment.invoice.totalChargeableWeight || 
+                                shipment.invoice.chargeableWeight ||
+                                (shipment.invoice.warehouseDetails?.[0]?.chargeableWeight) || 
+                                null;
+            }
+            
+            // Try to get total actual weight
+            if (!invoicedActualWeight) {
+              invoicedActualWeight = shipment.invoice.totalActualWeight || 
+                                    shipment.invoice.actualWeight ||
+                                    (shipment.invoice.warehouseDetails?.[0]?.actualWeight) || 
+                                    null;
+            }
+          }
+        }
+        
+        // Debug logging for FS-00013 - what was extracted
+        if (shipment.id === 'FS-00013') {
+          console.log('FS-00013 Extracted invoice data:', {
+            warehouseInvoiceAmount,
+            chargeableWeight,
+            invoicedActualWeight
+          });
         }
         
         // Calculate commission ONLY on invoiced chargeable weight, not estimates
         const warehouseCommission = chargeableWeight ? (chargeableWeight * commissionRatePerKg) : null;
+        
+        // Get the quote weight for this warehouse from the accepted quote
+        let quoteWeight = null;
+        if (acceptedQuote && acceptedQuote.warehouseRates && acceptedQuote.warehouseRates.length > 0) {
+          if (shipment.id === 'FS-00013') {
+            console.log('FS-00013 Quote warehouse rates:', acceptedQuote.warehouseRates);
+          }
+          
+          // Always try to use quote data, even if destinations don't match
+          let warehouseRate = null;
+          
+          // If there's only one warehouse rate, always use it
+          if (acceptedQuote.warehouseRates.length === 1) {
+            warehouseRate = acceptedQuote.warehouseRates[0];
+            if (shipment.id === 'FS-00013') {
+              console.log('FS-00013: Using single warehouse rate from quote');
+            }
+          } else {
+            // For multiple rates, try to match first
+            warehouseRate = acceptedQuote.warehouseRates.find((wr: any) => 
+              wr.warehouseId === dest.id || wr.warehouse === dest.fbaWarehouse
+            );
+            
+            // If no match, use index-based fallback
+            if (!warehouseRate && index < acceptedQuote.warehouseRates.length) {
+              warehouseRate = acceptedQuote.warehouseRates[index];
+              if (shipment.id === 'FS-00013') {
+                console.log('FS-00013: Using index-based warehouse rate');
+              }
+            }
+          }
+          
+          if (warehouseRate) {
+            quoteWeight = warehouseRate.chargeableWeight || warehouseRate.weight || null;
+            if (shipment.id === 'FS-00013') {
+              console.log('FS-00013: Extracted quote weight:', quoteWeight);
+            }
+          }
+        }
+        
+        // Final debug log for FS-00013
+        if (shipment.id === 'FS-00013') {
+          console.log('FS-00013 Destination data:', dest);
+          console.log('FS-00013 Final row data:', {
+            totalCartons: dest.cartons || dest.actualCartons || dest.estimatedCartons || (shipment.invoice?.warehouseDetails?.[0]?.cartons) || (shipment.invoice?.warehouseDetails?.[0]?.totalCartons) || 0,
+            displayWeight: dest.chargeableWeight || dest.actualWeight || dest.weight || null,
+            quoteWeight,
+            finalInvoiceAmount: warehouseInvoiceAmount,
+            commission: warehouseCommission
+          });
+        }
         
         rows.push({
           id: `${shipment.id}${warehouseSuffix}`,
@@ -102,15 +293,22 @@ export const Reports = () => {
           customerId: shipment.customerId,
           origin,
           destination: dest.fbaWarehouse,
-          status: shipment.status,
+          status: displayStatus,
           createdAt: new Date(shipment.createdAt),
           deliveryDate: deliveryDate,
           isDelivered: shipment.status === 'Delivered',
-          totalCartons: dest.cartons,
-          totalWeight: dest.estimatedWeight,
+          // Try to get cartons from multiple sources - destination data, invoice data, or quote data
+          totalCartons: dest.cartons || 
+                       dest.actualCartons || 
+                       dest.estimatedCartons || 
+                       (shipment.invoice?.warehouseDetails?.[0]?.cartons) ||
+                       (shipment.invoice?.warehouseDetails?.[0]?.totalCartons) ||
+                       0,
+          totalWeight: dest.estimatedWeight || dest.weight || dest.grossWeight || 0,
           actualWeight: dest.actualWeight || null,
-          // Use chargeable weight from invoice if available, otherwise fallback to actual weight
-          displayWeight: chargeableWeight || dest.actualWeight || null,
+          // Use chargeable weight from destination data (this is what should be shown in Weight column)
+          displayWeight: dest.chargeableWeight || dest.actualWeight || dest.weight || null,
+          quoteWeight: quoteWeight, // Weight used in the original quote
           soNumber: dest.soNumber || '-',
           amazonReferenceId: dest.amazonReferenceId || '-',
           invoiceStatus,
@@ -211,8 +409,11 @@ export const Reports = () => {
       case 'In Transit': 
       case 'In Progress': return 'text-blue-700 bg-blue-50';
       case 'Customs': return 'text-orange-700 bg-orange-50';
-      case 'Awaiting Pickup': return 'text-yellow-700 bg-yellow-50';
-      case 'Pending': return 'text-gray-700 bg-gray-50';
+      case 'Awaiting Pickup': 
+      case 'Booking Confirmed': return 'text-yellow-700 bg-yellow-50';
+      case 'Pending':
+      case 'Pending Payment': return 'text-amber-700 bg-amber-50';
+      case 'Missing Shipment IDs': return 'text-red-700 bg-red-50';
       default: return 'text-gray-700 bg-gray-50';
     }
   };
@@ -250,7 +451,7 @@ export const Reports = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Shipment ID', 'SO Number', 'Customer', 'Origin', 'Destination', 'Status', 'Created', 'Delivered', 'Cartons', 'Weight (kg)', 'Reference ID', 'Amazon ID', 'Invoice Status', 'Final Invoice Amount', 'Commission Rate', 'Commission'];
+    const headers = ['Shipment ID', 'SO Number', 'Customer', 'Origin', 'Destination', 'Status', 'Created', 'Delivered', 'Cartons', 'Weight (kg)', 'Quote Weight (kg)', 'Reference ID', 'Amazon ID', 'Invoice Status', 'Final Invoice Amount', 'Commission Rate', 'Commission'];
     const rows = filteredAndSortedShipments.map(s => [
       s.id,
       s.soNumber,
@@ -261,12 +462,13 @@ export const Reports = () => {
       formatDate(s.createdAt),
       s.deliveryDate ? formatDate(s.deliveryDate) : '-',
       s.totalCartons,
-      s.displayWeight || '-',
+      s.displayWeight ? `${s.displayWeight.toFixed(2)}` : '-',
+      s.quoteWeight ? `${s.quoteWeight.toFixed(2)}` : '-',
       s.amazonReferenceId,
       s.amazonShipmentId,
       s.invoiceStatus,
       s.finalInvoiceAmount ? formatCurrency(s.finalInvoiceAmount) : '-',
-      `$${s.commissionRate.toFixed(2)}/kg`,
+      `$${(s.commissionRate || 0.50).toFixed(2)}/kg`,
       s.commission ? formatCurrency(s.commission) : '-'
     ]);
     
@@ -352,7 +554,7 @@ export const Reports = () => {
             {/* Summary Row */}
             {filteredAndSortedShipments.length > 0 && (
               <tr className="bg-white border-b-2 border-gray-300">
-                <td className="px-3 py-2 max-w-[300px]">
+                <td className="px-3 py-2 max-w-[300px] sticky left-0 z-20 bg-white border-r border-gray-200">
                   <span className="text-sm font-semibold text-gray-900 block truncate">{summaryTotals.rowCount} rows</span>
                 </td>
                 <td className="px-3 py-2 max-w-[300px]">
@@ -382,6 +584,9 @@ export const Reports = () => {
                 <td className="px-3 py-2">
                   <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{summaryTotals.weight.toFixed(2)} kg</span>
                 </td>
+                <td className="px-3 py-2">
+                  <span className="text-sm font-semibold text-gray-600">-</span>
+                </td>
                 <td className="px-3 py-2 max-w-[300px]">
                   <span className="text-sm font-semibold text-gray-600 block truncate">-</span>
                 </td>
@@ -406,7 +611,7 @@ export const Reports = () => {
               </tr>
             )}
             <tr>
-              <th className="px-3 py-3 text-left">
+              <th className="px-3 py-3 text-left sticky left-0 z-20 bg-gray-50 border-r border-gray-200">
                 <button
                   onClick={() => handleSort('id')}
                   className="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 whitespace-nowrap"
@@ -485,6 +690,9 @@ export const Reports = () => {
                 </button>
               </th>
               <th className="px-3 py-3 text-left">
+                <span className="text-xs font-medium text-gray-700 whitespace-nowrap">Quote Weight</span>
+              </th>
+              <th className="px-3 py-3 text-left">
                 <span className="text-xs font-medium text-gray-700 whitespace-nowrap">Reference ID</span>
               </th>
               <th className="px-3 py-3 text-left">
@@ -521,7 +729,9 @@ export const Reports = () => {
                   index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 } hover:bg-blue-50 transition-colors border-b border-gray-100`}
               >
-                <td className="px-3 py-3 max-w-[300px]">
+                <td className={`px-3 py-3 max-w-[300px] sticky left-0 z-10 border-r border-gray-200 ${
+                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                }`}>
                   <span className="text-sm font-medium text-gray-900 block truncate" title={shipment.id}>
                     {truncateText(shipment.id)}
                   </span>
@@ -571,7 +781,14 @@ export const Reports = () => {
                 </td>
                 <td className="px-3 py-3">
                   {shipment.displayWeight ? (
-                    <span className="text-sm text-gray-900 whitespace-nowrap">{shipment.displayWeight} kg</span>
+                    <span className="text-sm text-gray-900 whitespace-nowrap">{shipment.displayWeight.toFixed(2)} kg</span>
+                  ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="px-3 py-3">
+                  {shipment.quoteWeight ? (
+                    <span className="text-sm text-gray-900 whitespace-nowrap">{shipment.quoteWeight.toFixed(2)} kg</span>
                   ) : (
                     <span className="text-sm text-gray-400">-</span>
                   )}
@@ -602,7 +819,7 @@ export const Reports = () => {
                 </td>
                 <td className="px-3 py-3">
                   <span className="text-sm text-gray-900 whitespace-nowrap">
-                    ${shipment.commissionRate.toFixed(2)}/kg
+                    ${(shipment.commissionRate || 0.50).toFixed(2)}/kg
                   </span>
                 </td>
                 <td className="px-3 py-3">

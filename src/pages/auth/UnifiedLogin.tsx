@@ -1,63 +1,65 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '../../components/ui/Button';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 export const UnifiedLogin = () => {
+  const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, staffLogin, adminLogin } = useAuth();
-  const { addToast } = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = location.state?.from?.pathname || '/';
+  const [rememberMe, setRememberMe] = useState(false);
+  
+  usePageTitle('Sign In');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    if (!email || !password) {
+      showToast('Please enter both email and password', 'error');
+      return;
+    }
 
     try {
-      // Determine which login method to use based on email domain or known emails
-      if (email.includes('admin@')) {
-        await adminLogin(email, password);
-        addToast('Successfully logged in as admin!', 'success');
-        navigate('/admin');
-      } else if (email.includes('staff@')) {
-        await staffLogin(email, password);
-        addToast('Successfully logged in as staff!', 'success');
-        navigate('/staff');
-      } else {
-        // Default to customer login
-        await login(email, password);
-        addToast('Successfully logged in!', 'success');
-        navigate(from);
+      const result = await login(email, password);
+      
+      if (result.user) {
+        // Redirect based on role
+        switch (result.user.role) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'staff':
+            navigate('/staff');
+            break;
+          case 'user':
+          default:
+            navigate('/dashboard');
+            break;
+        }
+        
+        showToast('Login successful!', 'success');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      addToast('Failed to login. Please check your credentials.', 'error');
-    } finally {
-      setLoading(false);
+      showToast(error.message || 'Invalid email or password', 'error');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex items-center justify-center mx-auto">
-          <span className="text-5xl">🦈</span>
+        <div className="flex justify-center">
+          <img src="/shark-icon.svg" alt="Freight Shark" className="w-20 h-20" />
         </div>
-        <h1 className="mt-4 text-center text-2xl font-bold text-gray-900">
-          FREIGHT SHARK
-        </h1>
         <h2 className="mt-2 text-center text-xl text-gray-700">
           Sign in to your account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Or{' '}
-          <Link to="/signup" className="font-medium text-teal-600 hover:text-teal-700">
+          <Link to="/signup" className="font-medium text-[#00b4d8] hover:text-[#0096b8]">
             create a new account
           </Link>
         </p>
@@ -66,16 +68,16 @@ export const UnifiedLogin = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-sm rounded-xl sm:rounded-xl sm:px-10">
           {/* Demo Credentials */}
-          <div className="mb-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
-            <h3 className="text-sm font-medium text-teal-900 mb-2">Demo Credentials</h3>
-            <div className="space-y-1 text-xs text-teal-800">
+          <div className="mb-6 p-4 bg-[#E6EDF8] rounded-lg border border-[#D0D9E8]">
+            <h3 className="text-sm font-medium text-[#00b4d8] mb-2">Demo Credentials</h3>
+            <div className="space-y-1 text-xs text-[#0096b8]">
               <p><strong>Customer:</strong> customer@example.com</p>
               <p><strong>Staff:</strong> staff@freightshark.com</p>
               <p><strong>Admin:</strong> admin@freightshark.com</p>
-              <p><strong>Password (all):</strong> Password123!</p>
+              <p className="mt-2"><strong>Password for all:</strong> Password123!</p>
             </div>
           </div>
-          
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -90,8 +92,8 @@ export const UnifiedLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
-                  placeholder="you@example.com"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#00b4d8] focus:border-[#00b4d8] sm:text-sm"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>
@@ -109,7 +111,8 @@ export const UnifiedLogin = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#00b4d8] focus:border-[#00b4d8] sm:text-sm"
+                  placeholder="Enter your password"
                 />
               </div>
             </div>
@@ -120,14 +123,17 @@ export const UnifiedLogin = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-[#00b4d8] focus:ring-[#00b4d8] border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                   Remember me
                 </label>
               </div>
+
               <div className="text-sm">
-                <a href="#" className="font-medium text-teal-600 hover:text-teal-700">
+                <a href="#" className="font-medium text-[#00b4d8] hover:text-[#0096b8]">
                   Forgot your password?
                 </a>
               </div>
@@ -136,11 +142,11 @@ export const UnifiedLogin = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
+                disabled={isLoading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#00b4d8] hover:bg-[#0096b8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00b4d8] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white rounded-full animate-spin border-t-transparent" />
                 ) : (
                   'Sign in'
                 )}

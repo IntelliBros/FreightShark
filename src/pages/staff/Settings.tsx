@@ -4,7 +4,7 @@ import { DataService } from '../../services/DataService';
 import { useToast } from '../../context/ToastContext';
 
 export const Settings = () => {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [commissionRate, setCommissionRate] = useState<number>(0.50);
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -20,7 +20,7 @@ export const Settings = () => {
       setCommissionRate(rate);
       setOriginalRate(rate);
     } catch (error) {
-      showToast('Failed to load commission rate', 'error');
+      addToast('Failed to load commission rate', 'error');
     }
   };
 
@@ -36,9 +36,9 @@ export const Settings = () => {
       await DataService.updateCommissionRate(commissionRate);
       setOriginalRate(commissionRate);
       setHasChanges(false);
-      showToast('Commission rate updated successfully', 'success');
+      addToast('Commission rate updated successfully', 'success');
     } catch (error) {
-      showToast('Failed to update commission rate', 'error');
+      addToast('Failed to update commission rate', 'error');
     } finally {
       setLoading(false);
     }

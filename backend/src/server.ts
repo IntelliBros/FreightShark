@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { testConnection } from './db/database';
+import { emailService } from './services/emailService';
 
 // Load environment variables
 dotenv.config();
@@ -12,6 +13,7 @@ import quoteRoutes from './routes/quotes';
 import shipmentRoutes from './routes/shipments';
 import userRoutes from './routes/users';
 import announcementRoutes from './routes/announcements';
+import emailRoutes from './routes/email';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +43,7 @@ app.use('/api/quotes', quoteRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/email', emailRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

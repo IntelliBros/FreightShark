@@ -1,5 +1,6 @@
 import { supabaseService } from './supabaseService';
 import { authService } from './authService';
+import { emailService } from './EmailService';
 import type { QuoteRequest as BaseQuoteRequest, Quote, Shipment, User } from './supabaseService';
 
 // Extended QuoteRequest with additional fields used in the app
@@ -80,7 +81,35 @@ export const DataService = {
       userData.password_hash = await bcrypt.hash(userData.password, 10);
       delete userData.password; // Remove plain text password
     }
-    return await supabaseService.users.create(userData);
+    
+    try {
+      const newUser = await supabaseService.users.create(userData);
+      
+      // Send welcome email to new user
+      if (newUser && newUser.email) {
+        try {
+          await emailService.sendNotification(
+            newUser.email,
+            'welcome',
+            {
+              customerName: newUser.name || 'Valued Customer'
+            }
+          );
+          console.log(`Welcome email sent to ${newUser.email}`);
+        } catch (error) {
+          console.error('Failed to send welcome email:', error);
+          // Don't fail user creation if email fails
+        }
+      }
+      
+      return newUser;
+    } catch (error: any) {
+      // Handle duplicate user error (409 Conflict)
+      if (error.message?.includes('duplicate') || error.code === '23505' || error.status === 409) {
+        throw new Error('An account with this email already exists. Please login or use a different email.');
+      }
+      throw error;
+    }
   },
 
   async updateUser(id: string, updates: any) {
@@ -287,6 +316,25 @@ export const DataService = {
 
     const result = await supabaseService.quoteRequests.create(transformedRequest);
     console.log('Quote request created:', result);
+    
+    // Send email notification if SMTP is configured
+    try {
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser?.email) {
+        await emailService.sendNotification(
+          currentUser.email,
+          'quote-requested',
+          {
+            quoteId: result.id,
+            customerName: currentUser.name || 'Customer'
+          }
+        );
+      }
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError);
+      // Don't fail the request if email fails
+    }
+    
     return result;
   },
 
@@ -311,7 +359,11 @@ export const DataService = {
       requestId: quote.request_id, // Map request_id to requestId
       customerId: quote.customer_id, // Map customer_id to customerId
       staffId: quote.staff_id, // Map staff_id to staffId
-      total: quote.total_cost // Map total_cost to total for backwards compatibility
+      total: quote.total_cost, // Map total_cost to total for backwards compatibility
+      commissionRatePerKg: quote.commission_rate_per_kg || 0.50, // Include commission rate
+      warehouseRates: quote.per_warehouse_costs || [], // Map per_warehouse_costs to warehouseRates
+      otherCharges: quote.additional_charges?.otherCharges || [],
+      discounts: quote.additional_charges?.discounts || []
     }));
   },
 
@@ -327,6 +379,7 @@ export const DataService = {
       customerId: quote.customer_id, // Map customer_id to customerId
       staffId: quote.staff_id, // Map staff_id to staffId
       total: quote.total_cost, // Map total_cost to total for backwards compatibility
+      commissionRatePerKg: quote.commission_rate_per_kg || 0.50, // Include commission rate
       warehouseRates: quote.per_warehouse_costs || [], // Ensure warehouseRates exists
       otherCharges: quote.additional_charges?.otherCharges || [],
       discounts: quote.additional_charges?.discounts || []
@@ -358,13 +411,34 @@ export const DataService = {
       total_cost: quote.total || 0,
       valid_until: quote.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       per_warehouse_costs: quote.warehouseRates || [],
-      commission_rate_per_kg: quote.warehouseRates?.[0]?.ratePerKg || 0,
+      commission_rate_per_kg: quote.commissionRatePerKg || 0.50,
       notes: quote.notes || ''
     };
     
     try {
       const result = await supabaseService.quotes.create(transformedQuote);
       console.log('Quote created successfully:', result);
+      
+      // Send email notification to customer if SMTP is configured
+      try {
+        // Get customer details
+        const customer = await supabaseService.users.getById(quote.customerId);
+        if (customer?.email) {
+          await emailService.sendNotification(
+            customer.email,
+            'quote-ready',
+            {
+              quoteId: result.id,
+              customerName: customer.name || 'Customer',
+              amount: `$${quote.total.toFixed(2)}`
+            }
+          );
+        }
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the quote creation if email fails
+      }
+      
       return result;
     } catch (error) {
       console.error('Failed to create quote:', error);
@@ -394,18 +468,32 @@ export const DataService = {
     
     // Transform shipments to match expected frontend format
     return shipments.map(shipment => {
-      // Parse destination data
+      // Parse destination data - now includes invoice and masterCargo
       let destinations = [];
+      let invoice = null;
+      let masterCargo = shipment.master_cargo || {};
+      
       if (shipment.destination) {
         try {
           const parsed = typeof shipment.destination === 'string' 
             ? JSON.parse(shipment.destination) 
             : shipment.destination;
           
+          // Extract destinations
           if (parsed.destinations && Array.isArray(parsed.destinations)) {
             destinations = parsed.destinations;
           } else if (Array.isArray(parsed)) {
             destinations = parsed;
+          }
+          
+          // Extract invoice if it exists
+          if (parsed.invoice) {
+            invoice = parsed.invoice;
+          }
+          
+          // Extract masterCargo with actual values if it exists
+          if (parsed.masterCargo) {
+            masterCargo = { ...masterCargo, ...parsed.masterCargo };
           }
         } catch (e) {
           console.log('Could not parse destination:', shipment.destination);
@@ -430,9 +518,10 @@ export const DataService = {
         customerId: shipment.customer_id,
         quoteId: shipment.quote_id,
         destinations: destinations,
+        masterCargo: masterCargo,
         cargoDetails: cargoDetails,
         estimatedTotal: shipment.quotes?.total_cost || 0,
-        invoice: shipment.invoice || null, // Only show invoice if explicitly created
+        invoice: invoice, // Use extracted invoice from destination field
         createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
       };
     });
@@ -453,18 +542,38 @@ export const DataService = {
         return null;
       }
     
-    // Parse destination data
+    // Parse destination data - now includes invoice and masterCargo
     let destinations = [];
+    let invoice = null;
+    let masterCargo = shipment.master_cargo || {};
+    let actualTotal = null;
+    
     if (shipment.destination) {
       try {
         const parsed = typeof shipment.destination === 'string' 
           ? JSON.parse(shipment.destination) 
           : shipment.destination;
         
+        // Extract destinations
         if (parsed.destinations && Array.isArray(parsed.destinations)) {
           destinations = parsed.destinations;
         } else if (Array.isArray(parsed)) {
           destinations = parsed;
+        }
+        
+        // Extract invoice if it exists
+        if (parsed.invoice) {
+          invoice = parsed.invoice;
+        }
+        
+        // Extract masterCargo with actual values if it exists
+        if (parsed.masterCargo) {
+          masterCargo = { ...masterCargo, ...parsed.masterCargo };
+        }
+        
+        // Extract actual total if it exists
+        if (parsed.actualTotal !== undefined) {
+          actualTotal = parsed.actualTotal;
         }
       } catch (e) {
         console.log('Could not parse destination:', shipment.destination);
@@ -549,9 +658,11 @@ export const DataService = {
       quoteId: shipment.quote_id,
       customer: shipment.users || null, // Include customer data from join
       destinations: destinations,
+      masterCargo: masterCargo, // Use the merged masterCargo with actual values
       trackingEvents: trackingEvents, // Add tracking events
       estimatedTotal: shipment.quotes?.total_cost || 0,
-      invoice: shipment.invoice || null, // Only show invoice if explicitly created
+      actualTotal: actualTotal, // Include actual total from invoice
+      invoice: invoice, // Use extracted invoice from destination field
       createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
     };
     } catch (error) {
@@ -567,16 +678,85 @@ export const DataService = {
 
   async updateShipment(id: string, updates: any) {
     await simulateDelay(300);
-    return await supabaseService.shipments.update(id, updates);
+    const result = await supabaseService.shipments.update(id, updates);
+    
+    // Send email notification for status changes
+    if (updates.status) {
+      try {
+        const shipment = await this.getShipmentById(id);
+        if (shipment && shipment.customerId) {
+          const customer = await this.getUserById(shipment.customerId);
+          if (customer?.email) {
+            if (updates.status === 'Delivered') {
+              await emailService.sendNotification(
+                customer.email,
+                'shipment-delivered',
+                {
+                  shipmentId: id,
+                  customerName: customer.name || 'Customer',
+                  deliveryLocation: shipment.destination || '',
+                  deliveryDate: new Date().toLocaleString()
+                }
+              );
+            } else {
+              await emailService.sendNotification(
+                customer.email,
+                'shipment-update',
+                {
+                  shipmentId: id,
+                  customerName: customer.name || 'Customer',
+                  status: updates.status,
+                  trackingInfo: shipment.trackingNumber || '',
+                  estimatedDelivery: shipment.estimatedDelivery || ''
+                }
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to send shipment update notification:', error);
+      }
+    }
+    
+    return result;
   },
 
   // Tracking methods
   async addTrackingEvent(shipmentId: string, event: any) {
     await simulateDelay(300);
-    return await supabaseService.tracking.create({
-      ...event,
-      shipment_id: shipmentId
+    // Remove timestamp field as it doesn't exist in the database
+    const { timestamp, ...eventWithoutTimestamp } = event;
+    const result = await supabaseService.tracking.create({
+      id: `TE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      ...eventWithoutTimestamp,
+      shipment_id: shipmentId,
+      date: event.date || new Date().toISOString()
     });
+    
+    // Send notification for tracking updates
+    try {
+      const shipment = await this.getShipmentById(shipmentId);
+      if (shipment && shipment.customerId) {
+        const customer = await this.getUserById(shipment.customerId);
+        if (customer?.email) {
+          await emailService.sendNotification(
+            customer.email,
+            'shipment-update',
+            {
+              shipmentId: shipmentId,
+              customerName: customer.name || 'Customer',
+              status: event.status || shipment.status,
+              trackingInfo: `${event.location || ''} - ${event.description || ''}`.trim(),
+              estimatedDelivery: shipment.estimatedDelivery || ''
+            }
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send tracking event notification:', error);
+    }
+    
+    return result;
   },
 
   async getTrackingEvents(shipmentId: string) {
@@ -627,6 +807,19 @@ export const DataService = {
   async deleteAnnouncement(id: string) {
     await simulateDelay(300);
     return await supabaseService.announcements.delete(id);
+  },
+
+  // Commission rate methods
+  async getCommissionRate() {
+    await simulateDelay(100);
+    // Get from system settings
+    const settings = await supabaseService.systemSettings.get('commission_rate');
+    return settings ? parseFloat(settings.value) : 0.50;
+  },
+
+  async updateCommissionRate(rate: number) {
+    await simulateDelay(300);
+    return await supabaseService.systemSettings.update('commission_rate', rate.toString());
   },
 
   // Convert quote to shipment method

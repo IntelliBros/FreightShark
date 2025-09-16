@@ -10,8 +10,7 @@ export const StaffSidebar = () => {
   const [expanded, setExpanded] = useState({
     quotes: true,
     shipments: true,
-    invoices: true,
-    messages: false
+    invoices: true
   });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isActive = (path: string) => {
@@ -31,16 +30,14 @@ export const StaffSidebar = () => {
   };
   return <aside className={`bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       <div className={`p-6 ${isCollapsed ? 'p-4 flex justify-center' : ''}`}>
-        {isCollapsed ? <div className="w-8 h-8 rounded-full bg-[#1E2A45] flex items-center justify-center">
-            <span className="text-white text-xs font-bold">DDP</span>
-          </div> : <div className="h-8 flex items-center">
-            <div className="w-8 h-8 rounded-full bg-[#1E2A45] flex items-center justify-center mr-2">
-              <span className="text-white text-xs font-bold">DDP</span>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Staff Portal</p>
-            </div>
-          </div>}
+        {isCollapsed ? (
+          <img src="/shark-icon.svg" alt="Freight Shark" className="w-10 h-10" />
+        ) : (
+          <div>
+            <img src="/freight-shark-logo.svg" alt="Freight Shark" className="h-10" />
+            <p className="text-xs text-gray-500 mt-2">Staff Portal</p>
+          </div>
+        )}
       </div>
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
@@ -119,25 +116,10 @@ export const StaffSidebar = () => {
               </ul>}
           </li>
           <li>
-            <button onClick={() => toggleExpanded('messages')} className={`flex items-center justify-between w-full px-3 py-2 rounded-lg ${isGroupActive('/staff/messages') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <div className="flex items-center">
-                <MessageCircleIcon className="h-4 w-4 min-w-4" />
-                {!isCollapsed && <span className="ml-3 text-sm">Messages</span>}
-              </div>
-              {!isCollapsed && (expanded.messages ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />)}
-            </button>
-            {expanded.messages && !isCollapsed && <ul className="mt-1 ml-7 space-y-1">
-                <li>
-                  <Link to="/staff/messages/inbox" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/messages/inbox') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    Inbox
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/staff/messages/sent" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/messages/sent') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    Sent
-                  </Link>
-                </li>
-              </ul>}
+            <Link to="/staff/messages" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/staff/messages') || isActive('/staff/messages/inbox') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <MessageCircleIcon className="h-4 w-4 min-w-4" />
+              {!isCollapsed && <span className="ml-3 text-sm">Messages</span>}
+            </Link>
           </li>
           <li>
             <Link to="/staff/reports" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/staff/reports') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>

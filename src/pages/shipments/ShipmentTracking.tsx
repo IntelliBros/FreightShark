@@ -3,23 +3,23 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+// Force reload - chat panel
 import { ChatPanel } from '../../components/chat/ChatPanel';
 import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, MessageCircleIcon, ChevronRightIcon, ChevronDownIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, ImageIcon, RefreshCwIcon, BoxIcon, ReceiptIcon, DollarSignIcon, CalendarIcon, CreditCardIcon } from 'lucide-react';
 import { DataService, QuoteRequest } from '../../services/DataService';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { amazonWarehouseService } from '../../services/amazonWarehouseService';
+import { generateInvoicePDF } from '../../utils/generateInvoicePDF';
 
 // Helper function to get warehouse addresses
-const getWarehouseAddress = (fbaWarehouse: string): string => {
-  const warehouseAddresses: Record<string, string> = {
-    'FBA ONT8': '1600 Discovery Drive, Moreno Valley, CA 92551, USA',
-    'FBA BFI4': '2700 Center Dr, DuPont, WA 98327, USA',
-    'FBA MDW2': '250 Emerald Dr, Joliet, IL 60433, USA',
-    'FBA PHX6': '4750 West Mohave St, Phoenix, AZ 85043, USA',
-    'FBA RIC2': '5000 Commerce Way, Petersburg, VA 23803, USA'
-  };
-  return warehouseAddresses[fbaWarehouse] || 'Address not available';
+const getWarehouseAddress = (warehouseCode: string): string => {
+  const warehouse = amazonWarehouseService.getWarehouseByCode(warehouseCode);
+  if (warehouse) {
+    return `${warehouse.address}, ${warehouse.city}, ${warehouse.state} ${warehouse.zipCode}, ${warehouse.country}`;
+  }
+  return 'Address not available';
 };
 
 export const ShipmentTracking = () => {
@@ -136,8 +136,16 @@ export const ShipmentTracking = () => {
         paidAt: new Date().toISOString()
       };
       
+      // Get current destination data and update invoice within it
+      const currentDestinationData = shipment.destination || {};
+      const updatedDestinationData = {
+        ...currentDestinationData,
+        invoice: updatedInvoice
+      };
+      
       await DataService.updateShipment(id!, { 
-        invoice: updatedInvoice 
+        destination: updatedDestinationData,
+        status: 'In Progress' // Update status when payment is made
       });
       
       addToast('Payment processed successfully!', 'success');
@@ -260,19 +268,14 @@ export const ShipmentTracking = () => {
       
       // Get the current shipment to preserve invoice data
       const currentShipment = await DataService.getShipmentById(id!);
+      const currentDestinationData = currentShipment?.rawDestination || {};
       
-      // Prepare the update - need to update both destinations and invoice.warehouseDetails
-      // Also update status to "In Progress" since IDs have been provided
-      const updateData: any = {
-        destinations: updatedDestinations,
-        status: 'In Progress' as const
-      };
-      
-      // If invoice exists, also update the warehouseDetails in the invoice
-      if (currentShipment?.invoice) {
-        updateData.invoice = {
-          ...currentShipment.invoice,
-          warehouseDetails: currentShipment.invoice.warehouseDetails?.map((wd: any) => {
+      // Update the invoice's warehouseDetails if it exists
+      let updatedInvoice = currentDestinationData.invoice;
+      if (updatedInvoice && updatedInvoice.warehouseDetails) {
+        updatedInvoice = {
+          ...updatedInvoice,
+          warehouseDetails: updatedInvoice.warehouseDetails.map((wd: any) => {
             const updatedDest = updatedDestinations.find((d: any) => 
               d.fbaWarehouse === wd.warehouse || d.id === wd.id
             );
@@ -288,8 +291,18 @@ export const ShipmentTracking = () => {
         };
       }
       
-      // Save to backend - update the entire shipment
-      const updatedShipment = await DataService.updateShipment(id!, updateData);
+      // Prepare the destination data with updated destinations and preserved invoice
+      const updatedDestinationData = {
+        ...currentDestinationData,
+        destinations: updatedDestinations,
+        invoice: updatedInvoice
+      };
+      
+      // Save to backend - update status and destination field
+      const updatedShipment = await DataService.updateShipment(id!, {
+        status: 'In Progress' as const,
+        destination: updatedDestinationData
+      });
       
       console.log('Response from backend after update:', updatedShipment);
       
@@ -481,11 +494,20 @@ export const ShipmentTracking = () => {
               
               if (warehouses.length > 0) {
                 console.log('Mapping warehouseDetails, count:', warehouses.length);
-                return warehouses.map((warehouseDetail: any) => {
+                console.log('Available destinations for matching:', dests);
+                return warehouses.map((warehouseDetail: any, index: number) => {
+                  // Try to find the corresponding destination with amazonShipmentId
+                  const matchingDest = dests.find((d: any) => 
+                    d.fbaWarehouse === warehouseDetail.warehouse || 
+                    d.id === warehouseDetail.id
+                  ) || dests[index];
+                  
+                  console.log(`Warehouse ${warehouseDetail.warehouse}: matchingDest =`, matchingDest);
+                  
                   return {
                     id: warehouseDetail.id || `warehouse-${Math.random().toString(36).substr(2, 9)}`,
-                    amazonShipmentId: warehouseDetail.amazonShipmentId || '',
-                    amazonReferenceId: warehouseDetail.amazonReferenceId || '',
+                    amazonShipmentId: matchingDest?.amazonShipmentId || warehouseDetail.amazonShipmentId || '',
+                    amazonReferenceId: matchingDest?.amazonReferenceId || warehouseDetail.amazonReferenceId || '',
                     fbaWarehouse: warehouseDetail.warehouse,
                     address: getWarehouseAddress(warehouseDetail.warehouse),
                     cartons: warehouseDetail.cartons,
@@ -498,16 +520,18 @@ export const ShipmentTracking = () => {
               } else if (dests.length > 0) {
                 console.log('Mapping destinations, count:', dests.length);
                 return dests.map((dest: any) => {
+                  const soNumber = dest.soNumber || dest.trackingNumber || '';
                   return {
                     id: dest.id,
                     amazonShipmentId: dest.amazonShipmentId || '',
                     amazonReferenceId: dest.amazonReferenceId || '',
                     fbaWarehouse: dest.fbaWarehouse,
-                    address: getWarehouseAddress(dest.fbaWarehouse),
-                    cartons: dest.cartons,
-                    chargeableWeight: dest.estimatedWeight || dest.weight || 0,
+                    address: dest.address || getWarehouseAddress(dest.fbaWarehouse),
+                    cartons: dest.cartons || dest.actualCartons || 0,
+                    chargeableWeight: dest.chargeableWeight || dest.estimatedWeight || dest.weight || 0,
                     status: shipmentData?.status,
-                    trackingNumber: `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+                    soNumber: soNumber,
+                    trackingNumber: soNumber || `TRACK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
                     progress: getProgressPercentage(shipmentData?.status, shipmentData)
                   };
                 });
@@ -806,7 +830,11 @@ export const ShipmentTracking = () => {
             variant="secondary" 
             size="sm"
             onClick={() => {
-              if (shipment.quoteId) {
+              if (shipment.invoice) {
+                // If invoice exists, switch to invoice tab
+                setActiveTab('invoice');
+              } else if (shipment.quoteId) {
+                // Otherwise, navigate to quote page
                 navigate(`/quotes/${shipment.quoteId}`);
               } else {
                 addToast('Quote information not available', 'error');
@@ -814,7 +842,7 @@ export const ShipmentTracking = () => {
             }}
           >
             <FileTextIcon className="h-3.5 w-3.5 mr-1" />
-            View Quote
+            {shipment.invoice ? 'View Invoice' : 'View Quote'}
           </Button>
           <Button variant="primary" size="sm" onClick={handleContactSupport}>
             <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
@@ -1226,7 +1254,7 @@ export const ShipmentTracking = () => {
                       Tracking Number
                     </span>
                     <span className="text-sm font-medium text-gray-900">
-                      {activeDestinationData.soNumber || 'Not provided'}
+                      {activeDestinationData.trackingNumber || activeDestinationData.soNumber || 'Not provided'}
                     </span>
                   </div>
                 </div>
@@ -1353,16 +1381,19 @@ export const ShipmentTracking = () => {
             </div>
           </div>
         </Card>}
-      {activeTab === 'chat' && <div className="h-[600px] bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+      {activeTab === 'chat' && (
+        <div className="h-[600px] bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+          {console.log('=== Chat Tab is Active ===', { activeTab, id, user })}
           <ChatPanel 
             shipmentId={id || ''} 
             currentUser={{
-              id: user?.id || 'user-1',
-              name: user?.name || 'Customer',
-              role: user?.role === 'admin' ? 'admin' : user?.role === 'staff' ? 'staff' : 'customer'
+              id: user?.id || 'demo-customer',
+              name: user?.name || 'Demo Customer',
+              role: user?.role === 'admin' ? 'admin' : user?.role === 'staff' ? 'staff' : 'customer' as const
             }}
           />
-        </div>}
+        </div>
+      )}
       {activeTab === 'invoice' && shipment.invoice && (
         <Card>
           <div className="flex justify-between items-start mb-6">
@@ -1380,7 +1411,25 @@ export const ShipmentTracking = () => {
               <Badge variant={shipment.invoice.status === 'Paid' ? 'success' : 'warning'}>
                 {shipment.invoice.status}
               </Badge>
-              <Button variant="secondary" size="sm">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => {
+                  console.log('Download Invoice clicked');
+                  console.log('Shipment:', shipment);
+                  console.log('Invoice:', shipment?.invoice);
+                  if (shipment && shipment.invoice) {
+                    try {
+                      generateInvoicePDF(shipment, shipment.invoice);
+                      console.log('PDF generation completed');
+                    } catch (error) {
+                      console.error('Error generating PDF:', error);
+                    }
+                  } else {
+                    console.log('No shipment or invoice data available');
+                  }
+                }}
+              >
                 <FileTextIcon className="h-4 w-4 mr-1" />
                 Download Invoice
               </Button>

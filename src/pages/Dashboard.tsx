@@ -6,9 +6,12 @@ import { Badge } from '../components/ui/Badge';
 import { TruckIcon, PackageIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, AlertCircleIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 export const Dashboard = () => {
   const { user } = useAuth();
   const { shipments } = useData();
+  
+  usePageTitle('Dashboard');
   
   // Filter shipments for current user
   const userShipments = useMemo(() => {
@@ -100,8 +103,8 @@ export const Dashboard = () => {
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
-          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
-            <TruckIcon className="w-5 h-5 text-teal-600" />
+          <div className="w-12 h-12 rounded-full bg-[#00b4d8]/10 flex items-center justify-center mr-4">
+            <TruckIcon className="w-5 h-5 text-[#00b4d8]" />
           </div>
           <div>
             <div className="text-3xl font-bold text-gray-900">{stats.activeShipments}</div>
@@ -109,8 +112,8 @@ export const Dashboard = () => {
           </div>
         </div>
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
-          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
-            <PackageIcon className="w-5 h-5 text-teal-600" />
+          <div className="w-12 h-12 rounded-full bg-[#00b4d8]/10 flex items-center justify-center mr-4">
+            <PackageIcon className="w-5 h-5 text-[#00b4d8]" />
           </div>
           <div>
             <div className="text-3xl font-bold text-gray-900">{stats.sampleShipments}</div>
@@ -118,8 +121,8 @@ export const Dashboard = () => {
           </div>
         </div>
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center">
-          <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mr-4">
-            <CheckCircleIcon className="w-5 h-5 text-teal-600" />
+          <div className="w-12 h-12 rounded-full bg-[#00b4d8]/10 flex items-center justify-center mr-4">
+            <CheckCircleIcon className="w-5 h-5 text-[#00b4d8]" />
           </div>
           <div>
             <div className="text-3xl font-bold text-gray-900">{stats.completedShipments}</div>
@@ -140,7 +143,13 @@ export const Dashboard = () => {
                 to request a quote.
               </p>
             </div>
-            <img src="/image.png" alt="Shipping illustration" className="w-24 h-24 object-contain" />
+            <div className="w-24 h-24 flex items-center justify-center">
+              <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 7v10M13 7l4-4M13 7l-4-4" stroke="#00b4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 12h18" stroke="#0096b8" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
+                <path d="M7 17l-4 4M17 17l4 4" stroke="#00b4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
+              </svg>
+            </div>
           </div>
           <Link to="/quotes/new">
             <button className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
@@ -159,7 +168,14 @@ export const Dashboard = () => {
                 button below to begin.
               </p>
             </div>
-            <img src="/image.png" alt="Sample shipping illustration" className="w-24 h-24 object-contain" />
+            <div className="w-24 h-24 flex items-center justify-center">
+              <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="8" width="7" height="8" stroke="#00b4d8" strokeWidth="1.5" rx="1"/>
+                <rect x="13" y="6" width="7" height="10" stroke="#0096b8" strokeWidth="1.5" rx="1" opacity="0.7"/>
+                <path d="M7.5 11.5h0M16.5 10h0" stroke="#00b4d8" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M2 20h20" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" opacity="0.3"/>
+              </svg>
+            </div>
           </div>
           <Link to="/samples">
             <button className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
@@ -193,13 +209,13 @@ export const Dashboard = () => {
                       </span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div className="bg-teal-500 h-1.5 rounded-full" style={{
+                      <div className="bg-[#00b4d8] h-1.5 rounded-full" style={{
                   width: `${shipment.progress}%`
                 }}></div>
                     </div>
                   </div>
                   <div className="flex justify-end items-center text-xs">
-                    <Link to={`/shipments/${shipment.id}`} className="flex items-center text-teal-600 hover:text-teal-700">
+                    <Link to={`/shipments/${shipment.id}`} className="flex items-center text-[#00b4d8] hover:text-[#0096b8]">
                       <span className="mr-1">View Details</span>
                       <ArrowRightIcon className="w-3 h-3" />
                     </Link>

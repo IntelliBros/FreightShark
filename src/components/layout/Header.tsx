@@ -10,10 +10,10 @@ export const Header = () => {
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
   return <header className="bg-white h-16 flex items-center px-6 justify-between border-b border-gray-200">
       <div className="flex items-center">
-        <h1 className="text-gray-900 font-bold text-xl mr-8">FREIGHT SHARK</h1>
+        <h1 className="text-[#1f2c39] font-bold text-xl mr-8">FREIGHT SHARK</h1>
         <div className="relative hidden md:block">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <input type="text" placeholder="Search..." className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-full focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 w-60 bg-white text-sm text-gray-900 placeholder-gray-400" />
+          <input type="text" placeholder="Search..." className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-full focus:outline-none focus:ring-1 focus:ring-[#00b4d8] focus:border-[#00b4d8] w-60 bg-white text-sm text-gray-900 placeholder-gray-400" />
         </div>
       </div>
       <div className="flex items-center space-x-5">
@@ -27,7 +27,7 @@ export const Header = () => {
         </button>
         <div className="relative">
           <button className="flex items-center space-x-2 focus:outline-none" onClick={toggleProfile}>
-            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-[#00b4d8] flex items-center justify-center">
               <UserIcon className="h-4 w-4 text-white" />
             </div>
             <div className="hidden md:flex items-center">

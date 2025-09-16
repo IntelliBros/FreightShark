@@ -249,12 +249,16 @@ export const ProvideQuote = () => {
     }
     setIsSaving(true);
     try {
+      // Get the current commission rate to lock it into the quote
+      const commissionRate = await DataService.getCommissionRate();
+      
       // Calculate totals
       const subtotal = calculateSubtotal();
       const total = calculateTotal();
       
       console.log('Creating quote for request:', requestId);
       console.log('Quote request customerId:', quoteRequest.customerId);
+      console.log('Locking in commission rate:', commissionRate);
       
       // Create the quote
       const quote = {
@@ -269,6 +273,7 @@ export const ProvideQuote = () => {
         subtotal,
         total,
         notes: quoteForm.notes,
+        commissionRatePerKg: commissionRate, // Lock in the current commission rate
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
       };
       

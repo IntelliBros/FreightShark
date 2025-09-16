@@ -21,6 +21,7 @@ import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { CreateInvoice } from './pages/staff/invoices/CreateInvoice';
 import { PendingInvoices } from './pages/staff/invoices/PendingInvoices';
 import { PaidInvoices } from './pages/staff/invoices/PaidInvoices';
+import { MessagesInbox } from './pages/staff/messages/MessagesInbox';
 import { QuoteRequests } from './pages/staff/quotes/QuoteRequests';
 import { PendingQuotes } from './pages/staff/quotes/PendingQuotes';
 import { ApprovedQuotes } from './pages/staff/quotes/ApprovedQuotes';
@@ -36,21 +37,26 @@ import { Settings as StaffSettings } from './pages/staff/Settings';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
+import { EmailSettings } from './pages/admin/EmailSettings';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { DataProvider } from './context/DataContext';
+import { LandingPage } from './pages/LandingPage';
 export function App() {
   return <BrowserRouter>
       <AuthProvider>
         <DataProvider>
           <ToastProvider>
             <Routes>
+              {/* Landing Page */}
+              <Route path="/welcome" element={<LandingPage />} />
               {/* Auth routes */}
               <Route path="/login" element={<UnifiedLogin />} />
               <Route path="/signup" element={<SignUp />} />
               {/* Customer dashboard */}
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
                 <Route path="quotes/new" element={<NewQuote />} />
                 <Route path="quotes" element={<AllQuotes />} />
                 <Route path="quotes/:id" element={<QuoteDetails />} />
@@ -85,10 +91,9 @@ export function App() {
                 <Route path="announcements" element={<StaffAnnouncements />} />
                 <Route path="announcements/:id" element={<AnnouncementDetail />} />
                 <Route path="settings" element={<StaffSettings />} />
-                <Route path="messages" element={<StaffDashboard />} />
-                <Route path="messages/:id" element={<StaffDashboard />} />
-                <Route path="messages/inbox" element={<StaffDashboard />} />
-                <Route path="messages/sent" element={<StaffDashboard />} />
+                <Route path="messages" element={<MessagesInbox />} />
+                <Route path="messages/inbox" element={<MessagesInbox />} />
+                <Route path="messages/sent" element={<MessagesInbox />} />
               </Route>
               {/* Admin dashboard */}
               <Route path="/admin" element={<AdminLayout />}>
@@ -101,6 +106,7 @@ export function App() {
                 <Route path="system/general" element={<SystemSettings />} />
                 <Route path="system/integrations" element={<SystemSettings />} />
                 <Route path="system/notifications" element={<SystemSettings />} />
+                <Route path="system/email" element={<EmailSettings />} />
                 <Route path="security/roles" element={<AdminDashboard />} />
                 <Route path="security/api-keys" element={<AdminDashboard />} />
               </Route>

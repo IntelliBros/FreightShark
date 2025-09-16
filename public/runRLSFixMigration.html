@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Messages RLS Policies</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .success {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #4caf50;
+            display: none;
+        }
+        button {
+            background: #14b8a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0f9b8e;
+        }
+        .sql-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        a {
+            color: #2196f3;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fix Messages RLS Policies</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> This migration fixes Row Level Security policies that are preventing messages from being marked as read.
+            <br><br>
+            <strong>Current Issue:</strong> Messages appear as unread after refreshing because the database update operations are being blocked by restrictive RLS policies.
+        </div>
+
+        <div class="info">
+            <strong>What this does:</strong>
+            <ul>
+                <li>Removes the restrictive update policy</li>
+                <li>Adds a policy allowing authenticated users to update messages</li>
+                <li>Enables marking messages as read to work properly</li>
+                <li>Fixes the issue where read status doesn't persist</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Option 1: Quick Fix</h3>
+            <button onclick="openSupabaseSQL()">Open Supabase SQL Editor</button>
+            <p style="margin-top: 10px; color: #666;">Copy and paste the SQL below, then click "Run"</p>
+        </div>
+
+        <div class="sql-box" id="sqlContent">-- Drop existing restrictive update policy
+DROP POLICY IF EXISTS "Enable update for message sender" ON messages;
+
+-- Create a more permissive update policy that allows authenticated users to update messages
+-- This is specifically needed for marking messages as read (updating read_by_staff and read_by_customer fields)
+CREATE POLICY "Enable update for all authenticated users" ON messages
+  FOR UPDATE 
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- Ensure RLS is enabled on the table
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+-- Grant necessary permissions to authenticated users
+GRANT UPDATE ON messages TO authenticated;
+GRANT SELECT ON messages TO authenticated;
+GRANT INSERT ON messages TO authenticated;</div>
+        <button onclick="copySQL()">Copy SQL to Clipboard</button>
+
+        <div class="success" id="successMsg">
+            ✅ SQL copied! Now paste it in Supabase SQL Editor and click "Run".
+        </div>
+    </div>
+
+    <script>
+        function openSupabaseSQL() {
+            window.open('https://supabase.com/dashboard/project/isvuolzqqjutrfytebtl/sql/new', '_blank');
+        }
+
+        function copySQL() {
+            const sqlContent = document.getElementById('sqlContent').textContent;
+            navigator.clipboard.writeText(sqlContent).then(() => {
+                document.getElementById('successMsg').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('successMsg').style.display = 'none';
+                }, 5000);
+            });
+        }
+    </script>
+</body>
+</html>

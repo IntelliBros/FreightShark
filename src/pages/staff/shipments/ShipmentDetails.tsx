@@ -9,17 +9,16 @@ import { DataService, QuoteRequest } from '../../../services/DataService';
 import { useData } from '../../../context/DataContext';
 import { ChatPanel } from '../../../components/chat/ChatPanel';
 import { useAuth } from '../../../context/AuthContext';
+import { amazonWarehouseService } from '../../../services/amazonWarehouseService';
+import { generateInvoicePDF } from '../../../utils/generateInvoicePDF';
 
 // Helper function to get warehouse addresses
-const getWarehouseAddress = (fbaWarehouse: string): string => {
-  const warehouseAddresses: Record<string, string> = {
-    'FBA ONT8': '1600 Discovery Drive, Moreno Valley, CA 92551, USA',
-    'FBA BFI4': '2700 Center Dr, DuPont, WA 98327, USA',
-    'FBA MDW2': '250 Emerald Dr, Joliet, IL 60433, USA',
-    'FBA PHX6': '4750 West Mohave St, Phoenix, AZ 85043, USA',
-    'FBA RIC2': '5000 Commerce Way, Petersburg, VA 23803, USA'
-  };
-  return warehouseAddresses[fbaWarehouse] || 'Address not available';
+const getWarehouseAddress = (warehouseCode: string): string => {
+  const warehouse = amazonWarehouseService.getWarehouseByCode(warehouseCode);
+  if (warehouse) {
+    return `${warehouse.address}, ${warehouse.city}, ${warehouse.state} ${warehouse.zipCode}, ${warehouse.country}`;
+  }
+  return 'Address not available';
 };
 
 export const ShipmentDetails = () => {
@@ -72,14 +71,8 @@ export const ShipmentDetails = () => {
     notes: ''
   });
   
-  // Available FBA warehouses for adding new destinations
-  const availableWarehouses = [
-    { code: 'FBA ONT8', name: 'Ontario, CA', address: '1600 Discovery Drive, Moreno Valley, CA 92551' },
-    { code: 'FBA BFI4', name: 'Kent, WA', address: '2700 Center Dr, DuPont, WA 98327' },
-    { code: 'FBA MDW2', name: 'Joliet, IL', address: '250 Emerald Dr, Joliet, IL 60433' },
-    { code: 'FBA PHX6', name: 'Phoenix, AZ', address: '4750 West Mohave St, Phoenix, AZ 85043' },
-    { code: 'FBA RIC2', name: 'Petersburg, VA', address: '5000 Commerce Way, Petersburg, VA 23803' }
-  ];
+  // Get warehouses from the service
+  const availableWarehouses = amazonWarehouseService.getWarehouseOptions();
   // Calculate invoice totals
   const [invoiceData, setInvoiceData] = useState({
     subtotal: 0,
@@ -469,6 +462,9 @@ export const ShipmentDetails = () => {
           
           return {
             ...dest,
+            soNumber: actualDest.soNumber, // Include SO number
+            amazonShipmentId: actualDest.amazonShipmentId, // Include Amazon Shipment ID
+            address: getWarehouseAddress(dest.fbaWarehouse), // Include warehouse address
             actualCartons: cartons,
             actualWeight: weight,
             chargeableWeight: chargeableWeight,
@@ -491,6 +487,7 @@ export const ShipmentDetails = () => {
           fbaWarehouse: d.fbaWarehouse,
           amazonShipmentId: d.amazonShipmentId,
           soNumber: d.soNumber,
+          address: getWarehouseAddress(d.fbaWarehouse), // Include warehouse address
           estimatedCartons: cartons,
           estimatedWeight: weight,
           actualCartons: cartons,
@@ -541,17 +538,22 @@ export const ShipmentDetails = () => {
       };
       
       // Update the shipment with actual cargo data and invoice
-      const updatedShipment = {
-        ...shipment,
+      // Store all data in destination field for database persistence
+      const destinationData = {
+        destinations: allDestinations,
+        invoice: invoice,
         masterCargo: {
           ...shipment.masterCargo,
           actualGrossWeight: actualGrossWeight,
           actualCartonCount: actualCartonCount,
           actualChargeableWeight: actualChargeableWeight
         },
-        destinations: allDestinations,
-        actualTotal: invoiceData.total,
-        invoice: invoice
+        actualTotal: invoiceData.total
+      };
+      
+      const updatedShipment = {
+        status: 'Pending Payment' as const, // Update status when invoice is generated
+        destination: destinationData // Store everything in destination JSONB field
       };
       
       // Save to DataService
@@ -712,8 +714,8 @@ export const ShipmentDetails = () => {
                                 >
                                   <option value="">Choose warehouse...</option>
                                   {availableWarehouses.map(wh => (
-                                    <option key={wh.code} value={wh.code}>
-                                      {wh.code} - {wh.name}
+                                    <option key={wh.id} value={wh.value}>
+                                      {wh.label}
                                     </option>
                                   ))}
                                 </select>
@@ -739,13 +741,18 @@ export const ShipmentDetails = () => {
                                     <label className="block text-xs font-medium text-gray-700 mb-1">
                                       Warehouse
                                     </label>
-                                    <input 
-                                      type="text" 
+                                    <select 
                                       value={dest.fbaWarehouse} 
                                       onChange={e => handleUpdateDestination(dest.id, 'fbaWarehouse', e.target.value)}
                                       className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                                      disabled
-                                    />
+                                    >
+                                      <option value={dest.fbaWarehouse}>{dest.fbaWarehouse}</option>
+                                      {availableWarehouses.filter(wh => wh.value !== dest.fbaWarehouse).map(wh => (
+                                        <option key={wh.id} value={wh.value}>
+                                          {wh.label}
+                                        </option>
+                                      ))}
+                                    </select>
                                   </div>
                                   <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1564,7 +1571,15 @@ export const ShipmentDetails = () => {
                     </div>}
                 </div>
                 <div className="flex space-x-3">
-                  <Button variant="secondary" size="sm">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => {
+                      if (shipment && shipment.invoice) {
+                        generateInvoicePDF(shipment, shipment.invoice);
+                      }
+                    }}
+                  >
                     <FileTextIcon className="h-4 w-4 mr-1" />
                     Download Invoice
                   </Button>

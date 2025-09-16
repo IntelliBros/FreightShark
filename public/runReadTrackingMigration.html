@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Read Tracking Migration</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .success {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #4caf50;
+            display: none;
+        }
+        .error {
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #f44336;
+            display: none;
+        }
+        button {
+            background: #14b8a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0f9b8e;
+        }
+        .sql-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        .step {
+            margin: 20px 0;
+        }
+        .step h3 {
+            color: #555;
+            margin-bottom: 10px;
+        }
+        a {
+            color: #2196f3;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Read Tracking Migration</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Important:</strong> This migration adds proper read tracking for both staff and customers to the messages table, allowing accurate unread counts that persist across page refreshes.
+        </div>
+
+        <div class="step">
+            <h3>What this migration does:</h3>
+            <ul>
+                <li>Adds <code>read_by_staff</code> and <code>read_by_customer</code> boolean fields</li>
+                <li>Adds timestamp fields to track when messages were read</li>
+                <li>Updates existing messages with appropriate read status</li>
+                <li>Creates indexes for better query performance</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Option 1: Direct Link (Recommended)</h3>
+            <p>Click the button below to open Supabase SQL Editor with the migration:</p>
+            <button onclick="openSupabaseSQL()">Open Supabase SQL Editor</button>
+            <p style="margin-top: 10px; color: #666;">Then paste the SQL below and click "Run"</p>
+        </div>
+
+        <div class="step">
+            <h3>SQL Migration Script:</h3>
+            <div class="sql-box" id="sqlContent">-- Add read tracking fields to messages table
+ALTER TABLE messages 
+ADD COLUMN IF NOT EXISTS read_by_staff BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS read_by_customer BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS read_by_staff_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS read_by_customer_at TIMESTAMP WITH TIME ZONE;
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_messages_read_by_staff ON messages(read_by_staff);
+CREATE INDEX IF NOT EXISTS idx_messages_read_by_customer ON messages(read_by_customer);
+
+-- Update existing messages based on sender_role and is_read
+-- If sender is customer and is_read is true, mark as read by staff
+UPDATE messages 
+SET read_by_staff = true, 
+    read_by_staff_at = updated_at
+WHERE sender_role = 'customer' 
+  AND is_read = true;
+
+-- If sender is staff/system and is_read is true, mark as read by customer  
+UPDATE messages 
+SET read_by_customer = true,
+    read_by_customer_at = updated_at
+WHERE sender_role IN ('staff', 'system')
+  AND is_read = true;
+
+-- Messages sent by customer are automatically read by customer
+UPDATE messages 
+SET read_by_customer = true,
+    read_by_customer_at = created_at
+WHERE sender_role = 'customer';
+
+-- Messages sent by staff are automatically read by staff
+UPDATE messages 
+SET read_by_staff = true,
+    read_by_staff_at = created_at
+WHERE sender_role = 'staff';
+
+-- Messages sent by system are automatically read by staff
+UPDATE messages 
+SET read_by_staff = true,
+    read_by_staff_at = created_at
+WHERE sender_role = 'system';</div>
+            <button onclick="copySQL()">Copy SQL to Clipboard</button>
+        </div>
+
+        <div class="step">
+            <h3>Option 2: Manual Steps</h3>
+            <ol>
+                <li>Go to your <a href="https://supabase.com/dashboard/project/isvuolzqqjutrfytebtl" target="__blank">Supabase Dashboard</a></li>
+                <li>Navigate to the SQL Editor (left sidebar)</li>
+                <li>Click "New query"</li>
+                <li>Copy the SQL script above</li>
+                <li>Paste it in the SQL editor</li>
+                <li>Click "Run" to execute the migration</li>
+            </ol>
+        </div>
+
+        <div class="success" id="successMsg">
+            ✅ SQL copied to clipboard! Now paste it in the Supabase SQL Editor and click "Run".
+        </div>
+
+        <div class="error" id="errorMsg">
+            ❌ Failed to copy to clipboard. Please select and copy the SQL manually.
+        </div>
+    </div>
+
+    <script>
+        function openSupabaseSQL() {
+            window.open('https://supabase.com/dashboard/project/isvuolzqqjutrfytebtl/sql/new', '_blank');
+        }
+
+        function copySQL() {
+            const sqlContent = document.getElementById('sqlContent').textContent;
+            navigator.clipboard.writeText(sqlContent).then(() => {
+                document.getElementById('successMsg').style.display = 'block';
+                document.getElementById('errorMsg').style.display = 'none';
+                setTimeout(() => {
+                    document.getElementById('successMsg').style.display = 'none';
+                }, 5000);
+            }).catch(() => {
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('successMsg').style.display = 'none';
+            });
+        }
+    </script>
+</body>
+</html>

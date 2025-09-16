@@ -11,7 +11,7 @@ export const AdminLayout = () => {
   } = useAuth();
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="w-10 h-10 border-4 border-[#1E293B] rounded-full border-t-transparent animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-[#1E2A45] rounded-full border-t-transparent animate-spin"></div>
       </div>;
   }
   // Redirect to login if not authenticated or not an admin

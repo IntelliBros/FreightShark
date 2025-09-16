@@ -556,9 +556,64 @@ export const supabaseService = {
       if (updates.estimated_delivery !== undefined) dbUpdates.estimated_delivery = updates.estimated_delivery;
       if (updates.actual_delivery !== undefined) dbUpdates.actual_delivery = updates.actual_delivery;
       if (updates.cargo_details !== undefined) dbUpdates.cargo_details = updates.cargo_details;
-      // Note: invoice field doesn't exist in database - handle separately if needed
-      if (updates.destination !== undefined) dbUpdates.destination = updates.destination;
-      if (updates.destinations !== undefined) dbUpdates.destination = updates.destinations; // Map destinations to destination field
+      
+      // Handle destination updates carefully to preserve all data
+      if (updates.destination !== undefined || updates.destinations !== undefined || updates.invoice !== undefined) {
+        // First, fetch the current shipment to preserve existing data
+        const { data: currentShipment } = await supabase
+          .from('shipments')
+          .select('destination')
+          .eq('id', id)
+          .single();
+        
+        let existingData = {};
+        if (currentShipment?.destination) {
+          existingData = typeof currentShipment.destination === 'string' 
+            ? JSON.parse(currentShipment.destination)
+            : currentShipment.destination;
+        }
+        
+        // Preserve existing data
+        const preservedInvoice = existingData.invoice || null;
+        const preservedDestinations = existingData.destinations || [];
+        const preservedMasterCargo = existingData.masterCargo || null;
+        
+        // Handle different update scenarios
+        if (updates.invoice !== undefined && updates.destinations === undefined && updates.destination === undefined) {
+          // Only updating invoice - preserve destinations
+          dbUpdates.destination = {
+            destinations: preservedDestinations,
+            invoice: updates.invoice,
+            ...(preservedMasterCargo ? { masterCargo: preservedMasterCargo } : {})
+          };
+        } else if (updates.destinations !== undefined) {
+          // Updating destinations - preserve invoice
+          dbUpdates.destination = {
+            destinations: updates.destinations,
+            invoice: preservedInvoice,
+            ...(preservedMasterCargo ? { masterCargo: preservedMasterCargo } : {})
+          };
+        } else if (updates.destination !== undefined) {
+          // If updating the whole destination object, intelligently merge
+          const newDestination = typeof updates.destination === 'object' ? updates.destination : {};
+          
+          // If new destination has invoice but no destinations, preserve existing destinations
+          if (newDestination.invoice && !newDestination.destinations) {
+            dbUpdates.destination = {
+              destinations: preservedDestinations,
+              invoice: newDestination.invoice,
+              ...(newDestination.masterCargo || preservedMasterCargo ? { masterCargo: newDestination.masterCargo || preservedMasterCargo } : {})
+            };
+          } else {
+            // Otherwise merge everything
+            dbUpdates.destination = {
+              destinations: newDestination.destinations || preservedDestinations,
+              invoice: newDestination.invoice || preservedInvoice,
+              ...(newDestination.masterCargo || preservedMasterCargo ? { masterCargo: newDestination.masterCargo || preservedMasterCargo } : {})
+            };
+          }
+        }
+      }
       
       console.log('Filtered updates for database:', dbUpdates);
       
@@ -699,6 +754,194 @@ export const supabaseService = {
       
       if (error) throw error;
       return true;
+    }
+  },
+
+  // Messages for real-time chat
+  messages: {
+    async getByShipment(shipmentId: string) {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('shipment_id', shipmentId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+
+    async create(message: {
+      shipment_id: string;
+      sender_id: string;
+      sender_name: string;
+      sender_role: 'customer' | 'staff' | 'admin' | 'system';
+      content: string;
+      attachments?: any;
+    }) {
+      // Set read status based on sender role - sender always reads their own message
+      const readStatus = {
+        read_by_staff: message.sender_role === 'staff' || message.sender_role === 'admin' || message.sender_role === 'system',
+        read_by_customer: message.sender_role === 'customer',
+        read_by_staff_at: (message.sender_role === 'staff' || message.sender_role === 'admin' || message.sender_role === 'system') ? new Date().toISOString() : null,
+        read_by_customer_at: message.sender_role === 'customer' ? new Date().toISOString() : null,
+        is_read: false // Only true when both parties have read it
+      };
+
+      console.log('Creating message with read status:', { ...message, ...readStatus });
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ ...message, ...readStatus })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating message:', error);
+        throw error;
+      }
+      
+      console.log('Message created successfully:', data);
+      return data;
+    },
+
+    async markAsRead(messageIds: string[], role: 'staff' | 'customer') {
+      if (!messageIds || messageIds.length === 0) {
+        console.log('No message IDs provided to mark as read');
+        return true;
+      }
+
+      const updateData = role === 'staff' 
+        ? { 
+            read_by_staff: true, 
+            read_by_staff_at: new Date().toISOString()
+          }
+        : { 
+            read_by_customer: true, 
+            read_by_customer_at: new Date().toISOString()
+          };
+
+      console.log(`Marking ${messageIds.length} messages as read for ${role}:`, updateData);
+      console.log('Message IDs:', messageIds);
+
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .update(updateData)
+          .in('id', messageIds)
+          .select();
+        
+        if (error) {
+          console.error('Supabase update error:', error);
+          throw error;
+        }
+        
+        if (!data || data.length === 0) {
+          console.warn('⚠️ Update returned no data - checking if RLS policies are working correctly');
+          
+          // Try to verify if the update actually worked by checking the current state
+          const { data: checkData, error: checkError } = await supabase
+            .from('messages')
+            .select('id, read_by_staff, read_by_customer, read_by_staff_at, read_by_customer_at')
+            .in('id', messageIds);
+          
+          if (checkError) {
+            console.error('Error checking message status:', checkError);
+          } else {
+            console.log('Current message status after update attempt:', checkData);
+            // Check if any were actually updated
+            const updatedCount = checkData?.filter(msg => 
+              role === 'staff' ? msg.read_by_staff : msg.read_by_customer
+            ).length || 0;
+            
+            if (updatedCount > 0) {
+              console.log(`✅ Despite no return data, ${updatedCount} messages appear to be marked as read`);
+            } else {
+              console.error('❌ Messages were NOT updated - RLS policy may still be blocking updates');
+            }
+          }
+        } else {
+          console.log(`✅ Successfully marked ${data.length} messages as read`);
+        }
+        
+        return true;
+      } catch (err) {
+        console.error('Failed to mark messages as read:', err);
+        // Don't throw - allow app to continue functioning
+        return false;
+      }
+    },
+
+    // Store active subscriptions
+    activeSubscriptions: new Map(),
+
+    // Subscribe to real-time changes
+    subscribeToShipment(shipmentId: string, callback: (message: any) => void) {
+      // Unsubscribe from existing subscription if exists
+      if (this.activeSubscriptions.has(shipmentId)) {
+        const existingSub = this.activeSubscriptions.get(shipmentId);
+        if (existingSub) {
+          supabase.removeChannel(existingSub);
+        }
+      }
+
+      const subscription = supabase
+        .channel(`messages:${shipmentId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `shipment_id=eq.${shipmentId}`
+        }, (payload) => {
+          callback(payload.new);
+        })
+        .subscribe();
+
+      // Store the subscription
+      this.activeSubscriptions.set(shipmentId, subscription);
+      
+      return subscription;
+    },
+
+    // Unsubscribe from real-time changes
+    unsubscribe(shipmentId: string) {
+      const subscription = this.activeSubscriptions.get(shipmentId);
+      if (subscription) {
+        supabase.removeChannel(subscription);
+        this.activeSubscriptions.delete(shipmentId);
+      }
+    }
+  },
+
+  // System settings
+  systemSettings: {
+    async get(key: string) {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .eq('key', key)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
+        throw error;
+      }
+      return data;
+    },
+
+    async update(key: string, value: string) {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .upsert({
+          key,
+          value,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     }
   }
 };
