@@ -46,6 +46,14 @@ class EmailService {
     this.initializeTransporter();
   }
 
+  private getLogoUrl(format: 'svg' | 'png' = 'png'): string {
+    // Use environment variable or default to production URL
+    const baseUrl = process.env.FRONTEND_URL || 'https://freight-shark.vercel.app';
+    // PNG is more compatible with email clients
+    const filename = format === 'png' ? 'freight-shark-logo.png' : 'freight-shark-logo.svg';
+    return `${baseUrl}/${filename}`;
+  }
+
   private initializeTransporter() {
     try {
       this.transporter = nodemailer.createTransport({
@@ -88,6 +96,7 @@ class EmailService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #00b4d8; padding: 20px; text-align: center;">
+            <img src="${this.getLogoUrl()}" alt="Freight Shark" style="height: 50px; width: auto; margin-bottom: 10px;">
             <h1 style="color: white; margin: 0;">Freight Shark</h1>
           </div>
           <div style="padding: 20px; background: #f5f5f5;">
@@ -163,6 +172,7 @@ class EmailService {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #00b4d8; padding: 20px; text-align: center;">
+              <img src="${this.getLogoUrl()}" alt="Freight Shark" style="height: 50px; width: auto; margin-bottom: 10px;">
               <h1 style="color: white; margin: 0;">Freight Shark</h1>
             </div>
             <div style="padding: 20px; background: #f5f5f5;">
@@ -189,6 +199,7 @@ class EmailService {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #00b4d8; padding: 20px; text-align: center;">
+              <img src="${this.getLogoUrl()}" alt="Freight Shark" style="height: 50px; width: auto; margin-bottom: 10px;">
               <h1 style="color: white; margin: 0;">Freight Shark</h1>
             </div>
             <div style="padding: 20px; background: #f5f5f5;">
