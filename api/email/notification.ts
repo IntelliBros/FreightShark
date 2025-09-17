@@ -1,14 +1,16 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 function createEmailTemplate(templateId: string, variables: Record<string, string>) {
-  // Use hosted SVG logo for better email delivery
-  const logoUrl = `${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/freight-shark-logo.svg`;
+  // Use hosted SVG logos for better email delivery
+  const baseUrl = process.env.FRONTEND_URL || 'https://freight-shark.vercel.app';
+  const logoWhiteUrl = `${baseUrl}/freight-shark-logo-white.svg`;
+  const logoUrl = `${baseUrl}/freight-shark-logo.svg`;
 
   const header = `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #1f2c39;">
       <tr>
         <td style="padding: 30px; text-align: center; background-color: #1f2c39;">
-          <img src="${logoUrl}" alt="Freight Shark" width="200" height="60" style="display: block; border: none; margin: 0 auto;" />
+          <img src="${logoWhiteUrl}" alt="Freight Shark" width="200" height="60" style="display: block; border: none; margin: 0 auto;" />
         </td>
       </tr>
     </table>
@@ -21,11 +23,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; max-width: 400px;">
             <tr>
               <td style="text-align: center;">
-                <img src="${logoUrl}" alt="Freight Shark Logo" width="30" height="30" style="display: inline-block; border: none; margin-bottom: 10px; opacity: 0.6;" />
-                <p style="color: #64748b !important; font-size: 14px; margin: 0 0 15px 0; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
-                  <strong style="color: #1e293b !important;">Freight Shark</strong><br>
-                  Your trusted partner in global logistics
-                </p>
+                <img src="${logoUrl}" alt="Freight Shark Logo" width="120" height="40" style="display: inline-block; border: none; margin-bottom: 15px;" />
                 <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
                   <p style="color: #94a3b8 !important; font-size: 12px; margin: 5px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
                     © ${new Date().getFullYear()} Freight Shark. All rights reserved.

@@ -46,10 +46,13 @@ class EmailService {
     this.initializeTransporter();
   }
 
-  private getLogoUrl(format: 'svg' | 'png' = 'svg'): string {
+  private getLogoUrl(format: 'svg' | 'png' = 'svg', variant: 'default' | 'white' = 'default'): string {
     // Use environment variable or default to production URL
     const baseUrl = process.env.FRONTEND_URL || 'https://freight-shark.vercel.app';
     // Using SVG as default per request
+    if (variant === 'white') {
+      return `${baseUrl}/freight-shark-logo-white.svg`;
+    }
     const filename = format === 'svg' ? 'freight-shark-logo.svg' : 'freight-shark-logo.png';
     return `${baseUrl}/${filename}`;
   }
@@ -96,8 +99,7 @@ class EmailService {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #00b4d8; padding: 20px; text-align: center;">
-            <img src="${this.getLogoUrl()}" alt="Freight Shark" style="height: 50px; width: auto; margin-bottom: 10px;">
-            <h1 style="color: white; margin: 0;">Freight Shark</h1>
+            <img src="${this.getLogoUrl('svg', 'white')}" alt="Freight Shark" style="height: 60px; width: auto;">
           </div>
           <div style="padding: 20px; background: #f5f5f5;">
             <h2 style="color: #333;">Test Email Successful!</h2>
@@ -172,8 +174,7 @@ class EmailService {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #00b4d8; padding: 20px; text-align: center;">
-              <img src="${this.getLogoUrl()}" alt="Freight Shark" style="height: 50px; width: auto; margin-bottom: 10px;">
-              <h1 style="color: white; margin: 0;">Freight Shark</h1>
+              <img src="${this.getLogoUrl('svg', 'white')}" alt="Freight Shark" style="height: 60px; width: auto;">
             </div>
             <div style="padding: 20px; background: #f5f5f5;">
               <h2 style="color: #333;">Quote Request Received</h2>
@@ -199,8 +200,7 @@ class EmailService {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #00b4d8; padding: 20px; text-align: center;">
-              <img src="${this.getLogoUrl()}" alt="Freight Shark" style="height: 50px; width: auto; margin-bottom: 10px;">
-              <h1 style="color: white; margin: 0;">Freight Shark</h1>
+              <img src="${this.getLogoUrl('svg', 'white')}" alt="Freight Shark" style="height: 60px; width: auto;">
             </div>
             <div style="padding: 20px; background: #f5f5f5;">
               <h2 style="color: #333;">Your Quote is Ready!</h2>
