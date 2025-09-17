@@ -303,17 +303,6 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           </tr>
         </table>
 
-        <!-- Promise Box -->
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
-          <tr>
-            <td style="padding: 20px; background-color: #dcfce7; border: 2px solid #16a34a;">
-              <p style="color: #166534; font-size: 16px; margin: 0; text-align: center; font-weight: bold; font-family: Arial, sans-serif;">
-                ⚡ Our Promise: Quote within one business day or your first shipment is expedited FREE!
-              </p>
-            </td>
-          </tr>
-        </table>
-
         <!-- CTA Button -->
         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
           <tr>
