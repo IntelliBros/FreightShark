@@ -917,7 +917,13 @@ export const supabaseService = {
         console.log('🔔 Getting recent messages for user:', { userId, userRole, since });
 
         // Get all shipments for this user
-        let query = supabase.from('messages').select('*');
+        let messagesQuery = supabase.from('messages').select(`
+          *,
+          shipments!inner (
+            id,
+            destinations
+          )
+        `);
 
         // For customers, get their shipments
         if (userRole === 'user') {
@@ -929,7 +935,7 @@ export const supabaseService = {
 
           if (shipments && shipments.length > 0) {
             const shipmentIds = shipments.map(s => s.id);
-            query = query
+            messagesQuery = messagesQuery
               .in('shipment_id', shipmentIds)
               .neq('sender_id', userId)
               .gte('created_at', since)
@@ -939,21 +945,41 @@ export const supabaseService = {
           }
         } else {
           // For staff/admin, get all messages from customers
-          query = query
+          messagesQuery = messagesQuery
             .eq('sender_role', 'customer')
             .gte('created_at', since)
             .order('created_at', { ascending: false });
         }
 
-        const { data, error } = await query;
+        const { data, error } = await messagesQuery;
 
         if (error) {
           console.error('🔔 Error fetching recent messages:', error);
           return [];
         }
 
-        console.log('🔔 Found recent messages:', data?.length || 0);
-        return data || [];
+        // Process messages to include shipment info
+        const processedMessages = data?.map((msg: any) => {
+          const shipmentInfo = msg.shipments;
+          let warehouseInfo = '';
+
+          if (shipmentInfo?.destinations) {
+            const destinations = shipmentInfo.destinations;
+            const warehouseCount = Object.keys(destinations).length;
+            const warehouseNames = Object.keys(destinations).slice(0, 2).join(', ');
+            warehouseInfo = warehouseCount > 2
+              ? `${warehouseNames}, +${warehouseCount - 2} more`
+              : warehouseNames;
+          }
+
+          return {
+            ...msg,
+            warehouse_info: warehouseInfo
+          };
+        }) || [];
+
+        console.log('🔔 Found recent messages:', processedMessages.length);
+        return processedMessages;
       } catch (error) {
         console.error('🔔 Error in getRecentForUser:', error);
         return [];

@@ -264,11 +264,24 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
             if (!exists) {
               console.log('🔔 Creating notification for message:', msg);
+
+              // Format the message with shipment info
+              const messageContent = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
+
+              // Create title with shipment ID
+              let title = 'New Message';
+              if (msg.shipment_id) {
+                title = `Shipment ${msg.shipment_id}`;
+                if (msg.warehouse_info) {
+                  title += ` • ${msg.warehouse_info}`;
+                }
+              }
+
               addNotification({
                 type: 'message',
                 icon: MessageSquare,
-                title: 'New Message',
-                message: `${msg.sender_name}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`,
+                title: title,
+                message: `${msg.sender_name}: ${messageContent}`,
                 read: false,
                 link: `/shipments/${msg.shipment_id}`
               });
