@@ -126,7 +126,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
                   <td style="vertical-align: top;">
                     <strong style="color: #1e293b; font-size: 16px; font-family: Arial, sans-serif;">Request Quotes</strong>
                     <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px; font-family: Arial, sans-serif;">
-                      Get competitive shipping rates within 24 hours
+                      Get competitive shipping rates within one business day
                     </p>
                   </td>
                 </tr>
@@ -294,7 +294,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
                   <td style="vertical-align: top;">
                     <strong style="color: #1e293b; font-size: 15px; font-family: Arial, sans-serif;">Quote Delivery</strong>
                     <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px; font-family: Arial, sans-serif;">
-                      You'll receive your detailed quote within 24 hours
+                      You'll receive your detailed quote within one business day
                     </p>
                   </td>
                 </tr>
@@ -308,7 +308,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           <tr>
             <td style="padding: 20px; background-color: #dcfce7; border: 2px solid #16a34a;">
               <p style="color: #166534; font-size: 16px; margin: 0; text-align: center; font-weight: bold; font-family: Arial, sans-serif;">
-                ⚡ Our Promise: Quote within 24 hours or your first shipment is expedited FREE!
+                ⚡ Our Promise: Quote within one business day or your first shipment is expedited FREE!
               </p>
             </td>
           </tr>
