@@ -156,7 +156,10 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim()) {
+      console.log('🔔 Message is empty, not sending');
+      return;
+    }
 
     const messageData = {
       shipment_id: shipmentId,
@@ -166,7 +169,9 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
       sender_role: currentUser.role,
     };
 
+    console.log('🔔 ============ SENDING MESSAGE ============');
     console.log('🔔 Attempting to send message:', messageData);
+    console.log('🔔 Current localStorage global_chat_messages:', localStorage.getItem('global_chat_messages'));
 
     try {
       // Create message in Supabase
@@ -181,18 +186,26 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
         sender_id: currentUser.id,
         sender_name: currentUser.name,
         sender_role: currentUser.role,
+        shipment_id: shipmentId,  // Make sure shipment_id is included
         created_at: new Date().toISOString(),
         is_read: false
       };
 
       // Store message globally for cross-user notifications
       const globalMessages = JSON.parse(localStorage.getItem('global_chat_messages') || '[]');
-      globalMessages.push({
+      const messageWithTimestamp = {
         ...messageForGlobal,
+        shipment_id: shipmentId,  // Ensure shipment_id is included
         timestamp: Date.now()
-      });
-      localStorage.setItem('global_chat_messages', JSON.stringify(globalMessages.slice(-100)));
-      console.log('🔔 Saved message globally:', messageForGlobal, 'Total global messages:', globalMessages.length);
+      };
+      globalMessages.push(messageWithTimestamp);
+      const updatedGlobalMessages = globalMessages.slice(-100);
+      localStorage.setItem('global_chat_messages', JSON.stringify(updatedGlobalMessages));
+
+      console.log('🔔 ============ MESSAGE STORED GLOBALLY ============');
+      console.log('🔔 Saved message globally:', messageWithTimestamp);
+      console.log('🔔 Total global messages now:', updatedGlobalMessages.length);
+      console.log('🔔 Updated localStorage:', localStorage.getItem('global_chat_messages'));
 
       // Add the message to local state
       if (savedMessage) {
@@ -224,12 +237,19 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
 
       // Store message globally for cross-user notifications (fallback case)
       const globalMessages = JSON.parse(localStorage.getItem('global_chat_messages') || '[]');
-      globalMessages.push({
+      const messageWithTimestamp = {
         ...newMessage,
+        shipment_id: shipmentId,
         timestamp: Date.now()
-      });
-      localStorage.setItem('global_chat_messages', JSON.stringify(globalMessages.slice(-100)));
-      console.log('🔔 Saved message globally (fallback):', newMessage, 'Total global messages:', globalMessages.length);
+      };
+      globalMessages.push(messageWithTimestamp);
+      const updatedGlobalMessages = globalMessages.slice(-100);
+      localStorage.setItem('global_chat_messages', JSON.stringify(updatedGlobalMessages));
+
+      console.log('🔔 ============ MESSAGE STORED GLOBALLY (FALLBACK) ============');
+      console.log('🔔 Saved message globally (fallback):', messageWithTimestamp);
+      console.log('🔔 Total global messages now:', updatedGlobalMessages.length);
+      console.log('🔔 Updated localStorage:', localStorage.getItem('global_chat_messages'));
 
       setMessage('');
     }
