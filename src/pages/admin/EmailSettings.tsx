@@ -347,7 +347,7 @@ export const EmailSettings = () => {
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                <Mail className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div className="text-sm text-blue-800">
                   <p className="font-semibold mb-1">Before sending test emails:</p>
                   <ul className="list-disc list-inside space-y-1">
