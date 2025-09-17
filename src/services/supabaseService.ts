@@ -909,6 +909,55 @@ export const supabaseService = {
         supabase.removeChannel(subscription);
         this.activeSubscriptions.delete(shipmentId);
       }
+    },
+
+    // Get recent messages for a user (for notifications)
+    async getRecentForUser(userId: string, userRole: 'user' | 'staff' | 'admin', since: string) {
+      try {
+        console.log('🔔 Getting recent messages for user:', { userId, userRole, since });
+
+        // Get all shipments for this user
+        let query = supabase.from('messages').select('*');
+
+        // For customers, get their shipments
+        if (userRole === 'user') {
+          // Get shipments where this user is the customer
+          const { data: shipments } = await supabase
+            .from('shipments')
+            .select('id')
+            .eq('customer_id', userId);
+
+          if (shipments && shipments.length > 0) {
+            const shipmentIds = shipments.map(s => s.id);
+            query = query
+              .in('shipment_id', shipmentIds)
+              .neq('sender_id', userId)
+              .gte('created_at', since)
+              .order('created_at', { ascending: false });
+          } else {
+            return [];
+          }
+        } else {
+          // For staff/admin, get all messages from customers
+          query = query
+            .eq('sender_role', 'customer')
+            .gte('created_at', since)
+            .order('created_at', { ascending: false });
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('🔔 Error fetching recent messages:', error);
+          return [];
+        }
+
+        console.log('🔔 Found recent messages:', data?.length || 0);
+        return data || [];
+      } catch (error) {
+        console.error('🔔 Error in getRecentForUser:', error);
+        return [];
+      }
     }
   },
 

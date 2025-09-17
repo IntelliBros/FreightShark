@@ -191,74 +191,60 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     }
   }, [user]);
 
-  // Monitor for new messages (integrate with chat system)
+  // Monitor for new messages from database
   useEffect(() => {
     if (!user?.id) return;
 
     // Track last checked timestamp for this user
     const lastCheckedKey = `last_checked_messages_${user.id}`;
-    let lastChecked = parseInt(localStorage.getItem(lastCheckedKey) || '0');
+    let lastChecked = new Date(localStorage.getItem(lastCheckedKey) || new Date().toISOString());
 
-    const checkForNewMessages = () => {
-      // Force localStorage sync across tabs
-      const storageKey = 'global_chat_messages';
-      const rawMessages = localStorage.getItem(storageKey);
+    const checkForNewMessages = async () => {
+      try {
+        // Import supabaseService
+        const { supabaseService } = await import('../services/supabaseService');
 
-      console.log('🔔 Raw localStorage value:', rawMessages);
+        // Get all recent messages for the user's shipments
+        // For customers, get messages from staff
+        // For staff, get messages from customers
+        const roleFilter = user.role === 'user' ? 'staff' : 'customer';
 
-      const globalMessages = rawMessages ? JSON.parse(rawMessages) : [];
-      const newMessages = globalMessages.filter((msg: any) =>
-        msg.timestamp > lastChecked &&
-        msg.sender_id !== user.id &&
-        msg.sender_name !== user.name
-      );
-
-      console.log('🔔 Checking for new messages:', {
-        totalGlobal: globalMessages.length,
-        newCount: newMessages.length,
-        lastChecked,
-        currentUser: user.id,
-        userRole: user.role
-      });
-
-      // Log first few messages for debugging
-      if (globalMessages.length > 0) {
-        console.log('🔔 Sample messages:', globalMessages.slice(0, 2));
-      }
-
-      newMessages.forEach((msg: any) => {
-        console.log('🔔 Creating notification for message:', msg);
-        addNotification({
-          type: 'message',
-          icon: MessageSquare,
-          title: 'New Message',
-          message: `${msg.sender_name}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`,
-          read: false,
-          link: `/shipments/${msg.shipment_id}`
+        console.log('🔔 Checking database for new messages:', {
+          userRole: user.role,
+          lookingFor: roleFilter,
+          lastChecked: lastChecked.toISOString()
         });
-      });
 
-      // DEMO MODE: If we're a customer and there are staff messages, show them as notifications
-      if (user.role === 'user' && globalMessages.length > 0) {
-        const staffMessages = globalMessages.filter((msg: any) =>
-          msg.sender_role === 'staff' &&
-          msg.timestamp > lastChecked - 10000 // Look back 10 seconds for demo
+        // Get messages from the last 24 hours for all shipments
+        const recentMessages = await supabaseService.messages.getRecentForUser(
+          user.id,
+          user.role as any,
+          lastChecked.toISOString()
         );
 
-        if (staffMessages.length > 0) {
-          console.log('🔔 DEMO MODE: Found recent staff messages for customer:', staffMessages);
-          staffMessages.forEach((msg: any) => {
+        console.log('🔔 Found messages from database:', recentMessages?.length || 0);
+
+        if (recentMessages && recentMessages.length > 0) {
+          // Filter for messages from other users
+          const newMessages = recentMessages.filter((msg: any) =>
+            msg.sender_id !== user.id &&
+            new Date(msg.created_at) > lastChecked
+          );
+
+          console.log('🔔 New messages to notify:', newMessages.length);
+
+          newMessages.forEach((msg: any) => {
             // Check if we already have this notification
             const exists = notifications.some(n =>
               n.message.includes(msg.content.substring(0, 20))
             );
 
             if (!exists) {
-              console.log('🔔 DEMO MODE: Creating notification for staff message:', msg);
+              console.log('🔔 Creating notification for message:', msg);
               addNotification({
                 type: 'message',
                 icon: MessageSquare,
-                title: 'New Message from Staff',
+                title: 'New Message',
                 message: `${msg.sender_name}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`,
                 read: false,
                 link: `/shipments/${msg.shipment_id}`
@@ -266,29 +252,21 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
             }
           });
         }
-      }
 
-      // Update last checked timestamp
-      const now = Date.now();
-      localStorage.setItem(lastCheckedKey, now.toString());
-      lastChecked = now;
+        // Update last checked timestamp
+        const now = new Date();
+        localStorage.setItem(lastCheckedKey, now.toISOString());
+        lastChecked = now;
+      } catch (error) {
+        console.error('🔔 Error checking for new messages:', error);
+      }
     };
 
     // Check immediately
     checkForNewMessages();
 
-    // Check every 2 seconds for demo purposes
-    const interval = setInterval(checkForNewMessages, 2000);
-
-    // Listen for storage events (cross-tab communication)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'global_chat_messages' && e.newValue) {
-        console.log('🔔 Storage event detected - checking for new messages');
-        checkForNewMessages();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
+    // Check every 5 seconds for new messages from database
+    const interval = setInterval(checkForNewMessages, 5000);
 
     // Listen for manual notification checks
     const handleManualCheck = () => {
@@ -297,44 +275,11 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     };
     window.addEventListener('checkNotifications' as any, handleManualCheck);
 
-    // Also listen for custom events (for immediate updates)
-    const handleNewMessage = (event: CustomEvent) => {
-      const { shipmentId, message, senderName, senderId } = event.detail;
-
-      console.log('🔔 NotificationsContext received event:', {
-        shipmentId,
-        message,
-        senderName,
-        senderId,
-        currentUser: user,
-        shouldNotify: senderId !== user?.id && senderName !== user?.name
-      });
-
-      // Only create notification if message is from someone else
-      if (senderId !== user?.id && senderName !== user?.name) {
-        console.log('🔔 Creating notification for new message');
-        addNotification({
-          type: 'message',
-          icon: MessageSquare,
-          title: 'New Message',
-          message: `${senderName}: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`,
-          read: false,
-          link: `/shipments/${shipmentId}`
-        });
-      } else {
-        console.log('🔔 Skipping notification - message from self');
-      }
-    };
-
-    window.addEventListener('newChatMessage' as any, handleNewMessage as any);
-
     return () => {
       clearInterval(interval);
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('checkNotifications' as any, handleManualCheck);
-      window.removeEventListener('newChatMessage' as any, handleNewMessage as any);
     };
-  }, [user, addNotification]);
+  }, [user, addNotification, notifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
