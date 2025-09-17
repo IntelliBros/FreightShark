@@ -460,6 +460,12 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           </p>
         </div>
 
+        <div style="margin: 20px 0; padding: 15px; background-color: #fee2e2; border-left: 4px solid #ef4444;">
+          <p style="color: #991b1b; font-size: 14px; margin: 0; font-weight: bold;">
+            ⚠️ Important: Your shipment will not leave the warehouse until payment is received.
+          </p>
+        </div>
+
         <p style="color: #666666; font-size: 15px; margin: 20px 0; font-family: Arial, sans-serif;">
           Please log in to your account to view and pay the invoice.
         </p>
@@ -481,7 +487,7 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           </tr>
         </table>
       `),
-      text: `Invoice for Shipment ${variables.shipmentId}. Dear ${variables.customerName}, an invoice has been generated. Amount Due: ${variables.amount}. Due Date: ${variables.dueDate}. Please log in to view and pay.`
+      text: `Invoice for Shipment ${variables.shipmentId}. Dear ${variables.customerName}, an invoice has been generated. Amount Due: ${variables.amount}. Due Date: ${variables.dueDate}. IMPORTANT: Your shipment will not leave the warehouse until payment is received. Please log in to view and pay.`
     }
   };
 
