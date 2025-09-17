@@ -104,9 +104,13 @@ export const Header = () => {
                           <p className="text-sm font-medium text-gray-900">
                             {notification.title}
                           </p>
-                          <p className="text-xs text-gray-600 mt-0.5 truncate">
-                            {notification.message}
-                          </p>
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            {notification.message.split('\n').map((line, idx) => (
+                              <p key={idx} className={idx === 0 ? 'font-medium text-gray-700' : 'truncate'}>
+                                {line}
+                              </p>
+                            ))}
+                          </div>
                           <p className="text-xs text-gray-400 mt-1 flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
                             {notification.timestamp}

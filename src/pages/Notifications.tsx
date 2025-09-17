@@ -169,7 +169,7 @@ export const Notifications = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-gray-600 mb-2 whitespace-pre-line">
                           {notification.message}
                         </p>
                         <div className="flex items-center justify-between">

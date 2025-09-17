@@ -268,20 +268,33 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
               // Format the message with shipment info
               const messageContent = msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '');
 
-              // Create title with shipment ID
+              // Create detailed title with shipment ID and warehouses
               let title = 'New Message';
+              let fullMessage = `${msg.sender_name}: ${messageContent}`;
+
               if (msg.shipment_id) {
-                title = `Shipment ${msg.shipment_id}`;
-                if (msg.warehouse_info) {
-                  title += ` • ${msg.warehouse_info}`;
+                title = `New Message - Shipment ${msg.shipment_id}`;
+
+                // Add warehouse info to the message if available
+                if (msg.warehouse_info && msg.warehouse_info.trim() !== '') {
+                  fullMessage = `Shipment ${msg.shipment_id} (${msg.warehouse_info})\n${msg.sender_name}: ${messageContent}`;
+                } else {
+                  fullMessage = `Shipment ${msg.shipment_id}\n${msg.sender_name}: ${messageContent}`;
                 }
               }
+
+              console.log('🔔 Creating notification with details:', {
+                shipment_id: msg.shipment_id,
+                warehouse_info: msg.warehouse_info,
+                title: title,
+                message: fullMessage
+              });
 
               addNotification({
                 type: 'message',
                 icon: MessageSquare,
                 title: title,
-                message: `${msg.sender_name}: ${messageContent}`,
+                message: fullMessage,
                 read: false,
                 link: `/shipments/${msg.shipment_id}`
               });
