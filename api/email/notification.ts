@@ -339,6 +339,149 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
 
       `),
       text: `Quote Request #${variables.quoteId} Received! Dear ${variables.customerName}, we have successfully received your quote request and our experts are working on it. You'll receive your detailed quote within 1 business day. Track your quote status in your dashboard or contact us at quotes@freightshark.com`
+    },
+    'quote-ready': {
+      subject: `Your Quote #${variables.quoteId} is ready`,
+      html: wrapTemplate(`
+        <h1 style="color: #16a34a; margin: 0 0 20px 0; font-size: 28px; font-family: Arial, sans-serif;">
+          Your Quote is Ready!
+        </h1>
+
+        <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+          Dear ${variables.customerName},
+        </p>
+
+        <p style="color: #555555; font-size: 15px; line-height: 1.6; font-family: Arial, sans-serif;">
+          Your quote <strong>#${variables.quoteId}</strong> is ready for review.
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #00b4d8;">
+          <p style="color: #333; font-size: 18px; margin: 0;">
+            Total Amount: <strong>${variables.amount}</strong>
+          </p>
+        </div>
+
+        <p style="color: #666666; font-size: 15px; margin: 20px 0; font-family: Arial, sans-serif;">
+          Please log in to your account to view the full details and accept the quote.
+        </p>
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td align="center">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #00b4d8; padding: 12px 30px; text-align: center;">
+                    <a href="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/quotes/${variables.quoteId}"
+                       style="color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">
+                      View Quote Details
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Your Quote #${variables.quoteId} is ready! Dear ${variables.customerName}, your quote is ready for review. Total amount: ${variables.amount}. Please log in to view the full details.`
+    },
+    'shipment-update': {
+      subject: `Shipment ${variables.shipmentId} Status Update`,
+      html: wrapTemplate(`
+        <h1 style="color: #1e293b; margin: 0 0 20px 0; font-size: 28px; font-family: Arial, sans-serif;">
+          Shipment Status Update
+        </h1>
+
+        <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+          Dear ${variables.customerName},
+        </p>
+
+        <p style="color: #555555; font-size: 15px; line-height: 1.6; font-family: Arial, sans-serif;">
+          Your shipment <strong>${variables.shipmentId}</strong> status has been updated.
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background-color: #e8f7fa; border-left: 4px solid #00b4d8;">
+          <p style="color: #0096c7; font-size: 14px; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">
+            Current Status
+          </p>
+          <p style="color: #333; font-size: 20px; margin: 0; font-weight: bold;">
+            ${variables.status}
+          </p>
+        </div>
+
+        <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa;">
+          <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">
+            <strong>Tracking Information:</strong>
+          </p>
+          <p style="color: #333; font-size: 14px; margin: 0; white-space: pre-line;">
+            ${variables.trackingInfo || 'No additional tracking information available.'}
+          </p>
+        </div>
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td align="center">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #00b4d8; padding: 12px 30px; text-align: center;">
+                    <a href="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/shipments/${variables.shipmentId}"
+                       style="color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">
+                      Track Shipment
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Shipment ${variables.shipmentId} Status Update. Dear ${variables.customerName}, your shipment status has been updated to: ${variables.status}. ${variables.trackingInfo || ''}`
+    },
+    'invoice-generated': {
+      subject: `Invoice for Shipment ${variables.shipmentId}`,
+      html: wrapTemplate(`
+        <h1 style="color: #1e293b; margin: 0 0 20px 0; font-size: 28px; font-family: Arial, sans-serif;">
+          Invoice Generated
+        </h1>
+
+        <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+          Dear ${variables.customerName},
+        </p>
+
+        <p style="color: #555555; font-size: 15px; line-height: 1.6; font-family: Arial, sans-serif;">
+          An invoice has been generated for your shipment <strong>${variables.shipmentId}</strong>.
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background-color: #fff3cd; border-left: 4px solid #ffc107;">
+          <p style="color: #856404; font-size: 14px; margin: 0 0 10px 0;">
+            <strong>Amount Due:</strong> ${variables.amount}
+          </p>
+          <p style="color: #856404; font-size: 14px; margin: 0;">
+            <strong>Due Date:</strong> ${variables.dueDate}
+          </p>
+        </div>
+
+        <p style="color: #666666; font-size: 15px; margin: 20px 0; font-family: Arial, sans-serif;">
+          Please log in to your account to view and pay the invoice.
+        </p>
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td align="center">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #00b4d8; padding: 12px 30px; text-align: center;">
+                    <a href="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/invoices"
+                       style="color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">
+                      View Invoice
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Invoice for Shipment ${variables.shipmentId}. Dear ${variables.customerName}, an invoice has been generated. Amount Due: ${variables.amount}. Due Date: ${variables.dueDate}. Please log in to view and pay.`
     }
   };
 
