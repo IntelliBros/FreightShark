@@ -197,7 +197,30 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
     // Track last checked timestamp for this user
     const lastCheckedKey = `last_checked_messages_${user.id}`;
-    let lastChecked = new Date(localStorage.getItem(lastCheckedKey) || new Date().toISOString());
+    const storedValue = localStorage.getItem(lastCheckedKey);
+    let lastChecked: Date;
+
+    // Handle invalid or missing dates (could be old timestamp number or date string)
+    try {
+      if (!storedValue) {
+        // No previous value, start from 5 minutes ago
+        lastChecked = new Date(Date.now() - 5 * 60 * 1000);
+      } else if (/^\d+$/.test(storedValue)) {
+        // Old format: timestamp number
+        lastChecked = new Date(parseInt(storedValue));
+      } else {
+        // New format: ISO date string
+        lastChecked = new Date(storedValue);
+      }
+
+      // Check if date is valid
+      if (isNaN(lastChecked.getTime())) {
+        lastChecked = new Date(Date.now() - 5 * 60 * 1000);
+      }
+    } catch (e) {
+      console.log('🔔 Error parsing last checked date, using default:', e);
+      lastChecked = new Date(Date.now() - 5 * 60 * 1000);
+    }
 
     const checkForNewMessages = async () => {
       try {
