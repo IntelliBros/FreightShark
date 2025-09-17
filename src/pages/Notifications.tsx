@@ -10,7 +10,11 @@ import {
   CheckCircle,
   Filter,
   Bell,
-  Archive
+  Archive,
+  MessageSquare,
+  FileText,
+  AlertCircle,
+  Package
 } from 'lucide-react';
 
 export const Notifications = () => {
@@ -126,7 +130,15 @@ export const Notifications = () => {
       <div className="space-y-3">
         {filteredNotifications.length > 0 ? (
           filteredNotifications.map((notification) => {
-            const Icon = notification.icon;
+            // Map notification type to icon component
+            const iconMap: Record<string, any> = {
+              'message': MessageSquare,
+              'quote': FileText,
+              'invoice': FileText,
+              'alert': AlertCircle,
+              'shipment': Package
+            };
+            const Icon = iconMap[notification.type] || Bell;
             const typeColor = getTypeColor(notification.type);
 
             return (

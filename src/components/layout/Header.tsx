@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BellIcon, UserIcon, SearchIcon, ChevronDownIcon, Clock, ArrowRight } from 'lucide-react';
+import { BellIcon, UserIcon, SearchIcon, ChevronDownIcon, Clock, ArrowRight, MessageSquare, FileText, AlertCircle, Package, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationsContext';
 import { Link } from 'react-router-dom';
@@ -63,7 +63,15 @@ export const Header = () => {
 
               <div className="max-h-96 overflow-y-auto">
                 {recentNotifications.map((notification) => {
-                  const Icon = notification.icon;
+                  // Map notification type to icon component
+                  const iconMap: Record<string, any> = {
+                    'message': MessageSquare,
+                    'quote': FileText,
+                    'invoice': FileText,
+                    'alert': AlertCircle,
+                    'shipment': Package
+                  };
+                  const Icon = iconMap[notification.type] || Mail;
                   return (
                     <Link
                       key={notification.id}

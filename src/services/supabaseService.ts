@@ -917,13 +917,8 @@ export const supabaseService = {
         console.log('🔔 Getting recent messages for user:', { userId, userRole, since });
 
         // Get all shipments for this user
-        let messagesQuery = supabase.from('messages').select(`
-          *,
-          shipments!inner (
-            id,
-            destinations
-          )
-        `);
+        // First, get messages without join (simpler query)
+        let messagesQuery = supabase.from('messages').select('*');
 
         // For customers, get their shipments
         if (userRole === 'user') {
@@ -959,24 +954,34 @@ export const supabaseService = {
         }
 
         // Process messages to include shipment info
-        const processedMessages = data?.map((msg: any) => {
-          const shipmentInfo = msg.shipments;
-          let warehouseInfo = '';
+        // For now, just return the messages without warehouse info
+        // We'll fetch that separately if needed
+        const processedMessages = data || [];
 
-          if (shipmentInfo?.destinations) {
-            const destinations = shipmentInfo.destinations;
-            const warehouseCount = Object.keys(destinations).length;
-            const warehouseNames = Object.keys(destinations).slice(0, 2).join(', ');
-            warehouseInfo = warehouseCount > 2
-              ? `${warehouseNames}, +${warehouseCount - 2} more`
-              : warehouseNames;
-          }
+        // If we have messages, fetch shipment info for them
+        if (processedMessages.length > 0) {
+          const shipmentIds = [...new Set(processedMessages.map((m: any) => m.shipment_id))];
 
-          return {
-            ...msg,
-            warehouse_info: warehouseInfo
-          };
-        }) || [];
+          const { data: shipments } = await supabase
+            .from('shipments')
+            .select('id, destinations')
+            .in('id', shipmentIds);
+
+          // Add warehouse info to messages
+          processedMessages.forEach((msg: any) => {
+            const shipment = shipments?.find((s: any) => s.id === msg.shipment_id);
+            if (shipment?.destinations) {
+              const destinations = shipment.destinations;
+              const warehouseCount = Object.keys(destinations).length;
+              const warehouseNames = Object.keys(destinations).slice(0, 2).join(', ');
+              msg.warehouse_info = warehouseCount > 2
+                ? `${warehouseNames}, +${warehouseCount - 2} more`
+                : warehouseNames;
+            } else {
+              msg.warehouse_info = '';
+            }
+          });
+        }
 
         console.log('🔔 Found recent messages:', processedMessages.length);
         return processedMessages;
