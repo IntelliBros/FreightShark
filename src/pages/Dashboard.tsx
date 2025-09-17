@@ -203,7 +203,7 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card title="Active Shipments" subtitle="Your current shipments in progress" color="blue">
           {activeShipments.length > 0 ? <div className="space-y-4">
-              {activeShipments.map(shipment => <div key={shipment.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
+              {activeShipments.slice(0, 3).map(shipment => <div key={shipment.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <Link to={`/shipments/${shipment.id}`} className="text-gray-900 hover:underline font-medium text-sm">
@@ -237,6 +237,14 @@ export const Dashboard = () => {
                     </Link>
                   </div>
                 </div>)}
+              {activeShipments.length > 3 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Link to="/shipments" className="flex items-center justify-center text-sm text-[#00b4d8] hover:text-[#0096b8] font-medium">
+                    View all {activeShipments.length} shipments
+                    <ArrowRightIcon className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+              )}
             </div> : <div className="text-center py-8">
               <PackageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <h3 className="text-sm font-medium text-gray-700 mb-1">
