@@ -1,69 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BellIcon, UserIcon, SearchIcon, ChevronDownIcon, Package, FileText, AlertCircle, MessageSquare, Clock, ArrowRight } from 'lucide-react';
+import { BellIcon, UserIcon, SearchIcon, ChevronDownIcon, Clock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationsContext';
 import { Link } from 'react-router-dom';
-// Mock notifications data
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'quote',
-    icon: FileText,
-    title: 'Quote Ready',
-    message: 'Your quote #Q-00123 is ready for review',
-    timestamp: '2 hours ago',
-    read: false,
-    link: '/quotes/Q-00123'
-  },
-  {
-    id: '2',
-    type: 'invoice',
-    icon: FileText,
-    title: 'Invoice Generated',
-    message: 'Invoice for shipment #FS-00045 is ready',
-    timestamp: '5 hours ago',
-    read: false,
-    link: '/invoices'
-  },
-  {
-    id: '3',
-    type: 'alert',
-    icon: AlertCircle,
-    title: 'Shipment IDs Missing',
-    message: 'Please provide Amazon shipment IDs for #FS-00046',
-    timestamp: '1 day ago',
-    read: true,
-    link: '/shipments/FS-00046'
-  },
-  {
-    id: '4',
-    type: 'message',
-    icon: MessageSquare,
-    title: 'New Message',
-    message: 'You have a new message from support',
-    timestamp: '2 days ago',
-    read: true,
-    link: '/messages'
-  },
-  {
-    id: '5',
-    type: 'shipment',
-    icon: Package,
-    title: 'Shipment Update',
-    message: 'Shipment #FS-00044 has been delivered',
-    timestamp: '3 days ago',
-    read: true,
-    link: '/shipments/FS-00044'
-  }
-];
 
 export const Header = () => {
   const {
     user,
     logout
   } = useAuth();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
@@ -81,7 +29,6 @@ export const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
   const recentNotifications = notifications.slice(0, 4);
   return <header className="bg-white h-16 flex items-center px-6 justify-between border-b border-gray-200">
       <div className="flex items-center">
@@ -124,7 +71,12 @@ export const Header = () => {
                       className={`block px-4 py-3 hover:bg-gray-50 transition-colors ${
                         !notification.read ? 'bg-blue-50/50' : ''
                       }`}
-                      onClick={() => setIsNotificationsOpen(false)}
+                      onClick={() => {
+                        if (!notification.read) {
+                          markAsRead(notification.id);
+                        }
+                        setIsNotificationsOpen(false);
+                      }}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`p-2 rounded-lg ${

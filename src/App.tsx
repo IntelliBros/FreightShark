@@ -42,13 +42,15 @@ import { EmailSettings } from './pages/admin/EmailSettings';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { DataProvider } from './context/DataContext';
+import { NotificationsProvider } from './context/NotificationsContext';
 import { LandingPage } from './pages/LandingPage';
 export function App() {
   return <BrowserRouter>
       <AuthProvider>
         <DataProvider>
-          <ToastProvider>
-            <Routes>
+          <NotificationsProvider>
+            <ToastProvider>
+              <Routes>
               {/* Landing Page */}
               <Route path="/welcome" element={<LandingPage />} />
               {/* Auth routes */}
@@ -113,7 +115,8 @@ export function App() {
                 <Route path="security/api-keys" element={<AdminDashboard />} />
               </Route>
             </Routes>
-          </ToastProvider>
+            </ToastProvider>
+          </NotificationsProvider>
         </DataProvider>
       </AuthProvider>
     </BrowserRouter>;

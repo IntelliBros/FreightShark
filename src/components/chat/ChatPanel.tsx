@@ -103,6 +103,19 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
                     console.log('Message already exists, skipping duplicate');
                     return prev;
                   }
+
+                  // Dispatch custom event for notifications
+                  if (newMessage.sender_id !== currentUser.id) {
+                    window.dispatchEvent(new CustomEvent('newChatMessage', {
+                      detail: {
+                        shipmentId,
+                        message: newMessage.content,
+                        senderName: newMessage.sender_name,
+                        senderId: newMessage.sender_id
+                      }
+                    }));
+                  }
+
                   return [...prev, newMessage];
                 });
               }

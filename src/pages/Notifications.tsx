@@ -3,12 +3,9 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useNotifications } from '../context/NotificationsContext';
 import { Link } from 'react-router-dom';
 import {
-  FileText,
-  AlertCircle,
-  MessageSquare,
-  Package,
   Clock,
   CheckCircle,
   Filter,
@@ -16,101 +13,9 @@ import {
   Archive
 } from 'lucide-react';
 
-// Extended notifications data
-const allNotifications = [
-  {
-    id: '1',
-    type: 'quote',
-    icon: FileText,
-    title: 'Quote Ready',
-    message: 'Your quote #Q-00123 is ready for review',
-    timestamp: '2 hours ago',
-    date: '2024-01-15',
-    read: false,
-    link: '/quotes/Q-00123'
-  },
-  {
-    id: '2',
-    type: 'invoice',
-    icon: FileText,
-    title: 'Invoice Generated',
-    message: 'Invoice for shipment #FS-00045 is ready',
-    timestamp: '5 hours ago',
-    date: '2024-01-15',
-    read: false,
-    link: '/invoices'
-  },
-  {
-    id: '3',
-    type: 'alert',
-    icon: AlertCircle,
-    title: 'Shipment IDs Missing',
-    message: 'Please provide Amazon shipment IDs for #FS-00046',
-    timestamp: '1 day ago',
-    date: '2024-01-14',
-    read: true,
-    link: '/shipments/FS-00046'
-  },
-  {
-    id: '4',
-    type: 'message',
-    icon: MessageSquare,
-    title: 'New Message',
-    message: 'You have a new message from support',
-    timestamp: '2 days ago',
-    date: '2024-01-13',
-    read: true,
-    link: '/messages'
-  },
-  {
-    id: '5',
-    type: 'shipment',
-    icon: Package,
-    title: 'Shipment Update',
-    message: 'Shipment #FS-00044 has been delivered',
-    timestamp: '3 days ago',
-    date: '2024-01-12',
-    read: true,
-    link: '/shipments/FS-00044'
-  },
-  {
-    id: '6',
-    type: 'quote',
-    icon: FileText,
-    title: 'Quote Expiring Soon',
-    message: 'Quote #Q-00122 will expire in 2 days',
-    timestamp: '4 days ago',
-    date: '2024-01-11',
-    read: true,
-    link: '/quotes/Q-00122'
-  },
-  {
-    id: '7',
-    type: 'shipment',
-    icon: Package,
-    title: 'Shipment Departed',
-    message: 'Shipment #FS-00043 has departed from origin',
-    timestamp: '5 days ago',
-    date: '2024-01-10',
-    read: true,
-    link: '/shipments/FS-00043'
-  },
-  {
-    id: '8',
-    type: 'invoice',
-    icon: FileText,
-    title: 'Payment Received',
-    message: 'Payment confirmed for invoice #INV-00089',
-    timestamp: '1 week ago',
-    date: '2024-01-08',
-    read: true,
-    link: '/invoices'
-  }
-];
-
 export const Notifications = () => {
   usePageTitle('Notifications');
-  const [notifications, setNotifications] = useState(allNotifications);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
@@ -119,20 +24,6 @@ export const Notifications = () => {
     if (typeFilter !== 'all' && n.type !== typeFilter) return false;
     return true;
   });
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, read: true }))
-    );
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   const getTypeColor = (type: string) => {
     switch (type) {
