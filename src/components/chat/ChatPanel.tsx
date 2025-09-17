@@ -181,8 +181,20 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
       // Add the message to local state immediately
       if (savedMessage) {
         setMessages(prev => [...prev, savedMessage]);
+
+        // Simulate notification for the recipient
+        // In a real app, this would be handled by the recipient's subscription
+        // For demo purposes, dispatch the event to trigger notifications
+        window.dispatchEvent(new CustomEvent('newChatMessage', {
+          detail: {
+            shipmentId,
+            message: savedMessage.content,
+            senderName: savedMessage.sender_name,
+            senderId: savedMessage.sender_id
+          }
+        }));
       }
-      
+
       setMessage('');
     } catch (error) {
       console.error('Error sending message to database:', error);
@@ -203,6 +215,17 @@ export const ChatPanel = ({ shipmentId, currentUser }: ChatPanelProps) => {
       setMessages(updatedMessages);
       localStorage.setItem(`chat_${shipmentId}`, JSON.stringify(updatedMessages));
       console.log('Message saved to localStorage:', newMessage);
+
+      // Simulate notification for the recipient (fallback case)
+      window.dispatchEvent(new CustomEvent('newChatMessage', {
+        detail: {
+          shipmentId,
+          message: newMessage.content,
+          senderName: newMessage.sender_name,
+          senderId: newMessage.sender_id
+        }
+      }));
+
       setMessage('');
     }
   };

@@ -186,15 +186,16 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
   useEffect(() => {
     // Listen for custom events that might be dispatched by the chat system
     const handleNewMessage = (event: CustomEvent) => {
-      const { shipmentId, message, senderName } = event.detail;
+      const { shipmentId, message, senderName, senderId } = event.detail;
 
       // Only create notification if message is from someone else
-      if (senderName !== user?.name) {
+      // Check both ID and name to handle different scenarios
+      if (senderId !== user?.id && senderName !== user?.name) {
         addNotification({
           type: 'message',
           icon: MessageSquare,
           title: 'New Message',
-          message: `${senderName}: ${message}`,
+          message: `${senderName}: ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`,
           read: false,
           link: `/shipments/${shipmentId}`
         });
