@@ -62,6 +62,8 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
   // Add a new notification
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'date'>) => {
+    console.log('🔔 addNotification called with:', notification, 'for user:', user?.id);
+
     const now = new Date();
     const newNotification: Notification = {
       ...notification,
@@ -71,13 +73,20 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
       read: false
     };
 
-    setNotifications(prev => [newNotification, ...prev]);
+    console.log('🔔 Created notification:', newNotification);
+    setNotifications(prev => {
+      console.log('🔔 Previous notifications:', prev.length);
+      const updated = [newNotification, ...prev];
+      console.log('🔔 Updated notifications:', updated.length);
+      return updated;
+    });
 
     // Store in localStorage for persistence
     const storedNotifications = localStorage.getItem(`notifications_${user?.id}`);
     const existing = storedNotifications ? JSON.parse(storedNotifications) : [];
     const updated = [newNotification, ...existing].slice(0, 50); // Keep only last 50
     localStorage.setItem(`notifications_${user?.id}`, JSON.stringify(updated));
+    console.log('🔔 Saved to localStorage for user:', user?.id);
   }, [user]);
 
   // Mark notification as read
@@ -184,13 +193,67 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
   // Monitor for new messages (integrate with chat system)
   useEffect(() => {
-    // Listen for custom events that might be dispatched by the chat system
+    if (!user?.id) return;
+
+    // Track last checked timestamp for this user
+    const lastCheckedKey = `last_checked_messages_${user.id}`;
+    let lastChecked = parseInt(localStorage.getItem(lastCheckedKey) || '0');
+
+    const checkForNewMessages = () => {
+      const globalMessages = JSON.parse(localStorage.getItem('global_chat_messages') || '[]');
+      const newMessages = globalMessages.filter((msg: any) =>
+        msg.timestamp > lastChecked &&
+        msg.sender_id !== user.id &&
+        msg.sender_name !== user.name
+      );
+
+      console.log('🔔 Checking for new messages:', {
+        totalGlobal: globalMessages.length,
+        newCount: newMessages.length,
+        lastChecked,
+        currentUser: user.id
+      });
+
+      newMessages.forEach((msg: any) => {
+        console.log('🔔 Creating notification for message:', msg);
+        addNotification({
+          type: 'message',
+          icon: MessageSquare,
+          title: 'New Message',
+          message: `${msg.sender_name}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`,
+          read: false,
+          link: `/shipments/${msg.shipment_id}`
+        });
+      });
+
+      // Update last checked timestamp
+      const now = Date.now();
+      localStorage.setItem(lastCheckedKey, now.toString());
+      lastChecked = now;
+    };
+
+    // Check immediately
+    checkForNewMessages();
+
+    // Check every 2 seconds for demo purposes
+    const interval = setInterval(checkForNewMessages, 2000);
+
+    // Also listen for custom events (for immediate updates)
     const handleNewMessage = (event: CustomEvent) => {
       const { shipmentId, message, senderName, senderId } = event.detail;
 
+      console.log('🔔 NotificationsContext received event:', {
+        shipmentId,
+        message,
+        senderName,
+        senderId,
+        currentUser: user,
+        shouldNotify: senderId !== user?.id && senderName !== user?.name
+      });
+
       // Only create notification if message is from someone else
-      // Check both ID and name to handle different scenarios
       if (senderId !== user?.id && senderName !== user?.name) {
+        console.log('🔔 Creating notification for new message');
         addNotification({
           type: 'message',
           icon: MessageSquare,
@@ -199,12 +262,15 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
           read: false,
           link: `/shipments/${shipmentId}`
         });
+      } else {
+        console.log('🔔 Skipping notification - message from self');
       }
     };
 
     window.addEventListener('newChatMessage' as any, handleNewMessage as any);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('newChatMessage' as any, handleNewMessage as any);
     };
   }, [user, addNotification]);
