@@ -200,7 +200,13 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     let lastChecked = parseInt(localStorage.getItem(lastCheckedKey) || '0');
 
     const checkForNewMessages = () => {
-      const globalMessages = JSON.parse(localStorage.getItem('global_chat_messages') || '[]');
+      // Force localStorage sync across tabs
+      const storageKey = 'global_chat_messages';
+      const rawMessages = localStorage.getItem(storageKey);
+
+      console.log('🔔 Raw localStorage value:', rawMessages);
+
+      const globalMessages = rawMessages ? JSON.parse(rawMessages) : [];
       const newMessages = globalMessages.filter((msg: any) =>
         msg.timestamp > lastChecked &&
         msg.sender_id !== user.id &&
@@ -211,8 +217,14 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         totalGlobal: globalMessages.length,
         newCount: newMessages.length,
         lastChecked,
-        currentUser: user.id
+        currentUser: user.id,
+        userRole: user.role
       });
+
+      // Log first few messages for debugging
+      if (globalMessages.length > 0) {
+        console.log('🔔 Sample messages:', globalMessages.slice(0, 2));
+      }
 
       newMessages.forEach((msg: any) => {
         console.log('🔔 Creating notification for message:', msg);
@@ -237,6 +249,16 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
     // Check every 2 seconds for demo purposes
     const interval = setInterval(checkForNewMessages, 2000);
+
+    // Listen for storage events (cross-tab communication)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'global_chat_messages' && e.newValue) {
+        console.log('🔔 Storage event detected - checking for new messages');
+        checkForNewMessages();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     // Also listen for custom events (for immediate updates)
     const handleNewMessage = (event: CustomEvent) => {
@@ -271,6 +293,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('newChatMessage' as any, handleNewMessage as any);
     };
   }, [user, addNotification]);
