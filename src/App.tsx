@@ -15,6 +15,7 @@ import { Analytics } from './pages/analytics/Analytics';
 import { Announcements } from './pages/Announcements';
 import { AnnouncementDetail } from './pages/AnnouncementDetail';
 import { Settings } from './pages/settings/Settings';
+import { Notifications } from './pages/Notifications';
 import { UnifiedLogin } from './pages/auth/UnifiedLogin';
 import { SignUp } from './pages/auth/SignUp';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
@@ -67,6 +68,7 @@ export function App() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="announcements/:id" element={<AnnouncementDetail />} />
+                <Route path="notifications" element={<Notifications />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               {/* Staff dashboard */}

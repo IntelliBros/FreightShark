@@ -1,13 +1,88 @@
-import React, { useState } from 'react';
-import { BellIcon, MessageCircleIcon, UserIcon, SearchIcon, ChevronDownIcon } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { BellIcon, UserIcon, SearchIcon, ChevronDownIcon, Package, FileText, AlertCircle, MessageSquare, Clock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
+// Mock notifications data
+const mockNotifications = [
+  {
+    id: '1',
+    type: 'quote',
+    icon: FileText,
+    title: 'Quote Ready',
+    message: 'Your quote #Q-00123 is ready for review',
+    timestamp: '2 hours ago',
+    read: false,
+    link: '/quotes/Q-00123'
+  },
+  {
+    id: '2',
+    type: 'invoice',
+    icon: FileText,
+    title: 'Invoice Generated',
+    message: 'Invoice for shipment #FS-00045 is ready',
+    timestamp: '5 hours ago',
+    read: false,
+    link: '/invoices'
+  },
+  {
+    id: '3',
+    type: 'alert',
+    icon: AlertCircle,
+    title: 'Shipment IDs Missing',
+    message: 'Please provide Amazon shipment IDs for #FS-00046',
+    timestamp: '1 day ago',
+    read: true,
+    link: '/shipments/FS-00046'
+  },
+  {
+    id: '4',
+    type: 'message',
+    icon: MessageSquare,
+    title: 'New Message',
+    message: 'You have a new message from support',
+    timestamp: '2 days ago',
+    read: true,
+    link: '/messages'
+  },
+  {
+    id: '5',
+    type: 'shipment',
+    icon: Package,
+    title: 'Shipment Update',
+    message: 'Shipment #FS-00044 has been delivered',
+    timestamp: '3 days ago',
+    read: true,
+    link: '/shipments/FS-00044'
+  }
+];
+
 export const Header = () => {
   const {
     user,
     logout
   } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState(mockNotifications);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
+  const toggleNotifications = () => setIsNotificationsOpen(!isNotificationsOpen);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const recentNotifications = notifications.slice(0, 4);
   return <header className="bg-white h-16 flex items-center px-6 justify-between border-b border-gray-200">
       <div className="flex items-center">
         <h1 className="text-[#1f2c39] font-bold text-xl mr-8">FREIGHT SHARK</h1>
@@ -17,14 +92,88 @@ export const Header = () => {
         </div>
       </div>
       <div className="flex items-center space-x-5">
-        <button className="relative p-1.5 text-gray-600 hover:text-gray-900 focus:outline-none">
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-orange-500 rounded-full"></span>
-        </button>
-        <button className="relative p-1.5 text-gray-600 hover:text-gray-900 focus:outline-none">
-          <MessageCircleIcon className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-orange-500 rounded-full"></span>
-        </button>
+        <div className="relative" ref={notificationsRef}>
+          <button
+            className="relative p-1.5 text-gray-600 hover:text-gray-900 focus:outline-none"
+            onClick={toggleNotifications}
+          >
+            <BellIcon className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 h-2 w-2 bg-orange-500 rounded-full"></span>
+            )}
+          </button>
+
+          {isNotificationsOpen && (
+            <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg border border-gray-200 shadow-xl z-50">
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <span className="text-xs text-gray-500">{unreadCount} unread</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto">
+                {recentNotifications.map((notification) => {
+                  const Icon = notification.icon;
+                  return (
+                    <Link
+                      key={notification.id}
+                      to={notification.link}
+                      className={`block px-4 py-3 hover:bg-gray-50 transition-colors ${
+                        !notification.read ? 'bg-blue-50/50' : ''
+                      }`}
+                      onClick={() => setIsNotificationsOpen(false)}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-lg ${
+                          notification.type === 'alert' ? 'bg-amber-100' :
+                          notification.type === 'message' ? 'bg-purple-100' :
+                          notification.type === 'invoice' ? 'bg-green-100' :
+                          'bg-blue-100'
+                        }`}>
+                          <Icon className={`h-4 w-4 ${
+                            notification.type === 'alert' ? 'text-amber-600' :
+                            notification.type === 'message' ? 'text-purple-600' :
+                            notification.type === 'invoice' ? 'text-green-600' :
+                            'text-blue-600'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5 truncate">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1 flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {notification.timestamp}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <Link
+                to="/notifications"
+                className="block p-3 text-center border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                onClick={() => setIsNotificationsOpen(false)}
+              >
+                <span className="text-sm text-[#00b4d8] font-medium flex items-center justify-center">
+                  View all notifications
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </span>
+              </Link>
+            </div>
+          )}
+        </div>
         <div className="relative">
           <button className="flex items-center space-x-2 focus:outline-none" onClick={toggleProfile}>
             <div className="w-8 h-8 rounded-full bg-[#00b4d8] flex items-center justify-center">
