@@ -321,22 +321,6 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
           </tr>
         </table>
 
-        <!-- Support -->
-        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-          <tr>
-            <td style="padding: 20px; background-color: #f8f9fa;">
-              <h3 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0; font-family: Arial, sans-serif;">
-                Questions?
-              </h3>
-              <p style="color: #666666; font-size: 14px; margin: 5px 0; font-family: Arial, sans-serif;">
-                • Email: quotes@freightshark.com<br>
-                • Live Chat: Available in your dashboard<br>
-                • Phone: 1-800-FREIGHT
-              </p>
-            </td>
-          </tr>
-        </table>
-
       `),
       text: `Quote Request #${variables.quoteId} Received! Dear ${variables.customerName}, we have successfully received your quote request and our experts are working on it. You'll receive your detailed quote within 1 business day. Track your quote status in your dashboard or contact us at quotes@freightshark.com`
     },
