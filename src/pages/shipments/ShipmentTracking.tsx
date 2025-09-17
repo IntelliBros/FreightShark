@@ -1384,8 +1384,13 @@ export const ShipmentTracking = () => {
       {activeTab === 'chat' && (
         <div className="h-[600px] bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
           {console.log('=== Chat Tab is Active ===', { activeTab, id, user })}
-          <ChatPanel 
-            shipmentId={id || ''} 
+          {/* Trigger notification check when chat opens */}
+          {activeTab === 'chat' && setTimeout(() => {
+            console.log('🔔 Triggering manual notification check for chat tab');
+            window.dispatchEvent(new CustomEvent('checkNotifications'));
+          }, 100)}
+          <ChatPanel
+            shipmentId={id || ''}
             currentUser={{
               id: user?.id || 'demo-customer',
               name: user?.name || 'Demo Customer',

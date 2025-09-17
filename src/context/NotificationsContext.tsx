@@ -238,6 +238,36 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         });
       });
 
+      // DEMO MODE: If we're a customer and there are staff messages, show them as notifications
+      if (user.role === 'user' && globalMessages.length > 0) {
+        const staffMessages = globalMessages.filter((msg: any) =>
+          msg.sender_role === 'staff' &&
+          msg.timestamp > lastChecked - 10000 // Look back 10 seconds for demo
+        );
+
+        if (staffMessages.length > 0) {
+          console.log('🔔 DEMO MODE: Found recent staff messages for customer:', staffMessages);
+          staffMessages.forEach((msg: any) => {
+            // Check if we already have this notification
+            const exists = notifications.some(n =>
+              n.message.includes(msg.content.substring(0, 20))
+            );
+
+            if (!exists) {
+              console.log('🔔 DEMO MODE: Creating notification for staff message:', msg);
+              addNotification({
+                type: 'message',
+                icon: MessageSquare,
+                title: 'New Message from Staff',
+                message: `${msg.sender_name}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`,
+                read: false,
+                link: `/shipments/${msg.shipment_id}`
+              });
+            }
+          });
+        }
+      }
+
       // Update last checked timestamp
       const now = Date.now();
       localStorage.setItem(lastCheckedKey, now.toString());
@@ -259,6 +289,13 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     };
 
     window.addEventListener('storage', handleStorageChange);
+
+    // Listen for manual notification checks
+    const handleManualCheck = () => {
+      console.log('🔔 Manual notification check triggered');
+      checkForNewMessages();
+    };
+    window.addEventListener('checkNotifications' as any, handleManualCheck);
 
     // Also listen for custom events (for immediate updates)
     const handleNewMessage = (event: CustomEvent) => {
@@ -294,6 +331,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('checkNotifications' as any, handleManualCheck);
       window.removeEventListener('newChatMessage' as any, handleNewMessage as any);
     };
   }, [user, addNotification]);
