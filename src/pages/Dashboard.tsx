@@ -22,13 +22,14 @@ export const Dashboard = () => {
     );
   }, [shipments, user]);
   
-  // Get active shipments (In Transit, Customs, Awaiting Pickup)
+  // Get active shipments (any shipment with approved quote that is not yet complete/delivered)
   const activeShipments = useMemo(() => {
     return userShipments
-      .filter(shipment => 
-        shipment.status === 'In Transit' || 
-        shipment.status === 'Customs' || 
-        shipment.status === 'Awaiting Pickup'
+      .filter(shipment =>
+        // Active = has an approved quote and is not delivered
+        shipment.quote_id && // Has an associated quote
+        shipment.status !== 'Delivered' && // Not yet complete
+        shipment.status !== 'Cancelled' // Not cancelled
       )
       .map(shipment => {
         // Calculate progress based on status
