@@ -16,7 +16,10 @@ export const Dashboard = () => {
   // Filter shipments for current user
   const userShipments = useMemo(() => {
     if (!user) return [];
-    return shipments.filter(shipment => shipment.customerId === user.id);
+    return shipments.filter(shipment =>
+      // Check both camelCase and snake_case for compatibility
+      (shipment.customerId === user.id) || (shipment.customer_id === user.id)
+    );
   }, [shipments, user]);
   
   // Get active shipments (In Transit, Customs, Awaiting Pickup)
@@ -89,7 +92,19 @@ export const Dashboard = () => {
   const stats = useMemo(() => ({
     activeShipments: activeShipments.length,
     completedShipments: userShipments.filter(s => s.status === 'Delivered').length,
-    sampleShipments: 0 // This can be enhanced when sample shipments are added to the data model
+    // Count sample shipments (typically smaller shipments with weight < 10kg or marked as samples)
+    sampleShipments: userShipments.filter(s => {
+      // Check if it's a sample shipment based on:
+      // 1. Low weight (typically samples are < 10kg)
+      // 2. Special naming convention (contains 'sample' in ID or cargo details)
+      // 3. Or if there's a sample flag in cargo details
+      const isLowWeight = s.actual_weight ? s.actual_weight < 10 : s.estimated_weight ? s.estimated_weight < 10 : false;
+      const hasSampleInId = s.id?.toLowerCase().includes('sample') || false;
+      const hasSampleInCargo = s.cargo_details?.description?.toLowerCase().includes('sample') ||
+                               s.cargo_details?.type?.toLowerCase().includes('sample') || false;
+
+      return isLowWeight || hasSampleInId || hasSampleInCargo;
+    }).length
   }), [activeShipments, userShipments]);
   return <div className="max-w-7xl mx-auto">
       <div className="mb-6">
