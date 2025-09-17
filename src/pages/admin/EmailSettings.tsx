@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { emailService, SMTPConfig, EmailTemplate } from '../../services/EmailService';
-import { Mail, Server, Shield, Send, CheckCircle, AlertCircle, Edit2, Save, X } from 'lucide-react';
+import { Mail, Server, Shield, Send, CheckCircle, Edit2, Save, X } from 'lucide-react';
 
 export const EmailSettings = () => {
   const toastContext = useToast();
@@ -176,26 +176,6 @@ export const EmailSettings = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Email Settings</h1>
         <p className="text-gray-600 mt-1">Configure SMTP settings for email notifications</p>
-        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800">Demo Mode - Emails are Simulated</p>
-              <p className="text-sm text-amber-700 mt-1">
-                This is a frontend-only demo app. Emails are logged to the console but not actually sent.
-                To enable real email sending, you need one of these solutions:
-              </p>
-              <ul className="list-disc list-inside text-sm text-amber-700 mt-2 space-y-1">
-                <li><strong>Backend Server:</strong> Set up Node.js with Nodemailer</li>
-                <li><strong>EmailJS:</strong> Use emailjs.com for frontend email sending (free tier available)</li>
-                <li><strong>API Services:</strong> Integrate SendGrid, Mailgun, or AWS SES APIs</li>
-              </ul>
-              <p className="text-sm text-amber-700 mt-2">
-                Check the browser console to see simulated email details when testing.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
