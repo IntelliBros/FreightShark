@@ -125,13 +125,31 @@ export const ActiveShipments = () => {
             : 'China',
           destination: firstDest ? `${firstDest.fbaWarehouse}, USA` : 'USA',
           trackingNumber,
-          departureDate: shipment.createdAt || shipment.created_at 
-            ? new Date(shipment.createdAt || shipment.created_at).toLocaleDateString() 
-            : 'Date not available',
           progress,
-          lastUpdate: latestEvent && latestEvent.date
-            ? `${new Date(latestEvent.date).toLocaleDateString()} - ${latestEvent.description || 'Status update'}`
-            : 'No updates yet',
+          statusDate: (() => {
+            // Get the appropriate date based on current status
+            if (shipment.status === 'Delivered' && shipment.deliveredAt) {
+              return `Delivered: ${new Date(shipment.deliveredAt).toLocaleDateString()}`;
+            }
+            if (shipment.invoice?.status === 'Paid' &&
+                shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+              // In Progress - show when IDs were provided
+              return `In Progress: ${shipment.invoice?.paidAt ? new Date(shipment.invoice.paidAt).toLocaleDateString() : 'Date pending'}`;
+            }
+            if (shipment.invoice?.status === 'Paid' && missingShipmentIds) {
+              // Missing Shipment IDs - show when invoice was paid
+              return `Invoice Paid: ${shipment.invoice?.paidAt ? new Date(shipment.invoice.paidAt).toLocaleDateString() : 'Date pending'}`;
+            }
+            if (shipment.invoice) {
+              // Final Invoice Ready - show when invoice was generated
+              return `Invoice Generated: ${shipment.invoice?.createdAt ? new Date(shipment.invoice.createdAt).toLocaleDateString() : 'Date pending'}`;
+            }
+            // Waiting for Pickup - show when shipment was created
+            return `Booking Confirmed: ${shipment.createdAt || shipment.created_at ? new Date(shipment.createdAt || shipment.created_at).toLocaleDateString() : 'Date pending'}`;
+          })(),
+          lastActivity: latestEvent && latestEvent.description
+            ? latestEvent.description
+            : 'Awaiting updates',
           totalCartons: shipment.masterCargo?.actualCartons ||
                        shipment.destinations?.reduce((sum, d) => sum + (d.actualCartons || d.cartons || 0), 0) || 0,
           totalWeight: shipment.masterCargo?.actualWeight ||
@@ -293,10 +311,10 @@ export const ActiveShipments = () => {
                   <div className="text-xs text-gray-700">
                     <div className="flex items-center mb-1">
                       <ClockIcon className="h-3 w-3 text-gray-500 mr-1" />
-                      <span>Departure: {shipment.departureDate}</span>
+                      <span>{shipment.statusDate}</span>
                     </div>
                     <div className="text-xs text-gray-600 mt-2 italic">
-                      Last update: {shipment.lastUpdate}
+                      Last activity: {shipment.lastActivity}
                     </div>
                   </div>
                 </div>
