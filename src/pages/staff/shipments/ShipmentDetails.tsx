@@ -1692,10 +1692,10 @@ export const ShipmentDetails = () => {
                 return (
                   <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center">
-                        <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
-                        <div>
-                          <h3 className="font-medium text-gray-900">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <FileTextIcon className="h-8 w-8 text-blue-500 mr-3 flex-shrink-0" />
+                        <div className="flex-1 min-w-0 mr-2">
+                          <h3 className="font-medium text-gray-900 truncate" title={displayName}>
                             {displayName}
                           </h3>
                           <p className="text-xs text-gray-500 mt-1">
