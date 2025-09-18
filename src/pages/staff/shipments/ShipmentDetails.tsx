@@ -427,6 +427,52 @@ export const ShipmentDetails = () => {
       return updated;
     });
   };
+  const handleDocumentUpload = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.pdf,.xlsx,.xls,.doc,.docx,.png,.jpg,.jpeg';
+
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const files = target.files;
+
+      if (files && files.length > 0) {
+        setIsLoading(true);
+        try {
+          const documents = Array.from(files).map(file => ({
+            id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: user?.id || 'staff'
+          }));
+
+          // Update shipment with new documents
+          const updatedDocuments = [...(shipment.documents || []), ...documents];
+
+          await DataService.updateShipment(id!, {
+            documents: updatedDocuments
+          });
+
+          // Refresh shipment data
+          const updatedShipment = await DataService.getShipmentById(id!);
+          setShipment(updatedShipment);
+
+          addToast(`Successfully uploaded ${files.length} document${files.length > 1 ? 's' : ''}`, 'success');
+        } catch (error) {
+          console.error('Error uploading documents:', error);
+          addToast('Failed to upload documents', 'error');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    input.click();
+  };
+
   const handleGenerateInvoice = async () => {
     setIsLoading(true);
     try {
@@ -1596,87 +1642,46 @@ export const ShipmentDetails = () => {
             Shipment Documents
           </h2>
           <div className="mb-4">
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={handleDocumentUpload} isLoading={isLoading}>
               <DownloadIcon className="h-4 w-4 mr-1" />
               Upload Document
             </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Example document items */}
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center">
-                  <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
-                  <div>
-                    <h3 className="font-medium text-gray-900">
-                      Commercial Invoice.pdf
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Commercial Invoice
-                    </p>
+            {shipment.documents && shipment.documents.length > 0 ? (
+              shipment.documents.map((doc: any) => (
+                <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center">
+                      <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {doc.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {doc.type || 'Document'}
+                        </p>
+                      </div>
+                    </div>
+                    <button type="button" className="text-blue-600 hover:text-blue-800" title="Download">
+                      <DownloadIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      Uploaded on {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Unknown'}
+                    </span>
+                    <button type="button" className="text-xs text-blue-600 hover:text-blue-800">
+                      View
+                    </button>
                   </div>
                 </div>
-                <button type="button" className="text-blue-600 hover:text-blue-800" title="Download">
-                  <DownloadIcon className="h-4 w-4" />
-                </button>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                No documents uploaded yet
               </div>
-              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-xs text-gray-500">
-                  Uploaded on 2023-11-05
-                </span>
-                <button type="button" className="text-xs text-blue-600 hover:text-blue-800">
-                  View
-                </button>
-              </div>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center">
-                  <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
-                  <div>
-                    <h3 className="font-medium text-gray-900">
-                      Packing List.xlsx
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">Packing List</p>
-                  </div>
-                </div>
-                <button type="button" className="text-blue-600 hover:text-blue-800" title="Download">
-                  <DownloadIcon className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-xs text-gray-500">
-                  Uploaded on 2023-11-05
-                </span>
-                <button type="button" className="text-xs text-blue-600 hover:text-blue-800">
-                  View
-                </button>
-              </div>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center">
-                  <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
-                  <div>
-                    <h3 className="font-medium text-gray-900">
-                      Air Waybill.pdf
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">Air Waybill</p>
-                  </div>
-                </div>
-                <button type="button" className="text-blue-600 hover:text-blue-800" title="Download">
-                  <DownloadIcon className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-xs text-gray-500">
-                  Uploaded on 2023-11-07
-                </span>
-                <button type="button" className="text-xs text-blue-600 hover:text-blue-800">
-                  View
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </Card>}
       

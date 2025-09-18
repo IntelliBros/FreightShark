@@ -579,16 +579,8 @@ export const ShipmentTracking = () => {
               return [];
             }
           })(),
-          documents: [
-            { id: 'doc-1', name: 'Commercial Invoice.pdf', type: 'invoice' },
-            { id: 'doc-2', name: 'Packing List.xlsx', type: 'packing-list' },
-            { id: 'doc-3', name: 'Air Waybill.pdf', type: 'awb' },
-            { id: 'doc-4', name: 'Customs Clearance.pdf', type: 'customs' }
-          ],
-          photos: [
-            { id: 'photo-1', name: 'Cargo at pickup.jpg', timestamp: shipmentData?.createdAt || shipmentData?.created_at ? new Date(shipmentData?.createdAt || shipmentData?.created_at).toLocaleString() : 'Date not available' },
-            { id: 'photo-2', name: 'Packaging verification.jpg', timestamp: shipmentData?.createdAt || shipmentData?.created_at ? new Date(shipmentData?.createdAt || shipmentData?.created_at).toLocaleString() : 'Date not available' }
-          ],
+          documents: shipmentData?.documents || [],
+          photos: shipmentData?.photos || [],
           invoice: shipmentData?.invoice || null
         };
         } catch (error: any) {
