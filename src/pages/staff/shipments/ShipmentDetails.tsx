@@ -443,31 +443,44 @@ export const ShipmentDetails = () => {
       if (files && files.length > 0) {
         setIsLoading(true);
         try {
-          const documents = Array.from(files).map(file => {
-            // Get file extension for better type detection
-            const extension = file.name.split('.').pop()?.toLowerCase() || '';
+          // Process files with FileReader to get base64 content
+          const documentsPromises = Array.from(files).map(file => {
+            return new Promise<any>((resolve) => {
+              const reader = new FileReader();
 
-            // Determine document type based on extension or MIME type
-            let docType = 'Document';
-            if (['pdf'].includes(extension) || file.type === 'application/pdf') {
-              docType = 'PDF';
-            } else if (['xlsx', 'xls'].includes(extension) || file.type.includes('spreadsheet')) {
-              docType = 'Spreadsheet';
-            } else if (['doc', 'docx'].includes(extension) || file.type.includes('document')) {
-              docType = 'Word Document';
-            } else if (['png', 'jpg', 'jpeg'].includes(extension) || file.type.includes('image')) {
-              docType = 'Image';
-            }
+              reader.onload = () => {
+                // Get file extension for better type detection
+                const extension = file.name.split('.').pop()?.toLowerCase() || '';
 
-            return {
-              id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              name: file.name,
-              type: docType,
-              size: file.size,
-              uploadedAt: new Date().toISOString(),
-              uploadedBy: user?.id || 'staff'
-            };
+                // Determine document type based on extension or MIME type
+                let docType = 'Document';
+                if (['pdf'].includes(extension) || file.type === 'application/pdf') {
+                  docType = 'PDF';
+                } else if (['xlsx', 'xls'].includes(extension) || file.type.includes('spreadsheet')) {
+                  docType = 'Spreadsheet';
+                } else if (['doc', 'docx'].includes(extension) || file.type.includes('document')) {
+                  docType = 'Word Document';
+                } else if (['png', 'jpg', 'jpeg'].includes(extension) || file.type.includes('image')) {
+                  docType = 'Image';
+                }
+
+                resolve({
+                  id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  name: file.name,
+                  type: docType,
+                  size: file.size,
+                  mimeType: file.type || 'application/octet-stream',
+                  content: reader.result as string, // Base64 encoded content
+                  uploadedAt: new Date().toISOString(),
+                  uploadedBy: user?.id || 'staff'
+                });
+              };
+
+              reader.readAsDataURL(file); // Read file as base64
+            });
           });
+
+          const documents = await Promise.all(documentsPromises);
 
           // Update shipment with new documents
           const updatedDocuments = [...(shipment.documents || []), ...documents];
@@ -499,14 +512,78 @@ export const ShipmentDetails = () => {
   };
 
   const handleDocumentDownload = (doc: any) => {
-    // Create a fake download link since we don't have actual file storage
-    // In a real app, this would download from a file storage service
+    // Check if document has base64 content
+    if (doc.content && doc.content.startsWith('data:')) {
+      // Document has actual content - use it for download
+      const link = document.createElement('a');
+      link.href = doc.content;
+      link.download = doc.name || 'document';
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      addToast(`Downloaded ${doc.name}`, 'success');
+      return;
+    }
+
+    // Fallback: create sample content if no actual content is available
+    let content = '';
+    let mimeType = 'text/plain';
+
+    // Create sample content based on file type
+    if (doc.type === 'PDF') {
+      // Create a simple text file that simulates a PDF
+      content = `Sample PDF Document: ${doc.name}\n\n`;
+      content += `Document ID: ${doc.id}\n`;
+      content += `Upload Date: ${doc.uploadedAt}\n`;
+      content += `Uploaded By: ${doc.uploadedBy}\n\n`;
+      content += `This is a placeholder for the actual PDF content.\n`;
+      content += `In production, this would be the actual PDF file.`;
+      mimeType = 'application/pdf';
+    } else if (doc.type === 'Spreadsheet') {
+      // Create a simple CSV content
+      content = `Document Name,${doc.name}\n`;
+      content += `Document Type,${doc.type}\n`;
+      content += `Upload Date,${doc.uploadedAt}\n`;
+      content += `File Size,${doc.size || 'Unknown'}\n`;
+      mimeType = 'text/csv';
+    } else if (doc.type === 'Image') {
+      // For images, we can't create a real image, so create a text placeholder
+      content = `Image Document: ${doc.name}\n`;
+      content += `This is a placeholder for an image file.\n`;
+      content += `In production, this would download the actual image.`;
+      mimeType = 'text/plain';
+    } else {
+      // Generic document content
+      content = `Document: ${doc.name}\n\n`;
+      content += `Type: ${doc.type}\n`;
+      content += `Uploaded: ${doc.uploadedAt}\n`;
+      content += `Size: ${doc.size ? `${(doc.size / 1024).toFixed(2)} KB` : 'Unknown'}\n\n`;
+      content += `This is a placeholder document.\n`;
+      content += `In production, this would be the actual document content.`;
+      mimeType = 'text/plain';
+    }
+
+    // Create a Blob with the content
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+
+    // Create download link
     const link = document.createElement('a');
-    link.href = '#'; // In production, this would be the actual file URL
-    link.download = doc.name;
+    link.href = url;
+    link.download = doc.name || 'document.txt';
+
+    // Trigger download
+    document.body.appendChild(link);
     link.click();
 
-    addToast(`Downloading ${doc.name}`, 'info');
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    addToast(`Downloaded ${doc.name}`, 'success');
   };
 
   const handleGenerateInvoice = async () => {
@@ -1809,7 +1886,11 @@ export const ShipmentDetails = () => {
               {previewDocument.type === 'Image' ? (
                 <div className="flex justify-center">
                   <img
-                    src={`https://via.placeholder.com/600x400?text=${encodeURIComponent(previewDocument.name)}`}
+                    src={
+                      previewDocument.content && previewDocument.content.startsWith('data:')
+                        ? previewDocument.content
+                        : `https://via.placeholder.com/600x400?text=${encodeURIComponent(previewDocument.name)}`
+                    }
                     alt={previewDocument.name}
                     className="max-w-full h-auto"
                   />
