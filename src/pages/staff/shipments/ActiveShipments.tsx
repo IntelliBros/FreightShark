@@ -45,38 +45,39 @@ export const ActiveShipments = () => {
           shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '');
         
         // Calculate progress based on status
-        // Status flow: Waiting for Pickup (20%) -> Invoice Payment (10%) -> Shipment IDs (10%) -> In Progress (40%) -> Delivered (20%)
+        // Status flow: Waiting for Pickup (5%) -> Final Invoice Ready (5%) -> Missing Shipment IDs (10%) -> In Progress (40%) -> Delivered (40%)
         let progress = 0;
-        
-        // If invoice not paid yet
-        if (shipment.invoice?.status !== 'Paid') {
-          if (shipment.status === 'Awaiting Pickup') {
-            progress = 20; // Waiting for Pickup only
+
+        // Stage 1: Waiting for Pickup (5%)
+        if (shipment.status === 'Awaiting Pickup') {
+          progress = 5;
+        }
+
+        // Stage 2: Final Invoice Ready (5%, cumulative: 10%)
+        if (shipment.invoice) {
+          progress = 10;
+        }
+
+        // Stage 3: Invoice Paid but Missing Shipment IDs (10%, cumulative: 20%)
+        if (shipment.invoice?.status === 'Paid' && missingShipmentIds) {
+          progress = 20;
+        }
+
+        // Stage 4: In Progress - IDs provided (40%, cumulative: 60%)
+        if (shipment.invoice?.status === 'Paid' &&
+            shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+          // IDs provided, shipment is now in progress
+          if (shipment.status === 'Delivered') {
+            progress = 100; // Stage 5: Delivered (40%, cumulative: 100%)
+          } else {
+            // Any non-delivered status with payment and IDs means "In Progress"
+            progress = 60;
           }
-        } else if (missingShipmentIds) {
-          progress = 30; // Waiting (20%) + Payment (10%)
-        } else if (shipment.invoice?.status === 'Paid' && 
-                   shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
-          // IDs provided, check actual status
-          switch (shipment.status) {
-            case 'Delivered': 
-              progress = 100;
-              break;
-            case 'Awaiting Pickup': 
-              progress = 40; // Waiting (20%) + Payment (10%) + IDs (10%)
-              break;
-            default: 
-              // Any other status with payment and IDs means "In Progress"
-              progress = 80; // Waiting (20%) + Payment (10%) + IDs (10%) + In Progress (40%)
-          }
-        } else {
-          switch (shipment.status) {
-            case 'Awaiting Pickup': progress = 20; break;
-            case 'In Transit':
-            case 'Customs': progress = 80; break;
-            case 'Delivered': progress = 100; break;
-            default: progress = 0;
-          }
+        }
+
+        // Override for delivered status regardless of other conditions
+        if (shipment.status === 'Delivered') {
+          progress = 100;
         }
         
         // Get carrier from tracking number pattern or default
@@ -101,12 +102,26 @@ export const ActiveShipments = () => {
             name: customer?.company || 'Unknown Company',
             email: customer?.email || 'unknown@example.com'
           },
-          status: missingShipmentIds ? 'Missing Shipment IDs' : 
-                 (shipment.invoice?.status === 'Paid' && 
-                  shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) ? 'In Progress' :
-                 (shipment.status === 'Awaiting Pickup' ? 'Waiting for Pickup' : 
-                  (shipment.status === 'In Transit' || shipment.status === 'Customs') ? 'In Progress' : 
-                  shipment.status === 'Delivered' ? 'Delivered' : shipment.status),
+          status: (() => {
+            // Determine status based on the new flow
+            if (shipment.status === 'Delivered') {
+              return 'Delivered';
+            }
+            if (shipment.invoice?.status === 'Paid' && missingShipmentIds) {
+              return 'Missing Shipment IDs';
+            }
+            if (shipment.invoice?.status === 'Paid' &&
+                shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
+              return 'In Progress';
+            }
+            if (shipment.invoice) {
+              return 'Final Invoice Ready';
+            }
+            if (shipment.status === 'Awaiting Pickup') {
+              return 'Waiting for Pickup';
+            }
+            return shipment.status;
+          })(),
           rawShipment: shipment,
           origin: quoteRequest?.supplierDetails?.city 
             ? `${quoteRequest.supplierDetails.city}, ${quoteRequest.supplierDetails.country}`
@@ -140,13 +155,13 @@ export const ActiveShipments = () => {
   });
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Missing Shipment IDs':
-        return <Badge variant="error">{status}</Badge>;
-      case 'Booking Confirmed':
-        return <Badge variant="secondary">Booking Confirmed</Badge>;
       case 'Waiting for Pickup':
       case 'Awaiting Pickup':
         return <Badge variant="warning">Waiting for Pickup</Badge>;
+      case 'Final Invoice Ready':
+        return <Badge variant="secondary">Final Invoice Ready</Badge>;
+      case 'Missing Shipment IDs':
+        return <Badge variant="error">{status}</Badge>;
       case 'In Progress':
       case 'In Transit':
       case 'Customs':
@@ -155,6 +170,8 @@ export const ActiveShipments = () => {
       case 'Delivered':
       case 'Out for Delivery':
         return <Badge variant="success">Delivered</Badge>;
+      case 'Booking Confirmed':
+        return <Badge variant="secondary">Booking Confirmed</Badge>;
       default:
         return <Badge variant="default">{status}</Badge>;
     }
