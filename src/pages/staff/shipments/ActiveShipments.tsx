@@ -80,13 +80,10 @@ export const ActiveShipments = () => {
           progress = 100;
         }
         
-        // Get carrier from tracking number pattern or default
-        let carrier = 'DHL Express';
-        const latestEvent = shipment.trackingEvents && shipment.trackingEvents.length > 0 
+        // Get latest tracking event
+        const latestEvent = shipment.trackingEvents && shipment.trackingEvents.length > 0
           ? shipment.trackingEvents[shipment.trackingEvents.length - 1]
           : null;
-        if (latestEvent?.location?.includes('UPS')) carrier = 'UPS';
-        else if (latestEvent?.location?.includes('FedEx')) carrier = 'FedEx';
         
         // Get tracking numbers from SO numbers
         const soNumbers = shipment.destinations
@@ -123,11 +120,10 @@ export const ActiveShipments = () => {
             return shipment.status;
           })(),
           rawShipment: shipment,
-          origin: quoteRequest?.supplierDetails?.city 
+          origin: quoteRequest?.supplierDetails?.city
             ? `${quoteRequest.supplierDetails.city}, ${quoteRequest.supplierDetails.country}`
             : 'China',
           destination: firstDest ? `${firstDest.fbaWarehouse}, USA` : 'USA',
-          carrier,
           trackingNumber,
           departureDate: shipment.createdAt || shipment.created_at 
             ? new Date(shipment.createdAt || shipment.created_at).toLocaleDateString() 
@@ -207,7 +203,7 @@ export const ActiveShipments = () => {
           </div>
         </div>
         {filterOpen && <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Status
@@ -232,18 +228,6 @@ export const ActiveShipments = () => {
                   <option>FBA MDW2</option>
                   <option>FBA ATL6</option>
                   <option>FBA DFW7</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Carrier
-                </label>
-                <select className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">All Carriers</option>
-                  <option>DHL Express</option>
-                  <option>UPS</option>
-                  <option>FedEx</option>
-                  <option>USPS</option>
                 </select>
               </div>
             </div>
@@ -281,13 +265,14 @@ export const ActiveShipments = () => {
                           {shipment.origin} → {shipment.destination}
                         </span>
                       </div>
-                      <div className="mt-1 text-sm text-gray-700">
-                        <span className="text-gray-500">Carrier:</span>{' '}
-                        {shipment.carrier}
-                        {shipment.trackingNumber !== 'Pending' && <span className="ml-1 text-xs text-blue-600 hover:underline cursor-pointer">
+                      {shipment.trackingNumber !== 'Pending' && (
+                        <div className="mt-1 text-sm text-gray-700">
+                          <span className="text-gray-500">Tracking:</span>{' '}
+                          <span className="text-xs text-blue-600 hover:underline cursor-pointer">
                             {shipment.trackingNumber}
-                          </span>}
-                      </div>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
