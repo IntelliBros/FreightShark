@@ -1717,7 +1717,7 @@ export const ShipmentDetails = () => {
                   </div>
                 </div>
               );
-            }))
+            })
             ) : (
               <div className="col-span-full text-center py-8 text-gray-500">
                 No documents uploaded yet
