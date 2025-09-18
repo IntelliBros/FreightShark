@@ -63,7 +63,7 @@ export const AllQuotes = () => {
       }
     };
     fetchQuotes();
-  }, [addToast, user, contextQuotes]);
+  }, [addToast, user?.id]);
   
   // Add effect to refetch when component receives focus (e.g., after navigation)
   useEffect(() => {

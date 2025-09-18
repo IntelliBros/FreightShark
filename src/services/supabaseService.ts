@@ -104,8 +104,8 @@ export const supabaseService = {
         .from('users')
         .select('*')
         .eq('id', id)
-        .single();
-      
+        .maybeSingle();
+
       if (error) throw error;
       return data;
     },

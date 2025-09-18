@@ -136,8 +136,10 @@ export const ActiveShipments = () => {
           lastUpdate: latestEvent && latestEvent.date
             ? `${new Date(latestEvent.date).toLocaleDateString()} - ${latestEvent.description || 'Status update'}`
             : 'No updates yet',
-          totalCartons: shipment.destinations?.reduce((sum, d) => sum + (d.cartons || 0), 0) || 0,
-          totalWeight: shipment.destinations?.reduce((sum, d) => sum + (d.estimatedWeight || d.weight || 0), 0) || 0
+          totalCartons: shipment.masterCargo?.actualCartons ||
+                       shipment.destinations?.reduce((sum, d) => sum + (d.actualCartons || d.cartons || 0), 0) || 0,
+          totalWeight: shipment.masterCargo?.actualWeight ||
+                      shipment.destinations?.reduce((sum, d) => sum + (d.actualWeight || d.weight || d.estimatedWeight || 0), 0) || 0
         };
       });
   }, [shipments, quoteRequests, users]);
