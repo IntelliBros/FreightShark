@@ -183,9 +183,10 @@ export const ShipmentDetails = () => {
             date: new Date(event.date).toLocaleString(),
             event: event.description,
             location: event.location
-          }))
+          })),
+          documents: shipmentData?.documents || []
         };
-        
+
         console.log('Transformation object created at:', new Date().toISOString());
         
         // Check if shipment already has an invoice
