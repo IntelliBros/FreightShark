@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon, EyeIcon, XIcon } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { DataService, QuoteRequest } from '../../../services/DataService';
 import { useData } from '../../../context/DataContext';
@@ -39,6 +39,8 @@ export const ShipmentDetails = () => {
   const [shipment, setShipment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditingCargo, setIsEditingCargo] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   // Form state for actual cargo data with enhanced warehouse management
   const [actualCargoData, setActualCargoData] = useState<any>({
     grossWeight: 0,
@@ -489,6 +491,22 @@ export const ShipmentDetails = () => {
     };
 
     input.click();
+  };
+
+  const handleDocumentPreview = (doc: any) => {
+    setPreviewDocument(doc);
+    setIsPreviewOpen(true);
+  };
+
+  const handleDocumentDownload = (doc: any) => {
+    // Create a fake download link since we don't have actual file storage
+    // In a real app, this would download from a file storage service
+    const link = document.createElement('a');
+    link.href = '#'; // In production, this would be the actual file URL
+    link.download = doc.name;
+    link.click();
+
+    addToast(`Downloading ${doc.name}`, 'info');
   };
 
   const handleGenerateInvoice = async () => {
@@ -1703,17 +1721,45 @@ export const ShipmentDetails = () => {
                           </p>
                       </div>
                     </div>
-                    <button type="button" className="text-blue-600 hover:text-blue-800" title="Download">
-                      <DownloadIcon className="h-4 w-4" />
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:text-blue-800"
+                        title="Preview"
+                        onClick={() => handleDocumentPreview(doc)}
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:text-blue-800"
+                        title="Download"
+                        onClick={() => handleDocumentDownload(doc)}
+                      >
+                        <DownloadIcon className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
                     <span className="text-xs text-gray-500">
                       Uploaded on {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Unknown'}
                     </span>
-                    <button type="button" className="text-xs text-blue-600 hover:text-blue-800">
-                      View
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                        onClick={() => handleDocumentPreview(doc)}
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                        onClick={() => handleDocumentDownload(doc)}
+                      >
+                        Download
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -1739,6 +1785,98 @@ export const ShipmentDetails = () => {
             />
           </div>
         </Card>
+      )}
+
+      {/* Document Preview Modal */}
+      {isPreviewOpen && previewDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">
+                Document Preview: {previewDocument.name}
+              </h2>
+              <button
+                onClick={() => {
+                  setIsPreviewOpen(false);
+                  setPreviewDocument(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6">
+              {previewDocument.type === 'Image' ? (
+                <div className="flex justify-center">
+                  <img
+                    src={`https://via.placeholder.com/600x400?text=${encodeURIComponent(previewDocument.name)}`}
+                    alt={previewDocument.name}
+                    className="max-w-full h-auto"
+                  />
+                </div>
+              ) : previewDocument.type === 'PDF' ? (
+                <div className="bg-gray-100 rounded-lg p-8 text-center">
+                  <FileTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">
+                    PDF Preview: {previewDocument.name}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    In production, this would display the actual PDF content
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleDocumentDownload(previewDocument)}
+                  >
+                    <DownloadIcon className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-gray-100 rounded-lg p-8 text-center">
+                  <FileTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">
+                    Document: {previewDocument.name}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Type: {previewDocument.type}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Size: {previewDocument.size ? `${(previewDocument.size / 1024).toFixed(2)} KB` : 'Unknown'}
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleDocumentDownload(previewDocument)}
+                  >
+                    <DownloadIcon className="h-4 w-4 mr-2" />
+                    Download Document
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setIsPreviewOpen(false);
+                  setPreviewDocument(null);
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleDocumentDownload(previewDocument)}
+              >
+                <DownloadIcon className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>;
 };
