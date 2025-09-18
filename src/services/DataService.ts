@@ -468,32 +468,38 @@ export const DataService = {
     
     // Transform shipments to match expected frontend format
     return shipments.map(shipment => {
-      // Parse destination data - now includes invoice and masterCargo
+      // Parse destination data - now includes invoice, masterCargo, and documents
       let destinations = [];
       let invoice = null;
       let masterCargo = shipment.master_cargo || {};
-      
+      let documents = [];
+
       if (shipment.destination) {
         try {
-          const parsed = typeof shipment.destination === 'string' 
-            ? JSON.parse(shipment.destination) 
+          const parsed = typeof shipment.destination === 'string'
+            ? JSON.parse(shipment.destination)
             : shipment.destination;
-          
+
           // Extract destinations
           if (parsed.destinations && Array.isArray(parsed.destinations)) {
             destinations = parsed.destinations;
           } else if (Array.isArray(parsed)) {
             destinations = parsed;
           }
-          
+
           // Extract invoice if it exists
           if (parsed.invoice) {
             invoice = parsed.invoice;
           }
-          
+
           // Extract masterCargo with actual values if it exists
           if (parsed.masterCargo) {
             masterCargo = { ...masterCargo, ...parsed.masterCargo };
+          }
+
+          // Extract documents if they exist
+          if (parsed.documents && Array.isArray(parsed.documents)) {
+            documents = parsed.documents;
           }
         } catch (e) {
           console.log('Could not parse destination:', shipment.destination);
@@ -522,6 +528,7 @@ export const DataService = {
         cargoDetails: cargoDetails,
         estimatedTotal: shipment.quotes?.total_cost || 0,
         invoice: invoice, // Use extracted invoice from destination field
+        documents: documents, // Use extracted documents from destination field
         createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
       };
     });
@@ -542,38 +549,44 @@ export const DataService = {
         return null;
       }
     
-    // Parse destination data - now includes invoice and masterCargo
+    // Parse destination data - now includes invoice, masterCargo, and documents
     let destinations = [];
     let invoice = null;
     let masterCargo = shipment.master_cargo || {};
     let actualTotal = null;
-    
+    let documents = [];
+
     if (shipment.destination) {
       try {
-        const parsed = typeof shipment.destination === 'string' 
-          ? JSON.parse(shipment.destination) 
+        const parsed = typeof shipment.destination === 'string'
+          ? JSON.parse(shipment.destination)
           : shipment.destination;
-        
+
         // Extract destinations
         if (parsed.destinations && Array.isArray(parsed.destinations)) {
           destinations = parsed.destinations;
         } else if (Array.isArray(parsed)) {
           destinations = parsed;
         }
-        
+
         // Extract invoice if it exists
         if (parsed.invoice) {
           invoice = parsed.invoice;
         }
-        
+
         // Extract masterCargo with actual values if it exists
         if (parsed.masterCargo) {
           masterCargo = { ...masterCargo, ...parsed.masterCargo };
         }
-        
+
         // Extract actual total if it exists
         if (parsed.actualTotal !== undefined) {
           actualTotal = parsed.actualTotal;
+        }
+
+        // Extract documents if they exist
+        if (parsed.documents && Array.isArray(parsed.documents)) {
+          documents = parsed.documents;
         }
       } catch (e) {
         console.log('Could not parse destination:', shipment.destination);
@@ -663,6 +676,7 @@ export const DataService = {
       estimatedTotal: shipment.quotes?.total_cost || 0,
       actualTotal: actualTotal, // Include actual total from invoice
       invoice: invoice, // Use extracted invoice from destination field
+      documents: documents, // Use extracted documents from destination field
       createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
     };
     } catch (error) {

@@ -558,7 +558,7 @@ export const supabaseService = {
       if (updates.cargo_details !== undefined) dbUpdates.cargo_details = updates.cargo_details;
       
       // Handle destination updates carefully to preserve all data
-      if (updates.destination !== undefined || updates.destinations !== undefined || updates.invoice !== undefined) {
+      if (updates.destination !== undefined || updates.destinations !== undefined || updates.invoice !== undefined || updates.documents !== undefined) {
         // First, fetch the current shipment to preserve existing data
         const { data: currentShipment } = await supabase
           .from('shipments')
@@ -577,13 +577,23 @@ export const supabaseService = {
         const preservedInvoice = existingData.invoice || null;
         const preservedDestinations = existingData.destinations || [];
         const preservedMasterCargo = existingData.masterCargo || null;
+        const preservedDocuments = existingData.documents || [];
         
         // Handle different update scenarios
-        if (updates.invoice !== undefined && updates.destinations === undefined && updates.destination === undefined) {
+        if (updates.documents !== undefined && updates.invoice === undefined && updates.destinations === undefined && updates.destination === undefined) {
+          // Only updating documents - preserve everything else
+          dbUpdates.destination = {
+            destinations: preservedDestinations,
+            invoice: preservedInvoice,
+            documents: updates.documents,
+            ...(preservedMasterCargo ? { masterCargo: preservedMasterCargo } : {})
+          };
+        } else if (updates.invoice !== undefined && updates.destinations === undefined && updates.destination === undefined) {
           // Only updating invoice - preserve destinations
           dbUpdates.destination = {
             destinations: preservedDestinations,
             invoice: updates.invoice,
+            documents: preservedDocuments,
             ...(preservedMasterCargo ? { masterCargo: preservedMasterCargo } : {})
           };
         } else if (updates.destinations !== undefined) {
@@ -591,6 +601,7 @@ export const supabaseService = {
           dbUpdates.destination = {
             destinations: updates.destinations,
             invoice: preservedInvoice,
+            documents: preservedDocuments,
             ...(preservedMasterCargo ? { masterCargo: preservedMasterCargo } : {})
           };
         } else if (updates.destination !== undefined) {
@@ -602,6 +613,7 @@ export const supabaseService = {
             dbUpdates.destination = {
               destinations: preservedDestinations,
               invoice: newDestination.invoice,
+              documents: newDestination.documents || preservedDocuments,
               ...(newDestination.masterCargo || preservedMasterCargo ? { masterCargo: newDestination.masterCargo || preservedMasterCargo } : {})
             };
           } else {
@@ -609,6 +621,7 @@ export const supabaseService = {
             dbUpdates.destination = {
               destinations: newDestination.destinations || preservedDestinations,
               invoice: newDestination.invoice || preservedInvoice,
+              documents: newDestination.documents || preservedDocuments,
               ...(newDestination.masterCargo || preservedMasterCargo ? { masterCargo: newDestination.masterCargo || preservedMasterCargo } : {})
             };
           }
