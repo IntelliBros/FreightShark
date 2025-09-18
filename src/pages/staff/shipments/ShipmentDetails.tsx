@@ -441,14 +441,31 @@ export const ShipmentDetails = () => {
       if (files && files.length > 0) {
         setIsLoading(true);
         try {
-          const documents = Array.from(files).map(file => ({
-            id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            uploadedAt: new Date().toISOString(),
-            uploadedBy: user?.id || 'staff'
-          }));
+          const documents = Array.from(files).map(file => {
+            // Get file extension for better type detection
+            const extension = file.name.split('.').pop()?.toLowerCase() || '';
+
+            // Determine document type based on extension or MIME type
+            let docType = 'Document';
+            if (['pdf'].includes(extension) || file.type === 'application/pdf') {
+              docType = 'PDF';
+            } else if (['xlsx', 'xls'].includes(extension) || file.type.includes('spreadsheet')) {
+              docType = 'Spreadsheet';
+            } else if (['doc', 'docx'].includes(extension) || file.type.includes('document')) {
+              docType = 'Word Document';
+            } else if (['png', 'jpg', 'jpeg'].includes(extension) || file.type.includes('image')) {
+              docType = 'Image';
+            }
+
+            return {
+              id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: file.name,
+              type: docType,
+              size: file.size,
+              uploadedAt: new Date().toISOString(),
+              uploadedBy: user?.id || 'staff'
+            };
+          });
 
           // Update shipment with new documents
           const updatedDocuments = [...(shipment.documents || []), ...documents];
@@ -1650,18 +1667,40 @@ export const ShipmentDetails = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shipment.documents && shipment.documents.length > 0 ? (
-              shipment.documents.map((doc: any) => (
-                <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center">
-                      <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
-                      <div>
-                        <h3 className="font-medium text-gray-900">
-                          {doc.name}
-                        </h3>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {doc.type || 'Document'}
-                        </p>
+              shipment.documents.map((doc: any) => {
+                // Ensure doc.name is a string and not an object
+                const documentName = typeof doc.name === 'object'
+                  ? JSON.stringify(doc.name)
+                  : (doc.name || 'Untitled Document');
+
+                // Extract just the filename if it appears to be a stringified object
+                let displayName = documentName;
+                let displayType = doc.type || 'Document';
+
+                if (documentName.includes('"name"')) {
+                  try {
+                    const parsed = JSON.parse(documentName);
+                    displayName = parsed.name || documentName;
+                    displayType = parsed.type || displayType;
+                  } catch {
+                    // If parsing fails, try to extract the name value using regex
+                    const match = documentName.match(/"name":"([^"]+)"/);
+                    displayName = match ? match[1] : documentName;
+                  }
+                }
+
+                return (
+                  <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center">
+                        <FileTextIcon className="h-8 w-8 text-blue-500 mr-3" />
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {displayName}
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {displayType}
+                          </p>
                       </div>
                     </div>
                     <button type="button" className="text-blue-600 hover:text-blue-800" title="Download">
@@ -1677,7 +1716,8 @@ export const ShipmentDetails = () => {
                     </button>
                   </div>
                 </div>
-              ))
+              );
+            }))
             ) : (
               <div className="col-span-full text-center py-8 text-gray-500">
                 No documents uploaded yet
