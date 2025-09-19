@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon, EyeIcon, XIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon, EyeIcon, XIcon, CheckIcon } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { DataService, QuoteRequest } from '../../../services/DataService';
 import { useData } from '../../../context/DataContext';
@@ -504,6 +504,62 @@ export const ShipmentDetails = () => {
     };
 
     input.click();
+  };
+
+  const handleMarkWarehouseDelivered = async (warehouseCode: string) => {
+    if (!confirm(`Are you sure you want to mark ${warehouseCode} as delivered?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Update the destination status to delivered
+      const updatedDestinations = shipment.destinations.map((dest: any) => ({
+        ...dest,
+        deliveryStatus: dest.fbaWarehouse === warehouseCode ? 'delivered' : dest.deliveryStatus,
+        deliveredAt: dest.fbaWarehouse === warehouseCode ? new Date().toISOString() : dest.deliveredAt
+      }));
+
+      // Check if all destinations are delivered
+      const allDelivered = updatedDestinations.every((dest: any) => dest.deliveryStatus === 'delivered');
+
+      // Update shipment with the new destination statuses
+      const updateData: any = {
+        destinations: updatedDestinations
+      };
+
+      // If all warehouses are delivered, update the main shipment status
+      if (allDelivered) {
+        updateData.status = 'Delivered';
+        updateData.deliveredAt = new Date().toISOString();
+      }
+
+      const updatedShipment = await DataService.updateShipment(id!, updateData);
+
+      if (updatedShipment) {
+        setShipment({
+          ...shipment,
+          ...updatedShipment,
+          destinations: updatedDestinations,
+          status: allDelivered ? 'Delivered' : shipment.status
+        });
+
+        addToast(
+          allDelivered
+            ? 'All warehouses marked as delivered. Shipment completed!'
+            : `${warehouseCode} marked as delivered`,
+          'success'
+        );
+
+        // Refresh data if needed
+        refreshData();
+      }
+    } catch (error) {
+      console.error('Error marking warehouse as delivered:', error);
+      addToast('Failed to update delivery status', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDocumentPreview = (doc: any) => {
@@ -1426,17 +1482,28 @@ export const ShipmentDetails = () => {
                 <div className="space-y-4">
                   {shipment.invoice && shipment.invoice.warehouseDetails && shipment.invoice.warehouseDetails.length > 0 ? (
                     // Show invoice warehouse details when available
-                    shipment.invoice.warehouseDetails.map((warehouse: any, index: number) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div>
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-start space-x-6">
-                              <div>
-                                <h4 className="font-medium text-gray-900 text-base">
-                                  {warehouse.warehouse}
-                                </h4>
-                                {warehouse.soNumber && (
-                                  <p className="text-xs text-gray-500 mt-1">
+                    shipment.invoice.warehouseDetails.map((warehouse: any, index: number) => {
+                      // Check if this warehouse is already delivered
+                      const destination = shipment.destinations?.find((d: any) => d.fbaWarehouse === warehouse.warehouse);
+                      const isDelivered = destination?.deliveryStatus === 'delivered';
+
+                      return (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-start space-x-6">
+                                <div>
+                                  <h4 className="font-medium text-gray-900 text-base flex items-center gap-2">
+                                    {warehouse.warehouse}
+                                    {isDelivered && (
+                                      <Badge variant="success" className="text-xs">
+                                        <CheckCircleIcon className="h-3 w-3 mr-1" />
+                                        Delivered
+                                      </Badge>
+                                    )}
+                                  </h4>
+                                  {warehouse.soNumber && (
+                                    <p className="text-xs text-gray-500 mt-1">
                                     SO# {warehouse.soNumber}
                                   </p>
                                 )}
@@ -1481,9 +1548,33 @@ export const ShipmentDetails = () => {
                               )}
                             </div>
                           )}
+                          {/* Mark as Delivered Button */}
+                          {!isDelivered && shipment.invoice?.status === 'Paid' && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleMarkWarehouseDelivered(warehouse.warehouse)}
+                                isLoading={isLoading}
+                                className="w-full"
+                              >
+                                <CheckIcon className="h-4 w-4 mr-2" />
+                                Mark as Delivered
+                              </Button>
+                            </div>
+                          )}
+                          {isDelivered && destination?.deliveredAt && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <p className="text-sm text-green-600 flex items-center">
+                                <CheckCircleIcon className="h-4 w-4 mr-2" />
+                                Delivered on {new Date(destination.deliveredAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ))
+                    );
+                  })
                   ) : (
                     // Show original destinations when no invoice
                     shipment.destinations?.map(dest => (

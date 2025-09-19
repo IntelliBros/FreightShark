@@ -83,11 +83,6 @@ export const StaffSidebar = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/staff/shipments/update" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/shipments/update') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    Update Status
-                  </Link>
-                </li>
-                <li>
                   <Link to="/staff/shipments/completed" className={`block px-3 py-1.5 rounded-lg text-xs ${isActive('/staff/shipments/completed') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-600 hover:bg-gray-50'}`}>
                     Completed
                   </Link>

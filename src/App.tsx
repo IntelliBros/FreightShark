@@ -29,7 +29,6 @@ import { ApprovedQuotes } from './pages/staff/quotes/ApprovedQuotes';
 import { ProvideQuote } from './pages/staff/quotes/ProvideQuote';
 import { CreateQuote } from './pages/staff/quotes/CreateQuote';
 import { ActiveShipments } from './pages/staff/shipments/ActiveShipments';
-import { UpdateShipment } from './pages/staff/shipments/UpdateShipment';
 import { ShipmentDetails } from './pages/staff/shipments/ShipmentDetails';
 import { CompletedShipments } from './pages/staff/shipments/CompletedShipments';
 import { StaffAnnouncements } from './pages/staff/Announcements';
@@ -86,7 +85,6 @@ export function App() {
                 <Route path="quotes/create" element={<CreateQuote />} />
                 <Route path="quotes/:id" element={<QuoteDetails />} />
                 <Route path="shipments/active" element={<ActiveShipments />} />
-                <Route path="shipments/update" element={<UpdateShipment />} />
                 <Route path="shipments/:id" element={<ShipmentDetails />} />
                 <Route path="shipments/completed" element={<CompletedShipments />} />
                 <Route path="customers/list" element={<StaffDashboard />} />

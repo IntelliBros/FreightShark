@@ -200,9 +200,6 @@ export const ActiveShipments = () => {
             Monitor and manage shipments currently in progress
           </p>
         </div>
-        <Link to="/staff/shipments/update">
-          <Button variant="primary">Update Shipment</Button>
-        </Link>
       </div>
       <Card className="mb-6">
         <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -336,12 +333,7 @@ export const ActiveShipments = () => {
                   <div className="flex space-x-2">
                     <Link to={`/staff/shipments/${shipment.id}`}>
                       <Button variant="primary" size="sm">
-                        Details
-                      </Button>
-                    </Link>
-                    <Link to={`/staff/shipments/update?id=${shipment.id}`}>
-                      <Button variant="secondary" size="sm">
-                        Update
+                        View Details
                       </Button>
                     </Link>
                   </div>
