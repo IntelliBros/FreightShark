@@ -176,7 +176,10 @@ export const ShipmentDetails = () => {
             estimatedCartons: dest.cartons,
             estimatedWeight: dest.estimatedWeight || dest.weight || dest.grossWeight || 135,
             actualCartons: null,
-            actualWeight: dest.actualWeight || null
+            actualWeight: dest.actualWeight || null,
+            // Preserve delivery status from database
+            deliveryStatus: dest.deliveryStatus || 'pending',
+            deliveredAt: dest.deliveredAt || null
           })),
           estimatedTotal: shipmentData?.estimatedTotal || shipmentData?.quotes?.total_cost || 3070,
           actualTotal: null,
