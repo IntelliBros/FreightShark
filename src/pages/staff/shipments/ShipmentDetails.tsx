@@ -512,12 +512,31 @@ export const ShipmentDetails = () => {
     }
 
     console.log('Marking warehouse as delivered:', warehouseCode);
-    console.log('Current destinations:', shipment.destinations);
+    console.log('Current shipment:', shipment);
 
     setIsLoading(true);
     try {
+      // First, ensure destinations array exists or create it from invoice data
+      let currentDestinations = shipment.destinations || [];
+
+      // If destinations don't exist but we have invoice warehouse details, create destinations from them
+      if ((!currentDestinations || currentDestinations.length === 0) && shipment.invoice?.warehouseDetails) {
+        console.log('Creating destinations from invoice warehouse details');
+        currentDestinations = shipment.invoice.warehouseDetails.map((wh: any) => ({
+          fbaWarehouse: wh.warehouse,
+          amazonShipmentId: wh.amazonShipmentId || '',
+          soNumber: wh.soNumber || '',
+          cartons: wh.cartons,
+          weight: wh.weight,
+          deliveryStatus: 'pending',
+          deliveredAt: null
+        }));
+      }
+
+      console.log('Current destinations before update:', currentDestinations);
+
       // Update the destination status to delivered
-      const updatedDestinations = shipment.destinations.map((dest: any) => {
+      const updatedDestinations = currentDestinations.map((dest: any) => {
         if (dest.fbaWarehouse === warehouseCode) {
           return {
             ...dest,
@@ -558,17 +577,20 @@ export const ShipmentDetails = () => {
       console.log('Received updated shipment:', updatedShipment);
 
       if (updatedShipment) {
-        // Update local state with the new data
-        const newShipmentData = {
+        // Update local state with the new shipment data, preserving all existing data
+        const mergedShipment = {
           ...shipment,
           ...updatedShipment,
           destinations: updatedDestinations,
-          status: allDelivered ? 'Delivered' : shipment.status,
-          actual_delivery: allDelivered ? new Date().toISOString() : shipment.actual_delivery
+          status: updateData.status || shipment.status,
+          actual_delivery: updateData.actual_delivery || shipment.actual_delivery,
+          // Preserve customer and invoice data that might not be in the response
+          customer: shipment.customer,
+          invoice: shipment.invoice
         };
 
-        console.log('Setting new shipment data:', newShipmentData);
-        setShipment(newShipmentData);
+        console.log('Updated local shipment state:', mergedShipment);
+        setShipment(mergedShipment);
 
         addToast(
           allDelivered
@@ -1515,6 +1537,8 @@ export const ShipmentDetails = () => {
                       const destination = shipment.destinations?.find((d: any) => d.fbaWarehouse === warehouse.warehouse);
                       const isDelivered = destination?.deliveryStatus === 'delivered';
 
+                      console.log(`Warehouse ${warehouse.warehouse} - Delivered: ${isDelivered}, Destination:`, destination);
+
                       return (
                         <div key={index} className="border border-gray-200 rounded-lg p-4">
                           <div>
@@ -1576,27 +1600,44 @@ export const ShipmentDetails = () => {
                               )}
                             </div>
                           )}
-                          {/* Mark as Delivered Button - Show if invoice exists and not already delivered */}
-                          {!isDelivered && shipment.invoice && (
+                          {/* Mark as Delivered Button - Show if invoice exists */}
+                          {shipment.invoice && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleMarkWarehouseDelivered(warehouse.warehouse)}
-                                isLoading={isLoading}
-                                className="w-full"
-                              >
-                                <CheckIcon className="h-4 w-4 mr-2" />
-                                Mark as Delivered
-                              </Button>
-                            </div>
-                          )}
-                          {isDelivered && destination?.deliveredAt && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                              <p className="text-sm text-green-600 flex items-center">
-                                <CheckCircleIcon className="h-4 w-4 mr-2" />
-                                Delivered on {new Date(destination.deliveredAt).toLocaleDateString()}
-                              </p>
+                              {!isDelivered ? (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleMarkWarehouseDelivered(warehouse.warehouse)}
+                                  disabled={isLoading}
+                                  className="w-full"
+                                >
+                                  <CheckIcon className="h-4 w-4 mr-2" />
+                                  Mark as Delivered
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    disabled={true}
+                                    className="w-full cursor-not-allowed opacity-60"
+                                  >
+                                    <CheckCircleIcon className="h-4 w-4 mr-2 text-green-600" />
+                                    Delivered
+                                  </Button>
+                                  {destination?.deliveredAt && (
+                                    <p className="text-xs text-gray-500 text-center mt-2">
+                                      {new Date(destination.deliveredAt).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  )}
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
