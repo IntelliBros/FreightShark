@@ -695,16 +695,30 @@ export const ShipmentTracking = () => {
   };
   
   const getDisplayStatus = () => {
+    // First check if shipment is delivered
+    if (shipment?.status === 'Delivered' || shipment?.status === 'delivered') {
+      return 'Delivered';
+    }
+
+    // Check if all destinations are delivered
+    if (Array.isArray(shipment?.destinations) &&
+        shipment.destinations.length > 0 &&
+        shipment.destinations.every((d: any) => d.deliveryStatus === 'delivered')) {
+      return 'Delivered';
+    }
+
     // Check if invoice is paid but IDs are missing
-    if (shipment?.invoice?.status === 'Paid' && 
+    if (shipment?.invoice?.status === 'Paid' &&
         Array.isArray(shipment?.destinations) && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
       return 'Missing Shipment IDs';
     }
+
     // If invoice is paid and all IDs are provided, show In Progress
-    if (shipment?.invoice?.status === 'Paid' && 
+    if (shipment?.invoice?.status === 'Paid' &&
         Array.isArray(shipment?.destinations) && shipment.destinations.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
       return 'In Progress';
     }
+
     return shipment?.status || 'Unknown';
   };
   
