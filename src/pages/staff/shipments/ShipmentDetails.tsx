@@ -169,14 +169,20 @@ export const ShipmentDetails = () => {
             estimatedWeight: 135
           }])).map((dest: any) => ({
             id: dest.id,
-            amazonShipmentId: dest.amazonShipmentId,
+            amazonShipmentId: dest.amazonShipmentId || '',
             amazonReferenceId: dest.amazonReferenceId || '',
             fbaWarehouse: dest.fbaWarehouse,
             address: getWarehouseAddress(dest.fbaWarehouse),
             estimatedCartons: dest.cartons,
             estimatedWeight: dest.estimatedWeight || dest.weight || dest.grossWeight || 135,
-            actualCartons: null,
+            actualCartons: dest.actualCartons || null,
             actualWeight: dest.actualWeight || null,
+            // Preserve ALL important fields from database
+            soNumber: dest.soNumber || '',
+            chargeableWeight: dest.chargeableWeight || null,
+            volumetricWeight: dest.volumetricWeight || null,
+            ratePerKg: dest.ratePerKg || null,
+            subtotal: dest.subtotal || null,
             // Preserve delivery status from database
             deliveryStatus: dest.deliveryStatus || 'pending',
             deliveredAt: dest.deliveredAt || null
@@ -528,9 +534,17 @@ export const ShipmentDetails = () => {
         currentDestinations = shipment.invoice.warehouseDetails.map((wh: any) => ({
           fbaWarehouse: wh.warehouse,
           amazonShipmentId: wh.amazonShipmentId || '',
+          amazonReferenceId: wh.amazonReferenceId || '',
           soNumber: wh.soNumber || '',
           cartons: wh.cartons,
           weight: wh.weight,
+          actualWeight: wh.actualWeight || wh.weight || null,
+          chargeableWeight: wh.chargeableWeight || null,
+          actualCartons: wh.actualCartons || wh.cartons || null,
+          estimatedWeight: wh.estimatedWeight || wh.weight || null,
+          volumetricWeight: wh.volumetricWeight || null,
+          ratePerKg: wh.ratePerKg || null,
+          subtotal: wh.subtotal || null,
           deliveryStatus: 'pending',
           deliveredAt: null
         }));
@@ -538,20 +552,21 @@ export const ShipmentDetails = () => {
 
       console.log('Current destinations before update:', currentDestinations);
 
-      // Update the destination status to delivered
+      // Update the destination status to delivered - preserve ALL fields
       const updatedDestinations = currentDestinations.map((dest: any) => {
         if (dest.fbaWarehouse === warehouseCode) {
+          console.log(`Marking ${warehouseCode} as delivered, preserving fields:`, dest);
           return {
-            ...dest,
+            ...dest, // Preserve all existing fields
             deliveryStatus: 'delivered',
             deliveredAt: new Date().toISOString()
           };
         }
-        // Preserve existing delivery status or default to pending
+        // Preserve ALL existing fields, just ensure delivery status is set
         return {
           ...dest,
           deliveryStatus: dest.deliveryStatus || 'pending',
-          deliveredAt: dest.deliveredAt
+          deliveredAt: dest.deliveredAt || null
         };
       });
 
