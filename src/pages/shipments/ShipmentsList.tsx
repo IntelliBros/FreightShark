@@ -35,24 +35,35 @@ export const ShipmentsList = () => {
   });
 
   const getStatusBadge = (shipment: any) => {
+    // First check if all destinations are delivered
+    if (shipment.destinations?.length > 0 &&
+        shipment.destinations.every((d: any) => d.deliveryStatus === 'delivered')) {
+      return <Badge variant="success">Delivered</Badge>;
+    }
+
+    // Check if overall shipment status is Delivered
+    if (shipment.status === 'Delivered' || shipment.status === 'delivered') {
+      return <Badge variant="success">Delivered</Badge>;
+    }
+
     // Check if invoice is paid but IDs are missing - this takes priority
     // Check both destinations array and invoice warehouseDetails
     if (shipment.invoice?.status === 'Paid') {
       // Check if IDs are missing in destinations or in invoice warehouseDetails
-      const destinationsHaveMissingIds = shipment.destinations?.length > 0 
+      const destinationsHaveMissingIds = shipment.destinations?.length > 0
         ? shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')
         : false;
-      
+
       const warehouseDetailsHaveMissingIds = shipment.invoice?.warehouseDetails?.length > 0
         ? shipment.invoice.warehouseDetails.some((w: any) => !w.amazonShipmentId || w.amazonShipmentId === '')
         : false;
-      
+
       // If either source shows missing IDs, display the error badge
       if (destinationsHaveMissingIds || warehouseDetailsHaveMissingIds) {
         return <Badge variant="error">Missing Shipment IDs</Badge>;
       }
     }
-    
+
     // Check the status from database
     const status = shipment.status;
     
@@ -88,14 +99,25 @@ export const ShipmentsList = () => {
   };
 
   const getProgressPercentage = (shipment: any) => {
+    // First check if all destinations are delivered
+    if (shipment.destinations?.length > 0 &&
+        shipment.destinations.every((d: any) => d.deliveryStatus === 'delivered')) {
+      return 100;
+    }
+
+    // Check if overall status is Delivered
+    if (shipment.status === 'Delivered' || shipment.status === 'delivered') {
+      return 100;
+    }
+
     // Simplified progress based on status since invoices are created by staff
     const status = shipment.status;
-    
+
     // If shipment has been created, it's at least at booking confirmed stage
     if (status === 'Booking Confirmed' || status === 'Awaiting Pickup') {
       return 20;
     }
-    
+
     // Check if invoice exists and is paid
     if (shipment.invoice?.status === 'Paid') {
       // If paid but missing IDs
@@ -109,12 +131,9 @@ export const ShipmentsList = () => {
       if (status === 'Out for Delivery') {
         return 90;
       }
-      if (status === 'Delivered') {
-        return 100;
-      }
       return 40; // Paid but still waiting
     }
-    
+
     // Status-based progress without invoice
     switch (status) {
       case 'In Transit':
@@ -123,8 +142,6 @@ export const ShipmentsList = () => {
         return 50;
       case 'Out for Delivery':
         return 80;
-      case 'Delivered':
-        return 100;
       default:
         return 20; // Default for any shipment that exists
     }
@@ -303,13 +320,67 @@ export const ShipmentsList = () => {
                     <div className="mb-2">
                       <span className="text-gray-500 block">Total Cartons:</span>
                       <span className="text-gray-900 font-medium">
-                        {shipment.destinations.reduce((sum, d) => sum + (d.cartons || 0), 0)}
+                        {(() => {
+                          // Try to get cartons from multiple sources
+                          let totalCartons = 0;
+
+                          // First try destinations
+                          if (shipment.destinations && shipment.destinations.length > 0) {
+                            totalCartons = shipment.destinations.reduce((sum, d) =>
+                              sum + (d.actualCartons || d.cartons || d.estimatedCartons || 0), 0);
+                          }
+
+                          // If still 0, try invoice warehouse details
+                          if (totalCartons === 0 && shipment.invoice?.warehouseDetails) {
+                            totalCartons = shipment.invoice.warehouseDetails.reduce((sum, w) =>
+                              sum + (w.cartons || w.actualCartons || 0), 0);
+                          }
+
+                          // If still 0, try masterCargo
+                          if (totalCartons === 0 && shipment.masterCargo) {
+                            totalCartons = shipment.masterCargo.actualCartons ||
+                                         shipment.masterCargo.estimatedCartonCount ||
+                                         shipment.masterCargo.cartonCount || 0;
+                          }
+
+                          // If still 0, try cargoDetails
+                          if (totalCartons === 0 && shipment.cargoDetails) {
+                            totalCartons = shipment.cargoDetails.cartonCount ||
+                                         shipment.cargoDetails.actualCartonCount || 0;
+                          }
+
+                          return totalCartons;
+                        })()}
                       </span>
                     </div>
                     <div className="mb-2">
                       <span className="text-gray-500 block">Est. Weight:</span>
                       <span className="text-gray-900 font-medium">
-                        {shipment.destinations.reduce((sum, d) => sum + (d.estimatedWeight || d.weight || 0), 0)} kg
+                        {(() => {
+                          // Try to get weight from multiple sources
+                          let totalWeight = 0;
+
+                          // First try destinations
+                          if (shipment.destinations && shipment.destinations.length > 0) {
+                            totalWeight = shipment.destinations.reduce((sum, d) =>
+                              sum + (d.actualWeight || d.weight || d.estimatedWeight || d.grossWeight || 0), 0);
+                          }
+
+                          // If still 0, try invoice warehouse details
+                          if (totalWeight === 0 && shipment.invoice?.warehouseDetails) {
+                            totalWeight = shipment.invoice.warehouseDetails.reduce((sum, w) =>
+                              sum + (w.actualWeight || w.weight || w.chargeableWeight || 0), 0);
+                          }
+
+                          // If still 0, try masterCargo
+                          if (totalWeight === 0 && shipment.masterCargo) {
+                            totalWeight = shipment.masterCargo.actualWeight ||
+                                        shipment.masterCargo.grossWeight ||
+                                        shipment.masterCargo.estimatedWeight || 0;
+                          }
+
+                          return totalWeight;
+                        })()} kg
                       </span>
                     </div>
                     {(shipment.invoice?.amount || shipment.estimatedTotal) && (

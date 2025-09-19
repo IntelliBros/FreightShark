@@ -457,9 +457,15 @@ export const ShipmentTracking = () => {
             safeWarehouseDetails = [];
           }
           
-          transformedShipment = {
+          // Check if all warehouses are delivered to determine overall status
+        let overallStatus = shipmentData?.status;
+        if (safeDestinations.length > 0 && safeDestinations.every((d: any) => d.deliveryStatus === 'delivered')) {
+          overallStatus = 'Delivered';
+        }
+
+        transformedShipment = {
           id: shipmentData?.id,
-          status: shipmentData?.status,
+          status: overallStatus,
           quoteId: shipmentData?.quoteId,
           createdAt: shipmentData?.createdAt || shipmentData?.created_at ? new Date(shipmentData?.createdAt || shipmentData?.created_at).toLocaleDateString() : 'Date not available',
           customer: shipmentData?.customer,
