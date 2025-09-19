@@ -115,18 +115,39 @@ export const Reports = () => {
       destinations.forEach((dest: any, index: number) => {
         const warehouseSuffix = (shipment.destinations?.length || 0) > 1 ? `-${index + 1}` : '';
         
-        // Find the delivered event if status is Delivered
+        // Find the delivered date for this specific warehouse
         let deliveryDate: Date | null = null;
-        if (shipment.status === 'Delivered' && shipment.trackingEvents) {
-          const deliveredEvent = shipment.trackingEvents
-            .filter((event: any) => 
-              event.description?.toLowerCase().includes('delivered') ||
-              event.status?.toLowerCase() === 'delivered'
-            )
-            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-          
-          if (deliveredEvent) {
-            deliveryDate = new Date(deliveredEvent.date);
+
+        // Debug logging for warehouse delivery status
+        if (shipment.id === 'FS-00015' || shipment.id === 'FS-00013') {
+          console.log(`${shipment.id} - Warehouse ${dest.fbaWarehouse} delivery status:`, {
+            deliveryStatus: dest.deliveryStatus,
+            deliveredAt: dest.deliveredAt
+          });
+        }
+
+        // First check if this specific warehouse has a delivery date
+        if (dest.deliveryStatus === 'delivered' && dest.deliveredAt) {
+          deliveryDate = new Date(dest.deliveredAt);
+        }
+        // Fall back to overall shipment delivery date if available
+        else if (shipment.status === 'Delivered') {
+          // Check for actual_delivery field first
+          if (shipment.actual_delivery) {
+            deliveryDate = new Date(shipment.actual_delivery);
+          }
+          // Otherwise check tracking events
+          else if (shipment.trackingEvents) {
+            const deliveredEvent = shipment.trackingEvents
+              .filter((event: any) =>
+                event.description?.toLowerCase().includes('delivered') ||
+                event.status?.toLowerCase() === 'delivered'
+              )
+              .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+            if (deliveredEvent) {
+              deliveryDate = new Date(deliveredEvent.date);
+            }
           }
         }
         
@@ -284,6 +305,12 @@ export const Reports = () => {
           });
         }
         
+        // Determine warehouse-specific status
+        let warehouseStatus = displayStatus;
+        if (dest.deliveryStatus === 'delivered') {
+          warehouseStatus = 'Delivered';
+        }
+
         rows.push({
           id: `${shipment.id}${warehouseSuffix}`,
           parentShipmentId: shipment.id,
@@ -293,10 +320,10 @@ export const Reports = () => {
           customerId: shipment.customerId,
           origin,
           destination: dest.fbaWarehouse,
-          status: displayStatus,
+          status: warehouseStatus,
           createdAt: new Date(shipment.createdAt),
           deliveryDate: deliveryDate,
-          isDelivered: shipment.status === 'Delivered',
+          isDelivered: dest.deliveryStatus === 'delivered' || shipment.status === 'Delivered',
           // Try to get cartons from multiple sources - destination data, invoice data, or quote data
           totalCartons: dest.cartons || 
                        dest.actualCartons || 
