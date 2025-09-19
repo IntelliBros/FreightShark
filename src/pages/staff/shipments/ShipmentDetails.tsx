@@ -511,31 +511,51 @@ export const ShipmentDetails = () => {
       return;
     }
 
+    console.log('Marking warehouse as delivered:', warehouseCode);
+    console.log('Current destinations:', shipment.destinations);
+
     setIsLoading(true);
     try {
       // Update the destination status to delivered
-      const updatedDestinations = shipment.destinations.map((dest: any) => ({
-        ...dest,
-        deliveryStatus: dest.fbaWarehouse === warehouseCode ? 'delivered' : dest.deliveryStatus,
-        deliveredAt: dest.fbaWarehouse === warehouseCode ? new Date().toISOString() : dest.deliveredAt
-      }));
+      const updatedDestinations = shipment.destinations.map((dest: any) => {
+        if (dest.fbaWarehouse === warehouseCode) {
+          return {
+            ...dest,
+            deliveryStatus: 'delivered',
+            deliveredAt: new Date().toISOString()
+          };
+        }
+        // Preserve existing delivery status or default to pending
+        return {
+          ...dest,
+          deliveryStatus: dest.deliveryStatus || 'pending',
+          deliveredAt: dest.deliveredAt
+        };
+      });
 
-      // Check if all destinations are delivered (or if this is the only destination)
+      console.log('Updated destinations:', updatedDestinations);
+
+      // Check if all destinations are delivered
       const allDelivered = updatedDestinations.every((dest: any) => dest.deliveryStatus === 'delivered');
-      const isSingleWarehouse = updatedDestinations.length === 1;
+
+      console.log('All delivered?', allDelivered);
 
       // Update shipment with the new destination statuses
       const updateData: any = {
         destinations: updatedDestinations
       };
 
-      // If all warehouses are delivered (or single warehouse is delivered), update the main shipment status
-      if (allDelivered || (isSingleWarehouse && updatedDestinations[0].deliveryStatus === 'delivered')) {
+      // Always update status to Delivered if marking any warehouse as delivered
+      // (since the shipment may have multiple warehouses but we're marking them individually)
+      if (allDelivered) {
         updateData.status = 'Delivered';
-        updateData.actual_delivery = new Date().toISOString(); // Use correct field name for database
+        updateData.actual_delivery = new Date().toISOString();
+        console.log('Updating shipment status to Delivered');
       }
 
+      console.log('Sending update with data:', updateData);
       const updatedShipment = await DataService.updateShipment(id!, updateData);
+      console.log('Received updated shipment:', updatedShipment);
 
       if (updatedShipment) {
         // Update local state with the new data
@@ -547,6 +567,7 @@ export const ShipmentDetails = () => {
           actual_delivery: allDelivered ? new Date().toISOString() : shipment.actual_delivery
         };
 
+        console.log('Setting new shipment data:', newShipmentData);
         setShipment(newShipmentData);
 
         addToast(
@@ -558,6 +579,8 @@ export const ShipmentDetails = () => {
 
         // Refresh data to sync with other components
         refreshData();
+      } else {
+        console.error('No updated shipment returned from DataService');
       }
     } catch (error) {
       console.error('Error marking warehouse as delivered:', error);
@@ -1553,8 +1576,8 @@ export const ShipmentDetails = () => {
                               )}
                             </div>
                           )}
-                          {/* Mark as Delivered Button */}
-                          {!isDelivered && shipment.invoice?.status === 'Paid' && (
+                          {/* Mark as Delivered Button - Show if invoice exists and not already delivered */}
+                          {!isDelivered && shipment.invoice && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
                               <Button
                                 variant="primary"
