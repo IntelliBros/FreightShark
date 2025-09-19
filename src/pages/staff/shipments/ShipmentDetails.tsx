@@ -520,29 +520,34 @@ export const ShipmentDetails = () => {
         deliveredAt: dest.fbaWarehouse === warehouseCode ? new Date().toISOString() : dest.deliveredAt
       }));
 
-      // Check if all destinations are delivered
+      // Check if all destinations are delivered (or if this is the only destination)
       const allDelivered = updatedDestinations.every((dest: any) => dest.deliveryStatus === 'delivered');
+      const isSingleWarehouse = updatedDestinations.length === 1;
 
       // Update shipment with the new destination statuses
       const updateData: any = {
         destinations: updatedDestinations
       };
 
-      // If all warehouses are delivered, update the main shipment status
-      if (allDelivered) {
+      // If all warehouses are delivered (or single warehouse is delivered), update the main shipment status
+      if (allDelivered || (isSingleWarehouse && updatedDestinations[0].deliveryStatus === 'delivered')) {
         updateData.status = 'Delivered';
-        updateData.deliveredAt = new Date().toISOString();
+        updateData.actual_delivery = new Date().toISOString(); // Use correct field name for database
       }
 
       const updatedShipment = await DataService.updateShipment(id!, updateData);
 
       if (updatedShipment) {
-        setShipment({
+        // Update local state with the new data
+        const newShipmentData = {
           ...shipment,
           ...updatedShipment,
           destinations: updatedDestinations,
-          status: allDelivered ? 'Delivered' : shipment.status
-        });
+          status: allDelivered ? 'Delivered' : shipment.status,
+          actual_delivery: allDelivered ? new Date().toISOString() : shipment.actual_delivery
+        };
+
+        setShipment(newShipmentData);
 
         addToast(
           allDelivered
@@ -551,7 +556,7 @@ export const ShipmentDetails = () => {
           'success'
         );
 
-        // Refresh data if needed
+        // Refresh data to sync with other components
         refreshData();
       }
     } catch (error) {
