@@ -1763,25 +1763,45 @@ export const ShipmentDetails = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shipment.documents && shipment.documents.length > 0 ? (
               shipment.documents.map((doc: any) => {
-                // Ensure doc.name is a string and not an object
-                const documentName = typeof doc.name === 'object'
-                  ? JSON.stringify(doc.name)
-                  : (doc.name || 'Untitled Document');
+                // Clean up document object if it's nested or malformed
+                let cleanDoc = doc;
+                let displayName = 'Untitled Document';
+                let displayType = 'Document';
 
-                // Extract just the filename if it appears to be a stringified object
-                let displayName = documentName;
-                let displayType = doc.type || 'Document';
+                // Check if doc itself is a nested object with the actual document
+                if (typeof doc === 'object' && doc !== null) {
+                  // If doc.name is an object, it might be a nested document
+                  if (typeof doc.name === 'object' && doc.name !== null) {
+                    cleanDoc = doc.name;
+                    displayName = cleanDoc.name || 'Untitled Document';
+                    displayType = cleanDoc.type || doc.type || 'Document';
+                  } else if (typeof doc.name === 'string') {
+                    displayName = doc.name;
+                    displayType = doc.type || 'Document';
 
-                if (documentName.includes('"name"')) {
-                  try {
-                    const parsed = JSON.parse(documentName);
-                    displayName = parsed.name || documentName;
-                    displayType = parsed.type || displayType;
-                  } catch {
-                    // If parsing fails, try to extract the name value using regex
-                    const match = documentName.match(/"name":"([^"]+)"/);
-                    displayName = match ? match[1] : documentName;
+                    // Check if the name is a stringified object
+                    if (displayName.startsWith('{') || displayName.includes('"name"')) {
+                      try {
+                        const parsed = JSON.parse(displayName);
+                        displayName = parsed.name || displayName;
+                        displayType = parsed.type || displayType;
+                      } catch {
+                        // Try regex extraction as fallback
+                        const nameMatch = displayName.match(/"name":"([^"]+)"/);
+                        if (nameMatch) {
+                          displayName = nameMatch[1];
+                        }
+                      }
+                    }
                   }
+                }
+
+                // Final cleanup: remove any remaining JSON artifacts
+                displayName = displayName.replace(/[{}"]/g, '').trim();
+
+                // If name is still too long or looks like an ID, truncate it
+                if (displayName.length > 50 && !displayName.includes('.')) {
+                  displayName = displayName.substring(0, 20) + '...' + displayName.substring(displayName.length - 10);
                 }
 
                 return (
@@ -1803,7 +1823,11 @@ export const ShipmentDetails = () => {
                         type="button"
                         className="text-blue-600 hover:text-blue-800"
                         title="Preview"
-                        onClick={() => handleDocumentPreview(doc)}
+                        onClick={() => handleDocumentPreview({
+                          ...cleanDoc,
+                          name: displayName,
+                          type: displayType
+                        })}
                       >
                         <EyeIcon className="h-4 w-4" />
                       </button>
@@ -1811,7 +1835,11 @@ export const ShipmentDetails = () => {
                         type="button"
                         className="text-blue-600 hover:text-blue-800"
                         title="Download"
-                        onClick={() => handleDocumentDownload(doc)}
+                        onClick={() => handleDocumentDownload({
+                          ...cleanDoc,
+                          name: displayName,
+                          type: displayType
+                        })}
                       >
                         <DownloadIcon className="h-4 w-4" />
                       </button>
@@ -1825,14 +1853,22 @@ export const ShipmentDetails = () => {
                       <button
                         type="button"
                         className="text-xs text-blue-600 hover:text-blue-800"
-                        onClick={() => handleDocumentPreview(doc)}
+                        onClick={() => handleDocumentPreview({
+                          ...cleanDoc,
+                          name: displayName,
+                          type: displayType
+                        })}
                       >
                         View
                       </button>
                       <button
                         type="button"
                         className="text-xs text-blue-600 hover:text-blue-800"
-                        onClick={() => handleDocumentDownload(doc)}
+                        onClick={() => handleDocumentDownload({
+                          ...cleanDoc,
+                          name: displayName,
+                          type: displayType
+                        })}
                       >
                         Download
                       </button>
