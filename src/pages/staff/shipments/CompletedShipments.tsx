@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { TruckIcon, SearchIcon, FilterIcon, ChevronDownIcon, CheckCircleIcon, DownloadIcon, FileTextIcon } from 'lucide-react';
-// Mock completed shipments data
+import { useData } from '../../../context/DataContext';
+import { DataService } from '../../../services/DataService';
+
+// Mock completed shipments data (fallback only)
 const MOCK_COMPLETED_SHIPMENTS = [{
   id: 'SH-1230',
   customer: {
@@ -60,7 +63,92 @@ const MOCK_COMPLETED_SHIPMENTS = [{
 export const CompletedShipments = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredShipments = MOCK_COMPLETED_SHIPMENTS.filter(shipment => {
+  const { shipments, quoteRequests } = useData();
+  const [users, setUsers] = useState<any[]>([]);
+
+  // Fetch users on mount
+  React.useEffect(() => {
+    DataService.getUsers().then(setUsers);
+  }, []);
+
+  // Transform shipments data to match the display format
+  const completedShipments = useMemo(() => {
+    return shipments
+      .filter(shipment => shipment.status === 'Delivered')
+      .map(shipment => {
+        // Find the customer
+        const customer = users.find(u => u.id === shipment.customerId);
+
+        // Find the related quote request for supplier details
+        const quoteRequest = quoteRequests.find(req =>
+          req.customerId === shipment.customerId &&
+          req.status === 'Quote Accepted'
+        );
+
+        // Get first destination for display
+        const firstDest = shipment.destinations && shipment.destinations.length > 0
+          ? shipment.destinations[0]
+          : null;
+
+        // Get delivery date
+        let deliveryDate = null;
+        if (shipment.actual_delivery) {
+          deliveryDate = new Date(shipment.actual_delivery).toLocaleDateString();
+        } else if (shipment.destinations && shipment.destinations.length > 0) {
+          // Check if all destinations are delivered
+          const allDelivered = shipment.destinations.filter((d: any) => d.deliveredAt);
+          if (allDelivered.length > 0) {
+            // Get the latest delivery date
+            deliveryDate = new Date(Math.max(...allDelivered.map((d: any) => new Date(d.deliveredAt).getTime()))).toLocaleDateString();
+          }
+        }
+
+        // Get tracking numbers from SO numbers
+        const soNumbers = shipment.destinations
+          ?.map((d: any) => d.soNumber)
+          .filter((so: string) => so && so !== '');
+        const trackingNumber = soNumbers && soNumbers.length > 0
+          ? soNumbers.join(', ')
+          : 'N/A';
+
+        // Get invoice status
+        let invoiceStatus = 'Not Created';
+        let invoiceNumber = '';
+        if (shipment.invoice) {
+          if (shipment.invoice.status === 'Paid') {
+            invoiceStatus = 'Paid';
+          } else if (shipment.invoice.id) {
+            invoiceStatus = 'Pending';
+          }
+          invoiceNumber = shipment.invoice.id || shipment.invoice.invoiceNumber || '';
+        }
+
+        return {
+          id: shipment.id,
+          customer: {
+            name: customer?.company || 'Unknown Company',
+            email: customer?.email || 'unknown@example.com'
+          },
+          status: 'Delivered',
+          origin: quoteRequest?.supplierDetails?.city
+            ? `${quoteRequest.supplierDetails.city}, ${quoteRequest.supplierDetails.country}`
+            : 'China',
+          destination: firstDest ? `${firstDest.fbaWarehouse}, USA` : 'USA',
+          carrier: 'DHL Express', // You might want to get this from actual data
+          trackingNumber,
+          departureDate: shipment.createdAt || shipment.created_at ? new Date(shipment.createdAt || shipment.created_at).toLocaleDateString() : 'N/A',
+          deliveryDate: deliveryDate || 'N/A',
+          totalCartons: shipment.masterCargo?.actualCartons ||
+                       shipment.destinations?.reduce((sum, d) => sum + (d.actualCartons || d.cartons || 0), 0) || 0,
+          totalWeight: shipment.masterCargo?.actualWeight ||
+                      shipment.destinations?.reduce((sum, d) => sum + (d.actualWeight || d.weight || d.estimatedWeight || 0), 0) || 0,
+          invoiceStatus,
+          invoiceNumber
+        };
+      });
+  }, [shipments, quoteRequests, users]);
+
+  const filteredShipments = (completedShipments.length > 0 ? completedShipments : MOCK_COMPLETED_SHIPMENTS).filter(shipment => {
     if (searchTerm === '') return true;
     const searchLower = searchTerm.toLowerCase();
     return shipment.id.toLowerCase().includes(searchLower) || shipment.customer.name.toLowerCase().includes(searchLower) || shipment.destination.toLowerCase().includes(searchLower) || shipment.origin.toLowerCase().includes(searchLower) || shipment.trackingNumber.toLowerCase().includes(searchLower) || shipment.invoiceNumber.toLowerCase().includes(searchLower);
