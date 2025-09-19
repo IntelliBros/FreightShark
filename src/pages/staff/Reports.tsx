@@ -156,9 +156,9 @@ export const Reports = () => {
         let chargeableWeight = null;
         let invoicedActualWeight = null;
         
-        // Debug logging for FS-00013
-        if (shipment.id === 'FS-00013') {
-          console.log('FS-00013 Invoice extraction for dest:', dest, {
+        // Debug logging for FS-00013 and FS-00015
+        if (shipment.id === 'FS-00013' || shipment.id === 'FS-00015') {
+          console.log(`${shipment.id} Invoice extraction for dest:`, dest, {
             hasInvoice: !!shipment.invoice,
             invoiceId: shipment.invoice?.id,
             invoiceCreatedAt: shipment.invoice?.createdAt,
@@ -166,79 +166,103 @@ export const Reports = () => {
           });
         }
         
-        if (shipment.invoice && shipment.invoice.id && shipment.invoice.createdAt) {
-          if (shipment.invoice.warehouseDetails && shipment.invoice.warehouseDetails.length > 0) {
-            // Debug log for FS-00013
-            if (shipment.id === 'FS-00013') {
-              console.log('FS-00013 Processing warehouse details:', {
-                destFbaWarehouse: dest.fbaWarehouse,
-                destId: dest.id,
-                index,
-                warehouseDetailsCount: shipment.invoice.warehouseDetails.length,
-                firstWarehouseDetail: shipment.invoice.warehouseDetails[0]
-              });
+        // Check if invoice exists - relax the check to just require an invoice object
+        if (shipment.invoice && shipment.invoice.warehouseDetails && shipment.invoice.warehouseDetails.length > 0) {
+          // Debug log for FS-00013 and FS-00015
+          if (shipment.id === 'FS-00013' || shipment.id === 'FS-00015') {
+            console.log(`${shipment.id} Processing warehouse details:`, {
+              destFbaWarehouse: dest.fbaWarehouse,
+              destId: dest.id,
+              index,
+              warehouseDetailsCount: shipment.invoice.warehouseDetails.length,
+              firstWarehouseDetail: shipment.invoice.warehouseDetails[0]
+            });
+          }
+
+          // Always use invoice data, regardless of destination matching
+          // This handles cases where destinations were added after invoice creation
+          let warehouseDetail = null;
+
+          // If there's only one warehouse detail in invoice, always use it
+          if (shipment.invoice.warehouseDetails.length === 1) {
+            warehouseDetail = shipment.invoice.warehouseDetails[0];
+            if (shipment.id === 'FS-00013' || shipment.id === 'FS-00015') {
+              console.log(`${shipment.id}: Using single warehouse detail from invoice`);
             }
-            
-            // Always use invoice data, regardless of destination matching
-            // This handles cases where destinations were added after invoice creation
-            let warehouseDetail = null;
-            
-            // If there's only one warehouse detail in invoice, always use it
-            if (shipment.invoice.warehouseDetails.length === 1) {
-              warehouseDetail = shipment.invoice.warehouseDetails[0];
-              if (shipment.id === 'FS-00013') {
-                console.log('FS-00013: Using single warehouse detail from invoice');
-              }
-            } else {
-              // For multiple warehouse details, try to match first
-              warehouseDetail = shipment.invoice.warehouseDetails.find((wd: any) => 
-                wd.warehouse === dest.fbaWarehouse || 
-                wd.warehouseId === dest.id
-              );
-              
-              // If no match, use index-based fallback
-              if (!warehouseDetail && index < shipment.invoice.warehouseDetails.length) {
-                warehouseDetail = shipment.invoice.warehouseDetails[index];
-                if (shipment.id === 'FS-00013') {
-                  console.log('FS-00013: Using index-based warehouse detail');
-                }
-              }
-            }
-            
-            if (warehouseDetail) {
-              warehouseInvoiceAmount = warehouseDetail.subtotal || warehouseDetail.amount || null;
-              chargeableWeight = warehouseDetail.chargeableWeight || null;
-              invoicedActualWeight = warehouseDetail.actualWeight || null;
-              
-              if (shipment.id === 'FS-00013') {
-                console.log('FS-00013: Extracted from warehouse detail:', {
-                  warehouseInvoiceAmount,
-                  chargeableWeight,
-                  invoicedActualWeight
-                });
+          } else {
+            // For multiple warehouse details, try to match first
+            warehouseDetail = shipment.invoice.warehouseDetails.find((wd: any) =>
+              wd.warehouse === dest.fbaWarehouse ||
+              wd.warehouseId === dest.id
+            );
+
+            // If no match, use index-based fallback
+            if (!warehouseDetail && index < shipment.invoice.warehouseDetails.length) {
+              warehouseDetail = shipment.invoice.warehouseDetails[index];
+              if (shipment.id === 'FS-00013' || shipment.id === 'FS-00015') {
+                console.log(`${shipment.id}: Using index-based warehouse detail`);
               }
             }
           }
-          
-          // If still no invoice amount found, check the invoice totals directly
-          if (!warehouseInvoiceAmount && shipment.invoice) {
-            warehouseInvoiceAmount = shipment.invoice.amount || shipment.invoice.total || shipment.invoice.totalAmount || null;
-            
-            // Try to get total chargeable weight from invoice
-            if (!chargeableWeight) {
-              chargeableWeight = shipment.invoice.totalChargeableWeight || 
-                                shipment.invoice.chargeableWeight ||
-                                (shipment.invoice.warehouseDetails?.[0]?.chargeableWeight) || 
-                                null;
+
+          if (warehouseDetail) {
+            // Debug logging for FS-00015
+            if (shipment.id === 'FS-00015') {
+              console.log('FS-00015: Found warehouse detail:', warehouseDetail);
             }
-            
-            // Try to get total actual weight
-            if (!invoicedActualWeight) {
-              invoicedActualWeight = shipment.invoice.totalActualWeight || 
-                                    shipment.invoice.actualWeight ||
-                                    (shipment.invoice.warehouseDetails?.[0]?.actualWeight) || 
-                                    null;
+
+            warehouseInvoiceAmount = warehouseDetail.subtotal || warehouseDetail.amount || null;
+            chargeableWeight = warehouseDetail.chargeableWeight || null;
+            invoicedActualWeight = warehouseDetail.actualWeight || null;
+
+            // Extract SO number and actual cartons from invoice warehouse detail
+            // The soNumber field should override the existing SO number
+            if (warehouseDetail.soNumber) {
+              dest.soNumber = warehouseDetail.soNumber;
             }
+            if (warehouseDetail.amazonShipmentId) {
+              dest.amazonShipmentId = warehouseDetail.amazonShipmentId;
+            }
+            // The cartons field in warehouseDetail is the final carton count
+            if (warehouseDetail.cartons) {
+              dest.actualCartons = warehouseDetail.cartons;
+            }
+            // Also get the actual weight from the invoice
+            if (warehouseDetail.actualWeight) {
+              dest.actualWeight = warehouseDetail.actualWeight;
+            }
+
+            if (shipment.id === 'FS-00013') {
+              console.log('FS-00013: Extracted from warehouse detail:', {
+                warehouseInvoiceAmount,
+                chargeableWeight,
+                invoicedActualWeight,
+                soNumber: warehouseDetail.soNumber,
+                amazonShipmentId: warehouseDetail.amazonShipmentId,
+                cartons: warehouseDetail.cartons
+              });
+            }
+          }
+        }
+
+        // If still no invoice amount found, check the invoice totals directly
+        if (!warehouseInvoiceAmount && shipment.invoice) {
+          warehouseInvoiceAmount = shipment.invoice.amount || shipment.invoice.total || shipment.invoice.totalAmount || null;
+
+          // Try to get total chargeable weight from invoice
+          if (!chargeableWeight) {
+            chargeableWeight = shipment.invoice.totalChargeableWeight ||
+                              shipment.invoice.chargeableWeight ||
+                              (shipment.invoice.warehouseDetails?.[0]?.chargeableWeight) ||
+                              null;
+          }
+
+          // Try to get total actual weight
+          if (!invoicedActualWeight) {
+            invoicedActualWeight = shipment.invoice.totalActualWeight ||
+                                  shipment.invoice.actualWeight ||
+                                  (shipment.invoice.warehouseDetails?.[0]?.actualWeight) ||
+                                  null;
           }
         }
         
@@ -333,8 +357,8 @@ export const Reports = () => {
                        0,
           totalWeight: dest.estimatedWeight || dest.weight || dest.grossWeight || 0,
           actualWeight: dest.actualWeight || null,
-          // Use chargeable weight from destination data (this is what should be shown in Weight column)
-          displayWeight: dest.chargeableWeight || dest.actualWeight || dest.weight || null,
+          // Use chargeable weight from invoice if available, otherwise fall back to destination data
+          displayWeight: chargeableWeight || dest.chargeableWeight || dest.actualWeight || dest.weight || null,
           quoteWeight: quoteWeight, // Weight used in the original quote
           soNumber: dest.soNumber || '-',
           amazonReferenceId: dest.amazonReferenceId || '-',
