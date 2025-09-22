@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Calculator, AlertTriangle, Package, DollarSign, Calendar, Info } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { useAuth } from '../../context/AuthContext';
 
 interface WarehouseRate {
   warehouseCode: string;
@@ -13,7 +12,6 @@ interface WarehouseRate {
 
 export function ShipmentEstimator() {
   const { shipments, quotes } = useData();
-  const { user } = useAuth();
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [chargeableWeight, setChargeableWeight] = useState('');
   const [showEstimate, setShowEstimate] = useState(false);
@@ -24,17 +22,13 @@ export function ShipmentEstimator() {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 45); // 45 days ago
 
-    // Filter to only current customer's quotes
-    const customerQuotes = quotes.filter(q => q.customerId === user?.id);
-    const customerShipments = shipments.filter(s => s.customerId === user?.id);
-
-    // Look at all customer's quotes that have pricing (approved or with shipments)
-    customerQuotes.forEach(quote => {
+    // Look at all quotes that have pricing (approved or with shipments)
+    quotes.forEach(quote => {
       // Skip quotes without warehouses or pricing
       if (!quote.warehouses || quote.warehouses.length === 0) return;
 
       // Use quote creation date or shipment date if available
-      const shipment = customerShipments.find(s => s.quoteId === quote.id);
+      const shipment = shipments.find(s => s.quoteId === quote.id);
       const dataDate = new Date(shipment?.createdAt || quote.createdAt);
 
       // Skip old data
@@ -76,11 +70,11 @@ export function ShipmentEstimator() {
       });
     });
 
-    // Also include data from customer's invoiced shipments for better accuracy
-    customerShipments.forEach(shipment => {
+    // Also include data from invoiced shipments for better accuracy
+    shipments.forEach(shipment => {
       if (!shipment.invoice) return;
 
-      const quote = customerQuotes.find(q => q.id === shipment.quoteId);
+      const quote = quotes.find(q => q.id === shipment.quoteId);
       if (!quote || !quote.warehouses) return;
 
       const shipmentDate = new Date(shipment.completedAt || shipment.createdAt);
@@ -125,7 +119,7 @@ export function ShipmentEstimator() {
     });
 
     return rates;
-  }, [shipments, quotes, user?.id]);
+  }, [shipments, quotes]);
 
   // Get unique warehouses with recent data
   const availableWarehouses = useMemo(() => {
