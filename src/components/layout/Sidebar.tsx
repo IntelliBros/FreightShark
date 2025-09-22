@@ -87,9 +87,9 @@ export const Sidebar = () => {
           <LogOutIcon className="h-4 w-4 min-w-4" />
           {!isCollapsed && <span className="ml-3 text-sm">Sign Out</span>}
         </button>
-        <button onClick={toggleSidebar} className="mt-4 flex items-center justify-center w-full px-3 py-1.5 text-xs text-gray-500 hover:bg-white rounded-lg">
-          {isCollapsed ? <ChevronRightIcon className="h-4 w-4" /> : <div className="flex items-center w-full">
-              <ChevronLeftIcon className="h-4 w-4 mr-1.5" />
+        <button onClick={toggleSidebar} className="mt-4 flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200">
+          {isCollapsed ? <ChevronRightIcon className="h-5 w-5" /> : <div className="flex items-center w-full justify-center">
+              <ChevronLeftIcon className="h-5 w-5 mr-2" />
               <span>Collapse</span>
             </div>}
         </button>
