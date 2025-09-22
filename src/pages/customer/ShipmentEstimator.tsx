@@ -245,35 +245,29 @@ export function ShipmentEstimator() {
     : 0;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-          <Calculator className="w-8 h-8 text-blue-600" />
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+          <Calculator className="w-6 h-6 text-blue-600" />
           Shipment Estimator
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm text-gray-600">
           Get a quick estimate based on historical shipping rates to your warehouses
         </p>
       </div>
 
-      {/* Important Notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
-        <div className="flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold text-amber-900 mb-2">Important Notice</p>
+      {/* Important Notice - More compact */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+        <div className="flex gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <p className="font-semibold text-amber-900 mb-1">Important Notice</p>
             <p className="text-amber-800">
               This tool provides a very rough estimate only, based on average rates from past shipments.
               The actual quote price will depend on many factors including:
+              Product type and classification • Current duty rates and taxes • Fuel surcharges and seasonal adjustments • Special handling requirements • Current market conditions
             </p>
-            <ul className="list-disc list-inside mt-2 text-amber-700 space-y-1">
-              <li>Product type and classification</li>
-              <li>Current duty rates and taxes</li>
-              <li>Fuel surcharges and seasonal adjustments</li>
-              <li>Special handling requirements</li>
-              <li>Current market conditions</li>
-            </ul>
-            <p className="text-amber-800 mt-2 font-medium">
+            <p className="text-amber-800 mt-1 font-medium">
               This estimate does not constitute a quote or price guarantee.
             </p>
           </div>
@@ -281,15 +275,15 @@ export function ShipmentEstimator() {
       </div>
 
       {/* Main Grid Layout */}
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid lg:grid-cols-2 gap-4 mb-4">
         {/* Left Column - Estimation Form */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-6">Calculate Estimate</h2>
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-lg font-semibold mb-3">Calculate Estimate</h2>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Package className="w-4 h-4 inline-block mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                <Package className="w-3 h-3 inline-block mr-1" />
                 Select Warehouse
               </label>
               <select
@@ -298,7 +292,7 @@ export function ShipmentEstimator() {
                   setSelectedWarehouse(e.target.value);
                   setShowEstimate(false);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Choose a warehouse...</option>
                 {availableWarehouses.map(warehouse => (
@@ -308,15 +302,15 @@ export function ShipmentEstimator() {
                 ))}
               </select>
               {availableWarehouses.length === 0 && (
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 mt-1">
                   No warehouses with recent shipment data available
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Weight className="w-4 h-4 inline-block mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                <Weight className="w-3 h-3 inline-block mr-1" />
                 Chargeable Weight (kg)
               </label>
               <div className="flex gap-2">
@@ -328,14 +322,14 @@ export function ShipmentEstimator() {
                     setShowEstimate(false);
                   }}
                   placeholder="Enter weight in kilograms"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="0"
                   step="0.01"
                 />
                 {showCalcResults && calculatedChargeable > 0 && (
                   <button
                     onClick={handleUseCalculatedWeight}
-                    className="px-3 py-2 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                    className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
                     title="Use calculated chargeable weight"
                   >
                     Use {calculatedChargeable.toFixed(2)} kg
@@ -347,14 +341,14 @@ export function ShipmentEstimator() {
 
           {/* Warning for no recent data */}
           {selectedWarehouse && !hasRecentData && (
-            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-2">
+              <div className="flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-900">No Recent Data Available</p>
-                  <p className="text-sm text-red-700 mt-1">
-                    There is no shipment data in the past 45 days for this warehouse.
-                    Please select a different warehouse to get a quick estimate.
+                  <p className="text-xs font-medium text-red-900">No Recent Data Available</p>
+                  <p className="text-xs text-red-700 mt-0.5">
+                    No shipment data in the past 45 days for this warehouse.
+                    Please select a different warehouse.
                   </p>
                 </div>
               </div>
@@ -364,23 +358,23 @@ export function ShipmentEstimator() {
           <button
             onClick={handleCalculate}
             disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
-            className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors w-full"
+            className="mt-3 px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors w-full"
           >
             Calculate Estimate
           </button>
         </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Ruler className="w-5 h-5" />
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Ruler className="w-4 h-4" />
             Chargeable Weight Calculator
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Box className="w-4 h-4 inline-block mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                <Box className="w-3 h-3 inline-block mr-1" />
                 Carton Count
               </label>
               <input
@@ -391,45 +385,45 @@ export function ShipmentEstimator() {
                   setShowCalcResults(false);
                 }}
                 placeholder="Number of cartons"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="1"
                 step="1"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Carton Dimensions Unit
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <button
                   onClick={() => setCalcDimensionUnit('cm')}
-                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  className={`flex-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
                     calcDimensionUnit === 'cm'
                       ? 'bg-blue-100 border-blue-300 text-blue-700'
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  Centimeters (CM)
+                  CM
                 </button>
                 <button
                   onClick={() => setCalcDimensionUnit('in')}
-                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  className={`flex-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
                     calcDimensionUnit === 'in'
                       ? 'bg-blue-100 border-blue-300 text-blue-700'
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  Inches (IN)
+                  IN
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Dimensions Per Carton
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
                     Length
@@ -442,7 +436,7 @@ export function ShipmentEstimator() {
                     setShowCalcResults(false);
                   }}
                   placeholder="L"
-                  className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-1 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="0"
                   step="0.01"
                 />
@@ -459,7 +453,7 @@ export function ShipmentEstimator() {
                     setShowCalcResults(false);
                   }}
                   placeholder="W"
-                  className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-1 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="0"
                   step="0.01"
                 />
@@ -476,7 +470,7 @@ export function ShipmentEstimator() {
                     setShowCalcResults(false);
                   }}
                   placeholder="H"
-                  className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-1 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="0"
                   step="0.01"
                 />
@@ -485,8 +479,8 @@ export function ShipmentEstimator() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Weight className="w-4 h-4 inline-block mr-1" />
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                <Weight className="w-3 h-3 inline-block mr-1" />
                 Weight Per Carton (kg)
               </label>
               <input
@@ -497,52 +491,47 @@ export function ShipmentEstimator() {
                   setShowCalcResults(false);
                 }}
                 placeholder="Weight per carton in kilograms"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="0"
                 step="0.01"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the weight of a single carton. Total weight will be calculated as weight × carton count.
+              <p className="text-xs text-gray-500 mt-0.5">
+                Weight × carton count = total weight
               </p>
             </div>
 
             <button
               onClick={handleCalculateChargeable}
               disabled={!calcCartonCount || !calcLength || !calcWidth || !calcHeight || !calcWeight}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Calculate Chargeable Weight
             </button>
 
             {/* Calculator Results */}
             {showCalcResults && calculatedChargeable > 0 && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Total Gross Weight:</span>
+              <div className="mt-2 p-2 bg-gray-50 rounded-lg space-y-1.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">Total Gross Weight:</span>
                   <span className="font-medium">{grossWeight.toFixed(2)} kg</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">
-                    Total Volumetric Weight
-                    <span className="text-xs text-gray-400 ml-1">
-                      (÷{calcDimensionUnit === 'in' ? '366' : '6000'})
-                    </span>:
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">
+                    Volumetric (÷{calcDimensionUnit === 'in' ? '366' : '6000'}):
                   </span>
                   <span className="font-medium">{volumetricWeight.toFixed(2)} kg</span>
                 </div>
-                <div className="pt-3 border-t border-gray-200">
+                <div className="pt-1.5 border-t border-gray-200">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-900">Chargeable Weight:</span>
-                    <span className={`text-lg font-bold ${
+                    <span className="text-xs font-medium text-gray-900">Chargeable Weight:</span>
+                    <span className={`text-sm font-bold ${
                       grossWeight > volumetricWeight ? 'text-blue-600' : 'text-green-600'
                     }`}>
                       {calculatedChargeable.toFixed(2)} kg
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {grossWeight > volumetricWeight
-                      ? '(Using gross weight - actual weight is higher)'
-                      : '(Using volumetric weight - size/volume is higher)'}
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {grossWeight > volumetricWeight ? 'Using gross weight' : 'Using volumetric weight'}
                   </p>
                 </div>
               </div>
@@ -553,24 +542,24 @@ export function ShipmentEstimator() {
 
       {/* Estimate Results */}
       {showEstimate && selectedWarehouseRate && hasRecentData && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-6">Estimated Cost</h2>
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-lg font-semibold mb-3">Estimated Cost</h2>
 
-          <div className="bg-blue-50 rounded-lg p-6 mb-6">
+          <div className="bg-blue-50 rounded-lg p-3 mb-3">
             <div className="text-center">
-              <p className="text-sm text-blue-600 mb-2">Estimated Total</p>
-              <p className="text-4xl font-bold text-blue-900">
+              <p className="text-xs text-blue-600 mb-1">Estimated Total</p>
+              <p className="text-2xl font-bold text-blue-900">
                 ${estimatedCost.toFixed(2)}
               </p>
-              <p className="text-sm text-blue-600 mt-2">
+              <p className="text-xs text-blue-600 mt-1">
                 Based on ${selectedWarehouseRate.averageRatePerKg.toFixed(2)}/kg
               </p>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div className="flex items-start gap-3">
-              <Package className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex items-start gap-2">
+              <Package className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-gray-900">Warehouse</p>
                 <p className="text-gray-600">
@@ -579,28 +568,28 @@ export function ShipmentEstimator() {
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <DollarSign className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <div className="flex items-start gap-2">
+              <DollarSign className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-gray-900">Average Rate</p>
                 <p className="text-gray-600">
-                  ${selectedWarehouseRate.averageRatePerKg.toFixed(2)} per kg
+                  ${selectedWarehouseRate.averageRatePerKg.toFixed(2)}/kg
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <div className="flex items-start gap-2">
+              <Info className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-gray-900">Sample Size</p>
                 <p className="text-gray-600">
-                  Based on {selectedWarehouseRate.sampleSize} shipment{selectedWarehouseRate.sampleSize !== 1 ? 's' : ''}
+                  {selectedWarehouseRate.sampleSize} shipment{selectedWarehouseRate.sampleSize !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <div className="flex items-start gap-2">
+              <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-gray-900">Last Shipment</p>
                 <p className="text-gray-600">
@@ -610,10 +599,9 @@ export function ShipmentEstimator() {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-3 p-2 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-600">
-              <span className="font-medium">Disclaimer:</span> This is an estimate only and should not be used for budgeting purposes.
-              Actual shipping costs may vary significantly. Please request a formal quote for accurate pricing.
+              <span className="font-medium">Disclaimer:</span> Estimate only. Actual costs may vary. Request a formal quote for accurate pricing.
             </p>
           </div>
         </div>
