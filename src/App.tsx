@@ -16,6 +16,7 @@ import { Announcements } from './pages/Announcements';
 import { AnnouncementDetail } from './pages/AnnouncementDetail';
 import { Settings } from './pages/settings/Settings';
 import { Notifications } from './pages/Notifications';
+import { ShipmentEstimator } from './pages/customer/ShipmentEstimator';
 import { UnifiedLogin } from './pages/auth/UnifiedLogin';
 import { SignUp } from './pages/auth/SignUp';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
@@ -64,6 +65,7 @@ export function App() {
                 <Route path="quotes/:id" element={<QuoteDetails />} />
                 <Route path="shipments" element={<ShipmentsList />} />
                 <Route path="shipments/:id" element={<ShipmentTracking />} />
+                <Route path="shipment-estimator" element={<ShipmentEstimator />} />
                 <Route path="samples" element={<SampleConsolidation />} />
                 <Route path="documents" element={<DocumentsHub />} />
                 <Route path="analytics" element={<Analytics />} />

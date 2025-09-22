@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboardIcon, FileTextIcon, TruckIcon, PackageIcon, FileIcon, SettingsIcon, LogOutIcon, ChevronLeftIcon, ChevronRightIcon, BellIcon } from 'lucide-react';
+import { LayoutDashboardIcon, FileTextIcon, TruckIcon, PackageIcon, FileIcon, SettingsIcon, LogOutIcon, ChevronLeftIcon, ChevronRightIcon, BellIcon, Calculator } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 export const Sidebar = () => {
   const location = useLocation();
@@ -40,9 +40,15 @@ export const Sidebar = () => {
             </Link>
           </li>
           <li>
-            <Link to="/shipments" className={`flex items-center px-3 py-2 rounded-lg ${isGroupActive('/shipments') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+            <Link to="/shipments" className={`flex items-center px-3 py-2 rounded-lg ${isGroupActive('/shipments') && !isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
               <TruckIcon className="h-4 w-4 min-w-4" />
               {!isCollapsed && <span className="ml-3 text-sm">Shipments</span>}
+            </Link>
+          </li>
+          <li>
+            <Link to="/shipment-estimator" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <Calculator className="h-4 w-4 min-w-4" />
+              {!isCollapsed && <span className="ml-3 text-sm">Shipment Estimator</span>}
             </Link>
           </li>
           <li>

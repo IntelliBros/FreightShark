@@ -10,7 +10,7 @@ import { QuoteRequest } from '../../services/DataService';
 
 export const StaffDashboard = () => {
   const { user } = useAuth();
-  const { quoteRequests, shipments, isLoading, messages } = useData();
+  const { quoteRequests, shipments, isLoading } = useData();
   const [pendingQuoteRequests, setPendingQuoteRequests] = useState<QuoteRequest[]>([]);
 
   useEffect(() => {
@@ -32,17 +32,26 @@ export const StaffDashboard = () => {
       s.status === 'In Progress'
     ).length;
 
-    // Count unread messages (if messages are available)
-    const unreadMessagesCount = messages?.filter((m: any) => !m.read).length || 0;
+    // Count unread messages from shipments that have messages
+    const unreadMessagesCount = shipments.reduce((count, shipment) => {
+      if (shipment.messages && Array.isArray(shipment.messages)) {
+        const unread = shipment.messages.filter((m: any) => !m.read || m.isUnread);
+        return count + unread.length;
+      }
+      return count;
+    }, 0);
 
-    // Count pending invoices (delivered shipments without paid invoices)
+    // Count pending invoices (delivered shipments that need invoicing)
     const pendingInvoicesCount = shipments.filter(s => {
       // Check if shipment is delivered
       const isDelivered = s.status === 'Delivered' ||
-        (s.destinations?.every((d: any) => d.deliveryStatus === 'delivered'));
+        (s.destinations && s.destinations.length > 0 &&
+         s.destinations.every((d: any) => d.deliveryStatus === 'delivered'));
 
-      // Check if invoice is not created or not paid
-      const needsInvoice = !s.invoice || s.invoice.status !== 'Paid';
+      // Check if invoice needs to be created or is not paid
+      const needsInvoice = !s.invoice ||
+                          !s.invoice.id ||
+                          (s.invoice.status && s.invoice.status !== 'Paid');
 
       return isDelivered && needsInvoice;
     }).length;
@@ -53,7 +62,7 @@ export const StaffDashboard = () => {
       unreadMessages: unreadMessagesCount,
       pendingInvoices: pendingInvoicesCount
     };
-  }, [quoteRequests, shipments, messages]);
+  }, [quoteRequests, shipments]);
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-[#1E2A45] rounded-full border-t-transparent animate-spin"></div>
