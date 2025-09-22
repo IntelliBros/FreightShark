@@ -245,10 +245,10 @@ export function ShipmentEstimator() {
     : 0;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-blue-600" />
+    <div className="max-w-5xl mx-auto">
+      <div className="mb-3">
+        <h1 className="text-xl font-bold mb-1 flex items-center gap-2">
+          <Calculator className="w-5 h-5 text-blue-600" />
           Shipment Estimator
         </h1>
         <p className="text-sm text-gray-600">
@@ -257,111 +257,158 @@ export function ShipmentEstimator() {
       </div>
 
       {/* Important Notice - More compact */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-4">
         <div className="flex gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs">
-            <p className="font-semibold text-amber-900 mb-1">Important Notice</p>
-            <p className="text-amber-800">
-              This tool provides a very rough estimate only, based on average rates from past shipments.
-              The actual quote price will depend on many factors including:
-              Product type and classification • Current duty rates and taxes • Fuel surcharges and seasonal adjustments • Special handling requirements • Current market conditions
-            </p>
-            <p className="text-amber-800 mt-1 font-medium">
-              This estimate does not constitute a quote or price guarantee.
+            <p className="font-semibold text-amber-900">Important Notice</p>
+            <p className="text-amber-700 mt-0.5">
+              This provides a rough estimate only. Actual pricing depends on product type, duty rates, fuel surcharges, handling requirements, and market conditions.
+              <span className="font-medium text-amber-800"> This is not a quote or price guarantee.</span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Grid Layout */}
-      <div className="grid lg:grid-cols-2 gap-4 mb-4">
-        {/* Left Column - Estimation Form */}
+      {/* Main Grid Layout - Wider estimator, narrower calculator */}
+      <div className="grid lg:grid-cols-[2fr_1fr] gap-4 mb-4">
+        {/* Left Column - Estimation Form with Results */}
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h2 className="text-lg font-semibold mb-3">Calculate Estimate</h2>
 
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                <Package className="w-3 h-3 inline-block mr-1" />
-                Select Warehouse
-              </label>
-              <select
-                value={selectedWarehouse}
-                onChange={(e) => {
-                  setSelectedWarehouse(e.target.value);
-                  setShowEstimate(false);
-                }}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Choose a warehouse...</option>
-                {availableWarehouses.map(warehouse => (
-                  <option key={warehouse.warehouseCode} value={warehouse.warehouseCode}>
-                    {warehouse.warehouseName}
-                  </option>
-                ))}
-              </select>
-              {availableWarehouses.length === 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  No warehouses with recent shipment data available
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                <Weight className="w-3 h-3 inline-block mr-1" />
-                Chargeable Weight (kg)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={chargeableWeight}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Input Section */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <Package className="w-3 h-3 inline-block mr-1" />
+                  Select Warehouse
+                </label>
+                <select
+                  value={selectedWarehouse}
                   onChange={(e) => {
-                    setChargeableWeight(e.target.value);
+                    setSelectedWarehouse(e.target.value);
                     setShowEstimate(false);
                   }}
-                  placeholder="Enter weight in kilograms"
-                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="0"
-                  step="0.01"
-                />
-                {showCalcResults && calculatedChargeable > 0 && (
-                  <button
-                    onClick={handleUseCalculatedWeight}
-                    className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
-                    title="Use calculated chargeable weight"
-                  >
-                    Use {calculatedChargeable.toFixed(2)} kg
-                  </button>
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Choose a warehouse...</option>
+                  {availableWarehouses.map(warehouse => (
+                    <option key={warehouse.warehouseCode} value={warehouse.warehouseCode}>
+                      {warehouse.warehouseName}
+                    </option>
+                  ))}
+                </select>
+                {availableWarehouses.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    No warehouses with recent shipment data available
+                  </p>
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* Warning for no recent data */}
-          {selectedWarehouse && !hasRecentData && (
-            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-2">
-              <div className="flex gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-red-900">No Recent Data Available</p>
-                  <p className="text-xs text-red-700 mt-0.5">
-                    No shipment data in the past 45 days for this warehouse.
-                    Please select a different warehouse.
-                  </p>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <Weight className="w-3 h-3 inline-block mr-1" />
+                  Chargeable Weight (kg)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={chargeableWeight}
+                    onChange={(e) => {
+                      setChargeableWeight(e.target.value);
+                      setShowEstimate(false);
+                    }}
+                    placeholder="Enter weight in kilograms"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    min="0"
+                    step="0.01"
+                  />
+                  {showCalcResults && calculatedChargeable > 0 && (
+                    <button
+                      onClick={handleUseCalculatedWeight}
+                      className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
+                      title="Use calculated chargeable weight"
+                    >
+                      Use {calculatedChargeable.toFixed(2)} kg
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
 
-          <button
-            onClick={handleCalculate}
-            disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
-            className="mt-3 px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors w-full"
-          >
-            Calculate Estimate
-          </button>
+              <button
+                onClick={handleCalculate}
+                disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors w-full"
+              >
+                Calculate Estimate
+              </button>
+            </div>
+
+            {/* Results Section */}
+            <div>
+              {/* Warning for no recent data */}
+              {selectedWarehouse && !hasRecentData && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-3">
+                  <div className="flex gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-red-900">No Recent Data Available</p>
+                      <p className="text-xs text-red-700 mt-0.5">
+                        No shipment data in the past 45 days for this warehouse.
+                        Please select a different warehouse.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Estimate Results */}
+              {showEstimate && selectedWarehouseRate && hasRecentData && (
+                <div>
+                  <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                    <div className="text-center">
+                      <p className="text-xs text-blue-600 mb-1">Estimated Total</p>
+                      <p className="text-2xl font-bold text-blue-900">
+                        ${estimatedCost.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Based on ${selectedWarehouseRate.averageRatePerKg.toFixed(2)}/kg
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-xs">
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-600">Warehouse:</span>
+                        <span className="font-medium">{selectedWarehouse}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-600">Chargeable Weight:</span>
+                        <span className="font-medium">{parseFloat(chargeableWeight).toFixed(2)} kg</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-600">Average Rate:</span>
+                        <span className="font-medium">${selectedWarehouseRate.averageRatePerKg.toFixed(2)}/kg</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-600">Based on:</span>
+                        <span className="font-medium">{selectedWarehouseRate.shipmentCount} shipments</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-500 italic">
+                        This estimate is based on historical averages and does not include potential additional charges
+                        such as fuel surcharges, special handling fees, or duties and taxes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
@@ -539,73 +586,6 @@ export function ShipmentEstimator() {
           </div>
         </div>
       </div>
-
-      {/* Estimate Results */}
-      {showEstimate && selectedWarehouseRate && hasRecentData && (
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="text-lg font-semibold mb-3">Estimated Cost</h2>
-
-          <div className="bg-blue-50 rounded-lg p-3 mb-3">
-            <div className="text-center">
-              <p className="text-xs text-blue-600 mb-1">Estimated Total</p>
-              <p className="text-2xl font-bold text-blue-900">
-                ${estimatedCost.toFixed(2)}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Based on ${selectedWarehouseRate.averageRatePerKg.toFixed(2)}/kg
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex items-start gap-2">
-              <Package className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900">Warehouse</p>
-                <p className="text-gray-600">
-                  {selectedWarehouseRate.warehouseName}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <DollarSign className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900">Average Rate</p>
-                <p className="text-gray-600">
-                  ${selectedWarehouseRate.averageRatePerKg.toFixed(2)}/kg
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Info className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900">Sample Size</p>
-                <p className="text-gray-600">
-                  {selectedWarehouseRate.sampleSize} shipment{selectedWarehouseRate.sampleSize !== 1 ? 's' : ''}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900">Last Shipment</p>
-                <p className="text-gray-600">
-                  {new Date(selectedWarehouseRate.lastShipmentDate).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 p-2 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">Disclaimer:</span> Estimate only. Actual costs may vary. Request a formal quote for accurate pricing.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
