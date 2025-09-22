@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete All Announcements</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Delete All Announcements</h1>
+    <div id="status"></div>
+    <script>
+        const supabaseUrl = 'https://pdnqzpzqzomzqkqlkcyj.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkbnF6cHpxem9tenFrcWxrY3lqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI1MDQzNDgsImV4cCI6MjA0ODA4MDM0OH0.r0iTLjZJvvPJDj94NDz6P0Gqii5Ru8suSU7-YzUUSaw';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        const statusDiv = document.getElementById('status');
+
+        async function deleteAllAnnouncements() {
+            statusDiv.innerHTML = '<p>Fetching announcements...</p>';
+
+            // First, fetch all announcements to see what we're deleting
+            const { data: announcements, error: fetchError } = await supabaseClient
+                .from('announcements')
+                .select('*');
+
+            if (fetchError) {
+                statusDiv.innerHTML = `<p style="color: red;">Error fetching announcements: ${fetchError.message}</p>`;
+                return;
+            }
+
+            if (!announcements || announcements.length === 0) {
+                statusDiv.innerHTML = '<p style="color: blue;">No announcements found in database.</p>';
+                return;
+            }
+
+            statusDiv.innerHTML += `<p>Found ${announcements.length} announcement(s) to delete:</p>`;
+            announcements.forEach(ann => {
+                statusDiv.innerHTML += `<p>- ${ann.title} (ID: ${ann.id})</p>`;
+            });
+
+            statusDiv.innerHTML += '<p>Deleting all announcements...</p>';
+
+            // Delete all announcements
+            const { error: deleteError } = await supabaseClient
+                .from('announcements')
+                .delete()
+                .neq('id', ''); // This deletes all records where id is not empty (i.e., all records)
+
+            if (deleteError) {
+                statusDiv.innerHTML += `<p style="color: red;">Error deleting announcements: ${deleteError.message}</p>`;
+                return;
+            }
+
+            statusDiv.innerHTML += '<p style="color: green;">✓ Successfully deleted all announcements!</p>';
+
+            // Verify deletion
+            const { data: remaining, error: verifyError } = await supabaseClient
+                .from('announcements')
+                .select('*');
+
+            if (verifyError) {
+                statusDiv.innerHTML += `<p style="color: red;">Error verifying deletion: ${verifyError.message}</p>`;
+            } else {
+                statusDiv.innerHTML += `<hr><p style="color: green;">Verification: ${remaining.length} announcements remaining in database.</p>`;
+            }
+        }
+
+        // Run the function
+        deleteAllAnnouncements();
+    </script>
+</body>
+</html>

@@ -89,46 +89,8 @@ async function setupDatabase() {
       console.log('\n✅ Users in database:', allUsers);
     }
 
-    // Try to create sample announcements
-    const announcements = [
-      {
-        id: 'ANN-001',
-        title: 'Shipping Agent Update',
-        content: 'Some Amazon warehouses are experiencing delays due to capacity issues.',
-        type: 'warning',
-        created_by: 'staff-1',
-        is_active: true
-      },
-      {
-        id: 'ANN-002',
-        title: 'Holiday Schedule Notice',
-        content: 'Our offices will be closed on December 25th and January 1st.',
-        type: 'info',
-        created_by: 'staff-1',
-        is_active: true
-      },
-      {
-        id: 'ANN-003',
-        title: 'New Feature: Real-time Tracking',
-        content: 'We have enhanced our tracking system with real-time updates.',
-        type: 'success',
-        created_by: 'staff-1',
-        is_active: true
-      }
-    ];
-
-    for (const announcement of announcements) {
-      const { error } = await supabase
-        .from('announcements')
-        .upsert(announcement, { 
-          onConflict: 'id',
-          ignoreDuplicates: true 
-        });
-      
-      if (error) {
-        console.log(`⚠️ Could not insert announcement:`, error.message);
-      }
-    }
+    // Skip creating mock announcements - keeping database clean
+    console.log('⏭️ Skipping mock announcements - keeping database clean');
 
     console.log('\n🎉 Setup attempt complete!');
     console.log('\n📝 Login credentials (if users were created):');
