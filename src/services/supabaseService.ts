@@ -1117,7 +1117,7 @@ export const supabaseService = {
         .select('*')
         .eq('key', key)
         .single();
-      
+
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
         throw error;
       }
@@ -1136,9 +1136,160 @@ export const supabaseService = {
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
+    }
+  },
+
+  // User carton templates management
+  userCartonTemplates: {
+    async getByUserId(userId: string) {
+      const { data, error } = await supabase
+        .from('user_carton_templates')
+        .select('*')
+        .eq('user_id', userId)
+        .order('nickname', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+
+    async create(template: {
+      user_id: string;
+      nickname: string;
+      carton_weight: number;
+      length: number;
+      width: number;
+      height: number;
+      volumetric_weight: number;
+    }) {
+      const newTemplate = {
+        id: `carton-template-${Date.now()}`,
+        ...template,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('user_carton_templates')
+        .insert([newTemplate])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: any) {
+      const { data, error } = await supabase
+        .from('user_carton_templates')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string) {
+      const { error } = await supabase
+        .from('user_carton_templates')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true };
+    }
+  },
+
+  // Suppliers management
+  suppliers: {
+    async getAll() {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+
+    async getById(id: string) {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      return data;
+    },
+
+    async create(supplier: {
+      name: string;
+      address: string;
+      city?: string;
+      country?: string;
+      contact_name?: string;
+      contact_phone?: string;
+      contact_email?: string;
+    }) {
+      const newSupplier = {
+        id: `supplier-${Date.now()}`,
+        ...supplier,
+        country: supplier.country || 'China',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('suppliers')
+        .insert([newSupplier])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: {
+      name?: string;
+      address?: string;
+      city?: string;
+      country?: string;
+      contact_name?: string;
+      contact_phone?: string;
+      contact_email?: string;
+    }) {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string) {
+      const { error } = await supabase
+        .from('suppliers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true };
     }
   }
 };

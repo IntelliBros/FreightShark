@@ -824,6 +824,75 @@ export const DataService = {
     return await supabaseService.announcements.delete(id);
   },
 
+  // User carton template methods
+  async getUserCartonTemplates(userId: string) {
+    await simulateDelay(200);
+    return await supabaseService.userCartonTemplates.getByUserId(userId);
+  },
+
+  async createCartonTemplate(userId: string, template: {
+    nickname: string;
+    carton_weight: number;
+    length: number;
+    width: number;
+    height: number;
+    volumetric_weight: number;
+  }) {
+    await simulateDelay(300);
+    return await supabaseService.userCartonTemplates.create({
+      user_id: userId,
+      ...template
+    });
+  },
+
+  async updateCartonTemplate(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.userCartonTemplates.update(id, updates);
+  },
+
+  async deleteCartonTemplate(id: string) {
+    await simulateDelay(300);
+    return await supabaseService.userCartonTemplates.delete(id);
+  },
+
+  // Supplier methods
+  async getSuppliers() {
+    await simulateDelay(200);
+    return await supabaseService.suppliers.getAll();
+  },
+
+  async getSupplierById(id: string) {
+    await simulateDelay(200);
+    return await supabaseService.suppliers.getById(id);
+  },
+
+  async createSupplier(supplier: {
+    name: string;
+    address: string;
+    contact?: string;
+    city?: string;
+    country?: string;
+  }) {
+    await simulateDelay(300);
+    return await supabaseService.suppliers.create({
+      name: supplier.name,
+      address: supplier.address,
+      contact_name: supplier.contact,
+      city: supplier.city,
+      country: supplier.country || 'China'
+    });
+  },
+
+  async updateSupplier(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.suppliers.update(id, updates);
+  },
+
+  async deleteSupplier(id: string) {
+    await simulateDelay(300);
+    return await supabaseService.suppliers.delete(id);
+  },
+
   // Commission rate methods
   async getCommissionRate() {
     await simulateDelay(100);

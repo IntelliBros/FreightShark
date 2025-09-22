@@ -137,7 +137,33 @@ export const NewQuote = () => {
     contact: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true);
+
+  // Load suppliers from database on component mount
+  useEffect(() => {
+    loadSuppliers();
+  }, []);
+
+  const loadSuppliers = async () => {
+    try {
+      setIsLoadingSuppliers(true);
+      const suppliers = await DataService.getSuppliers();
+      // Transform the data to match the component's Supplier type
+      const transformedSuppliers = suppliers.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        address: s.address,
+        contact: s.contact_name || ''
+      }));
+      setSavedSuppliers(transformedSuppliers);
+    } catch (error) {
+      console.error('Error loading suppliers:', error);
+      addToast('Failed to load suppliers', 'error');
+    } finally {
+      setIsLoadingSuppliers(false);
+    }
+  };
+
   // Amazon warehouse state
   const [availableWarehouses, setAvailableWarehouses] = useState<AmazonWarehouse[]>([]);
   const [warehouseSearch, setWarehouseSearch] = useState('');
@@ -179,22 +205,41 @@ export const NewQuote = () => {
       supplier
     });
   };
-  const handleAddNewSupplier = () => {
-    const newSupplierObj = {
-      id: `s${Date.now()}`,
-      ...newSupplier
-    };
-    setSavedSuppliers([...savedSuppliers, newSupplierObj]);
-    setFormData({
-      ...formData,
-      supplier: newSupplierObj
-    });
-    setShowNewSupplierForm(false);
-    setNewSupplier({
-      name: '',
-      address: '',
-      contact: ''
-    });
+  const handleAddNewSupplier = async () => {
+    try {
+      // Save to database
+      const savedSupplier = await DataService.createSupplier({
+        name: newSupplier.name,
+        address: newSupplier.address,
+        contact: newSupplier.contact
+      });
+
+      // Transform to component's Supplier type
+      const newSupplierObj = {
+        id: savedSupplier.id,
+        name: savedSupplier.name,
+        address: savedSupplier.address,
+        contact: savedSupplier.contact_name || ''
+      };
+
+      // Update local state
+      setSavedSuppliers([...savedSuppliers, newSupplierObj]);
+      setFormData({
+        ...formData,
+        supplier: newSupplierObj
+      });
+      setShowNewSupplierForm(false);
+      setNewSupplier({
+        name: '',
+        address: '',
+        contact: ''
+      });
+
+      addToast('Supplier added successfully', 'success');
+    } catch (error) {
+      console.error('Error adding supplier:', error);
+      addToast('Failed to add supplier', 'error');
+    }
   };
   
   const handleSaveNewCartonConfig = () => {
@@ -592,13 +637,17 @@ export const NewQuote = () => {
                 Select a Supplier
               </h3>
               {!showNewSupplierForm ? <div className="space-y-4">
-                  {savedSuppliers.length === 0 && (
+                  {isLoadingSuppliers ? (
+                    <div className="text-center py-6 text-gray-500">
+                      <p>Loading suppliers...</p>
+                    </div>
+                  ) : savedSuppliers.length === 0 ? (
                     <div className="text-center py-6 text-gray-500">
                       <p className="mb-2">No suppliers added yet</p>
                       <p className="text-sm">Click below to add your first supplier</p>
                     </div>
-                  )}
-                  {savedSuppliers.map(supplier => <div key={supplier.id} className={`border rounded-lg p-4 cursor-pointer transition ${formData.supplier?.id === supplier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`} onClick={() => handleSupplierSelect(supplier)}>
+                  ) : null}
+                  {!isLoadingSuppliers && savedSuppliers.map(supplier => <div key={supplier.id} className={`border rounded-lg p-4 cursor-pointer transition ${formData.supplier?.id === supplier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`} onClick={() => handleSupplierSelect(supplier)}>
                       <div className="flex justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900">
