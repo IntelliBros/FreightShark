@@ -32,7 +32,6 @@ export const Header = () => {
   const recentNotifications = notifications.slice(0, 4);
   return <header className="bg-white h-16 flex items-center px-6 justify-between border-b border-gray-200">
       <div className="flex items-center">
-        <h1 className="text-[#1f2c39] font-bold text-xl mr-8">FREIGHT SHARK</h1>
         <div className="relative hidden md:block">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <input type="text" placeholder="Search..." className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-full focus:outline-none focus:ring-1 focus:ring-[#00b4d8] focus:border-[#00b4d8] w-60 bg-white text-sm text-gray-900 placeholder-gray-400" />
