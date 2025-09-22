@@ -311,83 +311,84 @@ export function ShipmentEstimator() {
           </div>
         </div>
       ) : (
-        /* Main Grid Layout - Wider estimator, narrower calculator */
-        <div className="grid lg:grid-cols-[2fr_1fr] gap-4 mb-4">
+        /* Main Grid Layout - Dynamic width based on whether estimate is shown */
+        <div className={`grid gap-4 mb-4 ${showEstimate ? 'lg:grid-cols-[2fr_1fr]' : 'lg:grid-cols-2'}`}>
           {/* Left Column - Estimation Form with Results */}
           <div className="bg-white rounded-lg shadow-sm p-4">
             <h2 className="text-lg font-semibold mb-3">Calculate Estimate</h2>
 
-          <div className="grid md:grid-cols-2 gap-4">
             {/* Input Section */}
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  <Package className="w-3 h-3 inline-block mr-1" />
-                  Select Warehouse
-                </label>
-                <select
-                  value={selectedWarehouse}
-                  onChange={(e) => {
-                    setSelectedWarehouse(e.target.value);
-                    setShowEstimate(false);
-                  }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Choose a warehouse...</option>
-                  {availableWarehouses.map(warehouse => (
-                    <option key={warehouse.warehouseCode} value={warehouse.warehouseCode}>
-                      {warehouse.warehouseName}
-                    </option>
-                  ))}
-                </select>
-                {availableWarehouses.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    No warehouses with recent shipment data available
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  <Weight className="w-3 h-3 inline-block mr-1" />
-                  Chargeable Weight (kg)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={chargeableWeight}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Package className="w-3 h-3 inline-block mr-1" />
+                    Select Warehouse
+                  </label>
+                  <select
+                    value={selectedWarehouse}
                     onChange={(e) => {
-                      setChargeableWeight(e.target.value);
+                      setSelectedWarehouse(e.target.value);
                       setShowEstimate(false);
                     }}
-                    placeholder="Enter weight in kilograms"
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    min="0"
-                    step="0.01"
-                  />
-                  {showCalcResults && calculatedChargeable > 0 && (
-                    <button
-                      onClick={handleUseCalculatedWeight}
-                      className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
-                      title="Use calculated chargeable weight"
-                    >
-                      Use {calculatedChargeable.toFixed(2)} kg
-                    </button>
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Choose a warehouse...</option>
+                    {availableWarehouses.map(warehouse => (
+                      <option key={warehouse.warehouseCode} value={warehouse.warehouseCode}>
+                        {warehouse.warehouseName}
+                      </option>
+                    ))}
+                  </select>
+                  {availableWarehouses.length === 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      No warehouses with recent shipment data available
+                    </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <Weight className="w-3 h-3 inline-block mr-1" />
+                    Chargeable Weight (kg)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={chargeableWeight}
+                      onChange={(e) => {
+                        setChargeableWeight(e.target.value);
+                        setShowEstimate(false);
+                      }}
+                      placeholder="Enter weight in kilograms"
+                      className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                    />
+                    {showCalcResults && calculatedChargeable > 0 && (
+                      <button
+                        onClick={handleUseCalculatedWeight}
+                        className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
+                        title="Use calculated chargeable weight"
+                      >
+                        Use {calculatedChargeable.toFixed(2)} kg
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <button
                 onClick={handleCalculate}
                 disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
-                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors w-full"
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 Calculate Estimate
               </button>
             </div>
 
-            {/* Results Section */}
-            <div className="h-full flex flex-col">
+            {/* Results Section - Now below inputs */}
+            <div className="mt-4">
               {/* Warning for no recent data */}
               {selectedWarehouse && !hasRecentData && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-3">
@@ -473,7 +474,6 @@ export function ShipmentEstimator() {
               ) : null}
             </div>
           </div>
-        </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
         <div className="bg-white rounded-lg shadow-sm p-4">
