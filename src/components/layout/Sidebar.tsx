@@ -28,63 +28,63 @@ export const Sidebar = () => {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           <li>
-            <Link to="/" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <LayoutDashboardIcon className="h-4 w-4 min-w-4" />
+            <Link to="/" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <LayoutDashboardIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Dashboard</span>}
             </Link>
           </li>
           <li>
-            <Link to="/quotes" className={`flex items-center px-3 py-2 rounded-lg ${isGroupActive('/quotes') && !isActive('/quotes/new') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <FileTextIcon className="h-4 w-4 min-w-4" />
+            <Link to="/quotes" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isGroupActive('/quotes') && !isActive('/quotes/new') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <FileTextIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Quotes</span>}
             </Link>
           </li>
           <li>
-            <Link to="/shipments" className={`flex items-center px-3 py-2 rounded-lg ${isGroupActive('/shipments') && !isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <TruckIcon className="h-4 w-4 min-w-4" />
+            <Link to="/shipments" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isGroupActive('/shipments') && !isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <TruckIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Shipments</span>}
             </Link>
           </li>
           <li>
-            <Link to="/shipment-estimator" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <Calculator className="h-4 w-4 min-w-4" />
+            <Link to="/shipment-estimator" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <Calculator className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Shipment Estimator</span>}
             </Link>
           </li>
           <li>
-            <Link to="/samples" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/samples') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <PackageIcon className="h-4 w-4 min-w-4" />
+            <Link to="/samples" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/samples') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <PackageIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Sample Consolidation</span>}
             </Link>
           </li>
           <li>
-            <Link to="/documents" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/documents') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <FileIcon className="h-4 w-4 min-w-4" />
+            <Link to="/documents" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/documents') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <FileIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Documents</span>}
             </Link>
           </li>
           <li>
-            <Link to="/announcements" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/announcements') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <BellIcon className="h-4 w-4 min-w-4" />
+            <Link to="/announcements" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/announcements') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <BellIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Announcements</span>}
             </Link>
           </li>
         </ul>
       </nav>
       <div className={`p-5 border-t border-gray-100 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-        <Link to="/quotes/new" className={`flex items-center justify-center px-3 py-2 mb-3 rounded-lg bg-[#00b4d8] text-white hover:bg-[#0096b8] transition-colors ${isCollapsed ? 'w-10 h-10 p-0' : ''}`}>
+        <Link to="/quotes/new" className={`flex items-center justify-center px-3 py-2 mb-3 rounded-lg bg-[#00b4d8] text-white hover:bg-[#0096b8] transition-colors ${isCollapsed ? 'w-12 h-12 p-0' : ''}`}>
           {isCollapsed ? (
             <span className="text-lg font-bold">+</span>
           ) : (
             <span className="text-sm font-medium">New Quote</span>
           )}
         </Link>
-        <Link to="/settings" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/settings') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-          <SettingsIcon className="h-4 w-4 min-w-4" />
+        <Link to="/settings" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/settings') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+          <SettingsIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
           {!isCollapsed && <span className="ml-3 text-sm">Settings</span>}
         </Link>
         <button onClick={logout} className={`flex items-center w-full px-3 py-2 mt-2 text-gray-700 hover:bg-gray-50 rounded-lg ${isCollapsed ? 'justify-center' : ''}`}>
-          <LogOutIcon className="h-4 w-4 min-w-4" />
+          <LogOutIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
           {!isCollapsed && <span className="ml-3 text-sm">Sign Out</span>}
         </button>
         {!isCollapsed && (
