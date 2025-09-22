@@ -593,74 +593,68 @@ export const DataService = {
       }
     }
     
-    // Create default tracking events based on shipment status
-    const trackingEvents = [];
-    const createdDate = shipment.created_at || shipment.createdAt;
-    
-    // Always add shipment created event
-    if (createdDate) {
-      trackingEvents.push({
-        date: createdDate,
-        timestamp: createdDate,
-        status: 'Awaiting Pickup',
-        location: 'System',
-        description: 'Shipment created and awaiting pickup',
-        type: 'tracking'
-      });
+    // Fetch real tracking events from the database
+    let trackingEvents = [];
+    try {
+      const events = await this.getTrackingEvents(shipment.id);
+      if (events && Array.isArray(events)) {
+        // Sort events by date (most recent first for display, but we'll reverse later if needed)
+        trackingEvents = events.sort((a, b) => {
+          const dateA = new Date(a.date || a.timestamp || 0).getTime();
+          const dateB = new Date(b.date || b.timestamp || 0).getTime();
+          return dateA - dateB; // Oldest first for timeline display
+        });
+      }
+    } catch (error) {
+      console.log('Could not fetch tracking events:', error);
+      // Fall back to a single default event if no tracking events exist
+      const createdDate = shipment.created_at || shipment.createdAt;
+      if (createdDate && trackingEvents.length === 0) {
+        trackingEvents = [{
+          date: createdDate,
+          timestamp: createdDate,
+          status: 'Awaiting Pickup',
+          location: 'System',
+          description: 'Shipment created and awaiting pickup',
+          type: 'tracking'
+        }];
+      }
     }
-    
-    // Add payment event if invoice is paid
-    if (shipment.invoice?.status === 'Paid' && shipment.invoice?.paidAt) {
-      trackingEvents.push({
-        date: shipment.invoice.paidAt,
-        timestamp: shipment.invoice.paidAt,
-        status: 'Payment Received',
-        location: 'System',
-        description: 'Invoice payment received',
-        type: 'payment'
-      });
+
+    // If no tracking events exist yet, create a default one based on shipment creation
+    if (trackingEvents.length === 0) {
+      const createdDate = shipment.created_at || shipment.createdAt;
+      if (createdDate) {
+        trackingEvents.push({
+          date: createdDate,
+          timestamp: createdDate,
+          status: 'Awaiting Pickup',
+          location: 'System',
+          description: 'Shipment created and awaiting pickup',
+          type: 'tracking'
+        });
+      }
     }
-    
-    // Add in progress event if status is beyond awaiting pickup
-    if (shipment.status === 'In Progress' || shipment.status === 'In Transit' || shipment.status === 'Customs' || shipment.status === 'Delivered') {
-      const progressDate = new Date(createdDate);
-      progressDate.setHours(progressDate.getHours() + 24);
-      trackingEvents.push({
-        date: progressDate.toISOString(),
-        timestamp: progressDate.toISOString(),
-        status: 'In Progress',
-        location: 'Origin Warehouse',
-        description: 'Shipment picked up and in progress',
-        type: 'tracking'
-      });
-    }
-    
-    // Add in transit event if applicable
-    if (shipment.status === 'In Transit' || shipment.status === 'Customs' || shipment.status === 'Delivered') {
-      const transitDate = new Date(createdDate);
-      transitDate.setHours(transitDate.getHours() + 48);
-      trackingEvents.push({
-        date: transitDate.toISOString(),
-        timestamp: transitDate.toISOString(),
-        status: 'In Transit',
-        location: 'En Route',
-        description: 'Shipment in transit to destination',
-        type: 'tracking'
-      });
-    }
-    
-    // Add delivered event if delivered
-    if (shipment.status === 'Delivered') {
-      const deliveredDate = new Date(createdDate);
-      deliveredDate.setHours(deliveredDate.getHours() + 96);
-      trackingEvents.push({
-        date: deliveredDate.toISOString(),
-        timestamp: deliveredDate.toISOString(),
-        status: 'Delivered',
-        location: 'Destination Warehouse',
-        description: 'Shipment delivered successfully',
-        type: 'tracking'
-      });
+
+    // Add payment event if invoice is paid and not already in tracking events
+    if (invoice?.status === 'Paid' && invoice?.paidAt) {
+      const hasPaymentEvent = trackingEvents.some(e => e.type === 'payment');
+      if (!hasPaymentEvent) {
+        trackingEvents.push({
+          date: invoice.paidAt,
+          timestamp: invoice.paidAt,
+          status: 'Payment Received',
+          location: 'System',
+          description: 'Invoice payment received',
+          type: 'payment'
+        });
+        // Re-sort after adding payment event
+        trackingEvents.sort((a, b) => {
+          const dateA = new Date(a.date || a.timestamp || 0).getTime();
+          const dateB = new Date(b.date || b.timestamp || 0).getTime();
+          return dateA - dateB;
+        });
+      }
     }
     
     // Transform to match frontend format
