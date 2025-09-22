@@ -22,18 +22,7 @@ const STEPS = [{
   id: 'review',
   label: 'Review & Submit'
 }];
-// Mock supplier data
-const MOCK_SUPPLIERS = [{
-  id: 's1',
-  name: 'Guangzhou Electronics Co.',
-  address: '123 Industrial Park, Guangzhou, China',
-  contact: 'Li Wei'
-}, {
-  id: 's2',
-  name: 'Shenzhen Tech Manufacturing',
-  address: '456 Tech Zone, Shenzhen, China',
-  contact: 'Zhang Min'
-}];
+// Suppliers will be managed dynamically by users
 type Supplier = {
   id: string;
   name: string;
@@ -101,26 +90,7 @@ export const NewQuote = () => {
   const [currentDestinationIndex, setCurrentDestinationIndex] = useState<number | null>(null);
   const [modalMode, setModalMode] = useState<'select' | 'create' | 'edit'>('select');
   const [editingCartonId, setEditingCartonId] = useState<string | null>(null);
-  const [savedCartonConfigs, setSavedCartonConfigs] = useState<CartonConfiguration[]>([
-    {
-      id: 'saved-1',
-      nickname: 'Standard Small Box',
-      cartonWeight: 5,
-      length: 30,
-      width: 20,
-      height: 15,
-      volumetricWeight: 1.5
-    },
-    {
-      id: 'saved-2',
-      nickname: 'Large Master Carton',
-      cartonWeight: 15,
-      length: 60,
-      width: 40,
-      height: 40,
-      volumetricWeight: 16
-    }
-  ]);
+  const [savedCartonConfigs, setSavedCartonConfigs] = useState<CartonConfiguration[]>([]);
   const [newCartonConfig, setNewCartonConfig] = useState<CartonConfiguration>({
     id: '',
     nickname: '',
@@ -159,6 +129,7 @@ export const NewQuote = () => {
     },
     specialInstructions: ''
   });
+  const [savedSuppliers, setSavedSuppliers] = useState<Supplier[]>([]);
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
@@ -213,6 +184,7 @@ export const NewQuote = () => {
       id: `s${Date.now()}`,
       ...newSupplier
     };
+    setSavedSuppliers([...savedSuppliers, newSupplierObj]);
     setFormData({
       ...formData,
       supplier: newSupplierObj
@@ -620,7 +592,13 @@ export const NewQuote = () => {
                 Select a Supplier
               </h3>
               {!showNewSupplierForm ? <div className="space-y-4">
-                  {MOCK_SUPPLIERS.map(supplier => <div key={supplier.id} className={`border rounded-lg p-4 cursor-pointer transition ${formData.supplier?.id === supplier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`} onClick={() => handleSupplierSelect(supplier)}>
+                  {savedSuppliers.length === 0 && (
+                    <div className="text-center py-6 text-gray-500">
+                      <p className="mb-2">No suppliers added yet</p>
+                      <p className="text-sm">Click below to add your first supplier</p>
+                    </div>
+                  )}
+                  {savedSuppliers.map(supplier => <div key={supplier.id} className={`border rounded-lg p-4 cursor-pointer transition ${formData.supplier?.id === supplier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`} onClick={() => handleSupplierSelect(supplier)}>
                       <div className="flex justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900">
