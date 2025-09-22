@@ -24,24 +24,71 @@ export function ShipmentEstimator() {
 
     // Look at all quotes that have pricing (approved or with shipments)
     quotes.forEach(quote => {
-      // Skip quotes without warehouses or pricing
-      if (!quote.warehouses || quote.warehouses.length === 0) return;
+      // Parse warehouse data from per_warehouse_costs if it exists
+      let warehouses: any[] = [];
+
+      if (quote.per_warehouse_costs) {
+        // Parse per_warehouse_costs which is stored as JSON
+        try {
+          const warehouseCosts = typeof quote.per_warehouse_costs === 'string'
+            ? JSON.parse(quote.per_warehouse_costs)
+            : quote.per_warehouse_costs;
+
+          if (Array.isArray(warehouseCosts)) {
+            warehouses = warehouseCosts;
+          } else if (typeof warehouseCosts === 'object') {
+            // Convert object to array if needed
+            warehouses = Object.entries(warehouseCosts).map(([code, data]: [string, any]) => ({
+              warehouseCode: code,
+              warehouseName: data.warehouseName || code,
+              ...data
+            }));
+          }
+        } catch (e) {
+          // Silently skip if parsing fails
+        }
+      }
+
+      // Fallback to quote.warehouses if it exists
+      if ((!warehouses || warehouses.length === 0) && quote.warehouses) {
+        warehouses = quote.warehouses;
+      }
+
+      if (!warehouses || warehouses.length === 0) {
+        return;
+      }
 
       // Use quote creation date or shipment date if available
       const shipment = shipments.find(s => s.quoteId === quote.id);
-      const dataDate = new Date(shipment?.createdAt || quote.createdAt);
+      const dataDate = new Date(shipment?.createdAt || quote.createdAt || quote.created_at);
 
       // Skip old data
-      if (dataDate < cutoffDate) return;
+      if (dataDate < cutoffDate) {
+        return;
+      }
 
-      quote.warehouses.forEach(warehouse => {
-        // Skip warehouses without proper pricing
-        if (!warehouse.freightCharge && !warehouse.dutyAndTaxes && !warehouse.deliveryFee) return;
+      warehouses.forEach(warehouse => {
+        // Check various possible field names for pricing
+        const freightCharge = warehouse.freightCharge || warehouse.freight_charge || warehouse.freightCost || 0;
+        const dutyAndTaxes = warehouse.dutyAndTaxes || warehouse.duty_and_taxes || warehouse.dutyTaxes || 0;
+        const deliveryFee = warehouse.deliveryFee || warehouse.delivery_fee || warehouse.deliveryCharge || 0;
 
-        if (!rates[warehouse.warehouseCode]) {
-          rates[warehouse.warehouseCode] = {
-            warehouseCode: warehouse.warehouseCode,
-            warehouseName: warehouse.warehouseName,
+        // Skip warehouses without any pricing
+        if (!freightCharge && !dutyAndTaxes && !deliveryFee) {
+          return;
+        }
+
+        const warehouseCode = warehouse.warehouseCode || warehouse.warehouse_code || warehouse.code;
+        const warehouseName = warehouse.warehouseName || warehouse.warehouse_name || warehouse.name || warehouseCode;
+
+        if (!warehouseCode) {
+          return;
+        }
+
+        if (!rates[warehouseCode]) {
+          rates[warehouseCode] = {
+            warehouseCode: warehouseCode,
+            warehouseName: warehouseName,
             averageRatePerKg: 0,
             sampleSize: 0,
             lastShipmentDate: dataDate
@@ -49,12 +96,15 @@ export function ShipmentEstimator() {
         }
 
         // Calculate rate per kg for this warehouse
-        const totalWeight = warehouse.estimatedWeight || warehouse.chargeableWeight || 0;
-        const warehouseTotal = (warehouse.freightCharge || 0) + (warehouse.dutyAndTaxes || 0) + (warehouse.deliveryFee || 0);
+        const totalWeight = warehouse.estimatedWeight || warehouse.estimated_weight ||
+                          warehouse.chargeableWeight || warehouse.chargeable_weight ||
+                          warehouse.weight || 0;
+
+        const warehouseTotal = freightCharge + dutyAndTaxes + deliveryFee;
 
         if (totalWeight > 0 && warehouseTotal > 0) {
           const ratePerKg = warehouseTotal / totalWeight;
-          const current = rates[warehouse.warehouseCode];
+          const current = rates[warehouseCode];
 
           // Update average rate
           current.averageRatePerKg =
@@ -66,6 +116,8 @@ export function ShipmentEstimator() {
           if (dataDate > current.lastShipmentDate) {
             current.lastShipmentDate = dataDate;
           }
+
+          // Rate added successfully
         }
       });
     });
@@ -74,17 +126,51 @@ export function ShipmentEstimator() {
     shipments.forEach(shipment => {
       if (!shipment.invoice) return;
 
-      const quote = quotes.find(q => q.id === shipment.quoteId);
-      if (!quote || !quote.warehouses) return;
+      const quote = quotes.find(q => q.id === shipment.quoteId || q.id === shipment.quote_id);
+      if (!quote) return;
 
-      const shipmentDate = new Date(shipment.completedAt || shipment.createdAt);
+      // Parse warehouse data from quote
+      let warehouses: any[] = [];
+
+      if (quote.per_warehouse_costs) {
+        try {
+          const warehouseCosts = typeof quote.per_warehouse_costs === 'string'
+            ? JSON.parse(quote.per_warehouse_costs)
+            : quote.per_warehouse_costs;
+
+          if (Array.isArray(warehouseCosts)) {
+            warehouses = warehouseCosts;
+          } else if (typeof warehouseCosts === 'object') {
+            warehouses = Object.entries(warehouseCosts).map(([code, data]: [string, any]) => ({
+              warehouseCode: code,
+              warehouseName: data.warehouseName || code,
+              ...data
+            }));
+          }
+        } catch (e) {
+          // Silently skip if parsing fails
+        }
+      }
+
+      if ((!warehouses || warehouses.length === 0) && quote.warehouses) {
+        warehouses = quote.warehouses;
+      }
+
+      if (!warehouses || warehouses.length === 0) return;
+
+      const shipmentDate = new Date(shipment.completedAt || shipment.completed_at || shipment.createdAt || shipment.created_at);
       if (shipmentDate < cutoffDate) return;
 
-      quote.warehouses.forEach(warehouse => {
-        if (!rates[warehouse.warehouseCode]) {
-          rates[warehouse.warehouseCode] = {
-            warehouseCode: warehouse.warehouseCode,
-            warehouseName: warehouse.warehouseName,
+      warehouses.forEach(warehouse => {
+        const warehouseCode = warehouse.warehouseCode || warehouse.warehouse_code || warehouse.code;
+        const warehouseName = warehouse.warehouseName || warehouse.warehouse_name || warehouse.name || warehouseCode;
+
+        if (!warehouseCode) return;
+
+        if (!rates[warehouseCode]) {
+          rates[warehouseCode] = {
+            warehouseCode: warehouseCode,
+            warehouseName: warehouseName,
             averageRatePerKg: 0,
             sampleSize: 0,
             lastShipmentDate: shipmentDate
@@ -93,16 +179,24 @@ export function ShipmentEstimator() {
 
         // Use actual invoice amounts if available
         const invoiceWarehouse = shipment.invoice?.warehouses?.find(
-          w => w.warehouseCode === warehouse.warehouseCode
+          (w: any) => (w.warehouseCode || w.warehouse_code) === warehouseCode
         );
 
-        const totalWeight = invoiceWarehouse?.actualWeight || warehouse.estimatedWeight || warehouse.chargeableWeight || 0;
-        const warehouseTotal = invoiceWarehouse?.totalAmount ||
-          ((warehouse.freightCharge || 0) + (warehouse.dutyAndTaxes || 0) + (warehouse.deliveryFee || 0));
+        const totalWeight = invoiceWarehouse?.actualWeight || invoiceWarehouse?.actual_weight ||
+                          warehouse.estimatedWeight || warehouse.estimated_weight ||
+                          warehouse.chargeableWeight || warehouse.chargeable_weight ||
+                          warehouse.weight || 0;
+
+        const freightCharge = warehouse.freightCharge || warehouse.freight_charge || warehouse.freightCost || 0;
+        const dutyAndTaxes = warehouse.dutyAndTaxes || warehouse.duty_and_taxes || warehouse.dutyTaxes || 0;
+        const deliveryFee = warehouse.deliveryFee || warehouse.delivery_fee || warehouse.deliveryCharge || 0;
+
+        const warehouseTotal = invoiceWarehouse?.totalAmount || invoiceWarehouse?.total_amount ||
+          (freightCharge + dutyAndTaxes + deliveryFee);
 
         if (totalWeight > 0 && warehouseTotal > 0) {
           const ratePerKg = warehouseTotal / totalWeight;
-          const current = rates[warehouse.warehouseCode];
+          const current = rates[warehouseCode];
 
           // Update average rate
           current.averageRatePerKg =
@@ -114,6 +208,8 @@ export function ShipmentEstimator() {
           if (shipmentDate > current.lastShipmentDate) {
             current.lastShipmentDate = shipmentDate;
           }
+
+          // Rate added successfully
         }
       });
     });
