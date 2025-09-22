@@ -261,63 +261,16 @@ export const Dashboard = () => {
             </div>}
         </Card>
         <Card title="Announcements" subtitle="Latest updates and notifications">
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg flex items-start">
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900">
-                  Angel Zhuang
-                </h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  Dear FBA Boss Academy students, Hope you are all doing well. Here is the latest news on US and China agree to slash tariffs for 90 days as following : US to Cut Tariffs on Chinese Goods to 30% From 145% for 90 Days. It has been confirmed. Here is...
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Wednesday, May 14, 2025
-                </p>
-                <button className="mt-2 px-3 py-1 bg-gray-900 text-white text-xs rounded hover:bg-gray-800 transition-colors">
-                  Read more
-                </button>
-              </div>
+          <div className="text-center py-8">
+            <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+              <ClockIcon className="w-6 h-6 text-gray-400" />
             </div>
-            
-            <div className="p-4 bg-yellow-50 rounded-lg flex items-start">
-              <div className="mr-3 mt-0.5">
-                <ClockIcon className="w-4 h-4 text-yellow-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900">
-                  Holiday Schedule Notice
-                </h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  Our offices will be closed on December 25th and January 1st. 
-                  Please plan your shipments accordingly.
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Posted yesterday
-                </p>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-green-50 rounded-lg flex items-start">
-              <div className="mr-3 mt-0.5">
-                <CheckCircleIcon className="w-4 h-4 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900">
-                  New Feature: Real-time Tracking
-                </h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  We've enhanced our tracking system with real-time updates. 
-                  Check your shipment status for live location data.
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Posted 3 days ago
-                </p>
-              </div>
-            </div>
-            
-            <button className="w-full px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
-              View all announcements
-            </button>
+            <h3 className="text-sm font-medium text-gray-700 mb-1">
+              No announcements
+            </h3>
+            <p className="text-xs text-gray-500">
+              Check back later for important updates
+            </p>
           </div>
         </Card>
       </div>
