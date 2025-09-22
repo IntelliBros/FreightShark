@@ -195,17 +195,19 @@ export function ShipmentEstimator() {
       return { grossWeight: 0, volumetricWeight: 0, chargeableWeight: 0 };
     }
 
-    // Convert dimensions to cm if needed
-    const lengthCm = calcDimensionUnit === 'in' ? length * 2.54 : length;
-    const widthCm = calcDimensionUnit === 'in' ? width * 2.54 : width;
-    const heightCm = calcDimensionUnit === 'in' ? height * 2.54 : height;
+    let volumetricWeight: number;
 
-    // Calculate volume in cubic cm
-    const volumePerCarton = lengthCm * widthCm * heightCm;
-    const totalVolume = volumePerCarton * count;
-
-    // Convert to volumetric weight (using standard divisor of 5000 for air freight)
-    const volumetricWeight = totalVolume / 5000;
+    if (calcDimensionUnit === 'in') {
+      // For inches: (L x W x H) / 366
+      const volumePerCarton = length * width * height;
+      const totalVolume = volumePerCarton * count;
+      volumetricWeight = totalVolume / 366;
+    } else {
+      // For cm: (L x W x H) / 6000
+      const volumePerCarton = length * width * height;
+      const totalVolume = volumePerCarton * count;
+      volumetricWeight = totalVolume / 6000;
+    }
 
     // Gross weight is actual weight multiplied by carton count
     const grossWeight = weightPerCarton * count;
@@ -520,7 +522,12 @@ export function ShipmentEstimator() {
                   <span className="font-medium">{grossWeight.toFixed(2)} kg</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Total Volumetric Weight:</span>
+                  <span className="text-sm text-gray-600">
+                    Total Volumetric Weight
+                    <span className="text-xs text-gray-400 ml-1">
+                      (÷{calcDimensionUnit === 'in' ? '366' : '6000'})
+                    </span>:
+                  </span>
                   <span className="font-medium">{volumetricWeight.toFixed(2)} kg</span>
                 </div>
                 <div className="pt-3 border-t border-gray-200">
