@@ -314,12 +314,12 @@ export function ShipmentEstimator() {
         /* Main Grid Layout - Dynamic width based on whether estimate is shown */
         <div className={`grid gap-4 mb-4 ${showEstimate ? 'lg:grid-cols-[2fr_1fr]' : 'lg:grid-cols-2'}`}>
           {/* Left Column - Estimation Form with Results */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-lg font-semibold mb-3">Calculate Estimate</h2>
+          <div className={`bg-white rounded-lg shadow-sm ${showEstimate ? 'p-4' : 'p-3'}`}>
+            <h2 className="text-lg font-semibold mb-2">Calculate Estimate</h2>
 
-            {/* Input Section */}
-            <div className="space-y-3">
-              <div className="grid md:grid-cols-2 gap-4">
+            {/* Input Section - Compact spacing when no estimate */}
+            <div className={showEstimate ? 'space-y-3' : 'space-y-2'}>
+              <div className="grid md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     <Package className="w-3 h-3 inline-block mr-1" />
@@ -381,7 +381,7 @@ export function ShipmentEstimator() {
               <button
                 onClick={handleCalculate}
                 disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
-                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 Calculate Estimate
               </button>
@@ -455,13 +455,13 @@ export function ShipmentEstimator() {
           </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm p-3">
+          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <Ruler className="w-4 h-4" />
             Chargeable Weight Calculator
           </h2>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 <Box className="w-3 h-3 inline-block mr-1" />
