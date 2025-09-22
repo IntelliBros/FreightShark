@@ -408,7 +408,7 @@ export function ShipmentEstimator() {
 
                 {/* Estimate Results */}
                 {showEstimate && selectedWarehouseRate && hasRecentData && (
-                <div>
+                  <div>
                   <div className="bg-blue-50 rounded-lg p-3 mb-3">
                     <div className="text-center">
                       <p className="text-xs text-blue-600 mb-1">Estimated Total</p>
@@ -447,6 +447,7 @@ export function ShipmentEstimator() {
                         such as fuel surcharges, special handling fees, or duties and taxes.
                       </p>
                     </div>
+                  </div>
                   </div>
                 )}
               </div>
