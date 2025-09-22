@@ -79,9 +79,14 @@ export const Announcements = () => {
                 {truncateContent(announcement.content)}
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">
-                  {formatDate(announcement.createdAt)}
-                </span>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>{formatDate(announcement.createdAt)}</span>
+                  {announcement.creator && (
+                    <span className="text-gray-600">
+                      by {announcement.creator.name}
+                    </span>
+                  )}
+                </div>
                 <Link 
                   to={`/announcements/${announcement.id}`}
                   className="inline-flex items-center px-4 py-2 bg-[#2E3B55] text-white text-sm font-medium rounded-md hover:bg-[#1e2940] transition-colors"

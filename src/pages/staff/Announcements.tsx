@@ -17,7 +17,7 @@ export const StaffAnnouncements = () => {
     type: 'info' as Announcement['type'],
     isActive: true
   });
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export const StaffAnnouncements = () => {
       setAnnouncements(data);
     } catch (error) {
       console.error('Failed to fetch announcements:', error);
-      showToast('Failed to fetch announcements', 'error');
+      addToast('Failed to fetch announcements', 'error');
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ export const StaffAnnouncements = () => {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.content.trim()) {
-      showToast('Please fill in all required fields', 'error');
+      addToast('Please fill in all required fields', 'error');
       return;
     }
 
@@ -50,18 +50,18 @@ export const StaffAnnouncements = () => {
           title: formData.title,
           content: formData.content,
           type: formData.type,
-          isActive: formData.isActive
+          is_active: formData.isActive
         });
-        showToast('Announcement updated successfully', 'success');
+        addToast('Announcement updated successfully', 'success');
       } else {
         await DataService.createAnnouncement({
           title: formData.title,
           content: formData.content,
           type: formData.type,
-          createdBy: user?.id || 'STAFF-001',
-          isActive: formData.isActive
+          created_by: user?.id || 'staff-1',
+          is_active: formData.isActive
         });
-        showToast('Announcement created successfully', 'success');
+        addToast('Announcement created successfully', 'success');
       }
 
       setShowForm(false);
@@ -75,7 +75,7 @@ export const StaffAnnouncements = () => {
       fetchAnnouncements();
     } catch (error) {
       console.error('Failed to save announcement:', error);
-      showToast('Failed to save announcement', 'error');
+      addToast('Failed to save announcement', 'error');
     }
   };
 
@@ -97,24 +97,24 @@ export const StaffAnnouncements = () => {
 
     try {
       await DataService.deleteAnnouncement(id);
-      showToast('Announcement deleted successfully', 'success');
+      addToast('Announcement deleted successfully', 'success');
       fetchAnnouncements();
     } catch (error) {
       console.error('Failed to delete announcement:', error);
-      showToast('Failed to delete announcement', 'error');
+      addToast('Failed to delete announcement', 'error');
     }
   };
 
   const handleToggleActive = async (announcement: Announcement) => {
     try {
       await DataService.updateAnnouncement(announcement.id, {
-        isActive: !announcement.isActive
+        is_active: !announcement.isActive
       });
-      showToast(`Announcement ${!announcement.isActive ? 'activated' : 'deactivated'}`, 'success');
+      addToast(`Announcement ${!announcement.isActive ? 'activated' : 'deactivated'}`, 'success');
       fetchAnnouncements();
     } catch (error) {
       console.error('Failed to toggle announcement status:', error);
-      showToast('Failed to update announcement status', 'error');
+      addToast('Failed to update announcement status', 'error');
     }
   };
 
@@ -317,6 +317,11 @@ export const StaffAnnouncements = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     <span>{formatDate(announcement.createdAt)}</span>
+                    {announcement.creator && (
+                      <span className="text-gray-600">
+                        by {announcement.creator.name}
+                      </span>
+                    )}
                     {!announcement.isActive && (
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium">
                         Inactive

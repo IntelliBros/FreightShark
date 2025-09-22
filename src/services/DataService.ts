@@ -46,6 +46,13 @@ export type Announcement = {
   content: string;
   type: 'info' | 'warning' | 'success' | 'error';
   createdBy: string;
+  creator?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    company?: string;
+  } | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

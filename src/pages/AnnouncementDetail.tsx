@@ -35,10 +35,20 @@ export const AnnouncementDetail = () => {
     });
   };
 
-  const getAuthorInfo = (createdBy: string) => {
-    // This would normally fetch user info, but for now we'll return a default
+  const getAuthorInfo = (announcement: Announcement) => {
+    // Use the creator information if available, otherwise fall back to defaults
+    if (announcement.creator) {
+      return {
+        name: announcement.creator.name,
+        role: announcement.creator.role === 'staff' ? 'Staff Member' : announcement.creator.role,
+        company: announcement.creator.company || 'FBA BOSS',
+        avatar: '/avatar-placeholder.png'
+      };
+    }
+    
+    // Fallback for announcements without creator info
     return {
-      name: 'Angel Zhuang',
+      name: 'Staff Member',
       role: 'Contributing Writer',
       company: 'FBA BOSS',
       avatar: '/avatar-placeholder.png'
@@ -78,7 +88,7 @@ export const AnnouncementDetail = () => {
     );
   }
 
-  const author = getAuthorInfo(announcement.createdBy);
+  const author = getAuthorInfo(announcement);
   const readTime = Math.ceil(announcement.content.split(' ').length / 200);
 
   return (

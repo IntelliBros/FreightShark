@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete All Announcements - New</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Delete All Announcements from Correct Database</h1>
+    <div id="status"></div>
+    <script>
+        // Using the correct Supabase URL from src/lib/supabase.ts
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        const statusDiv = document.getElementById('status');
+
+        async function deleteAllAnnouncements() {
+            statusDiv.innerHTML = '<p>Fetching announcements from correct database...</p>';
+
+            // First, fetch all announcements to see what we're deleting
+            const { data: announcements, error: fetchError } = await supabaseClient
+                .from('announcements')
+                .select('*');
+
+            if (fetchError) {
+                statusDiv.innerHTML = `<p style="color: red;">Error fetching announcements: ${fetchError.message}</p>`;
+                console.error('Fetch error:', fetchError);
+                return;
+            }
+
+            if (!announcements || announcements.length === 0) {
+                statusDiv.innerHTML = '<p style="color: blue;">No announcements found in database.</p>';
+                return;
+            }
+
+            statusDiv.innerHTML += `<p>Found ${announcements.length} announcement(s) to delete:</p>`;
+            announcements.forEach(ann => {
+                statusDiv.innerHTML += `<p>- ${ann.title} (ID: ${ann.id})</p>`;
+            });
+
+            statusDiv.innerHTML += '<p>Deleting all announcements...</p>';
+
+            // Delete each announcement individually to ensure they're all removed
+            let deleteCount = 0;
+            for (const ann of announcements) {
+                const { error: deleteError } = await supabaseClient
+                    .from('announcements')
+                    .delete()
+                    .eq('id', ann.id);
+
+                if (deleteError) {
+                    statusDiv.innerHTML += `<p style="color: red;">Error deleting ${ann.id}: ${deleteError.message}</p>`;
+                    console.error('Delete error for', ann.id, ':', deleteError);
+                } else {
+                    deleteCount++;
+                    statusDiv.innerHTML += `<p style="color: green;">✓ Deleted: ${ann.title}</p>`;
+                }
+            }
+
+            statusDiv.innerHTML += `<p style="color: green;">Successfully deleted ${deleteCount} announcements!</p>`;
+
+            // Verify deletion
+            const { data: remaining, error: verifyError } = await supabaseClient
+                .from('announcements')
+                .select('*');
+
+            if (verifyError) {
+                statusDiv.innerHTML += `<p style="color: red;">Error verifying deletion: ${verifyError.message}</p>`;
+            } else {
+                statusDiv.innerHTML += `<hr><p style="color: ${remaining.length === 0 ? 'green' : 'orange'};">Verification: ${remaining.length} announcements remaining in database.</p>`;
+                if (remaining.length > 0) {
+                    statusDiv.innerHTML += '<p>Remaining announcements:</p>';
+                    remaining.forEach(ann => {
+                        statusDiv.innerHTML += `<p>- ${ann.title} (ID: ${ann.id})</p>`;
+                    });
+                }
+            }
+        }
+
+        // Run the function
+        deleteAllAnnouncements();
+    </script>
+</body>
+</html>

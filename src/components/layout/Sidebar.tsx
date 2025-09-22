@@ -29,43 +29,43 @@ export const Sidebar = () => {
         <ul className="space-y-1">
           <li>
             <Link to="/" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <LayoutDashboardIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <LayoutDashboardIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Dashboard</span>}
             </Link>
           </li>
           <li>
             <Link to="/quotes" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isGroupActive('/quotes') && !isActive('/quotes/new') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <FileTextIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <FileTextIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Quotes</span>}
             </Link>
           </li>
           <li>
             <Link to="/shipments" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isGroupActive('/shipments') && !isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <TruckIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <TruckIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Shipments</span>}
             </Link>
           </li>
           <li>
             <Link to="/shipment-estimator" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/shipment-estimator') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <Calculator className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <Calculator className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Shipment Estimator</span>}
             </Link>
           </li>
           <li>
             <Link to="/samples" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/samples') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <PackageIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <PackageIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Sample Consolidation</span>}
             </Link>
           </li>
           <li>
             <Link to="/documents" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/documents') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <FileIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <FileIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Documents</span>}
             </Link>
           </li>
           <li>
             <Link to="/announcements" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/announcements') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <BellIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+              <BellIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Announcements</span>}
             </Link>
           </li>
@@ -80,11 +80,11 @@ export const Sidebar = () => {
           )}
         </Link>
         <Link to="/settings" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/settings') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
-          <SettingsIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+          <SettingsIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
           {!isCollapsed && <span className="ml-3 text-sm">Settings</span>}
         </Link>
         <button onClick={logout} className={`flex items-center w-full px-3 py-2 mt-2 text-gray-700 hover:bg-gray-50 rounded-lg ${isCollapsed ? 'justify-center' : ''}`}>
-          <LogOutIcon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} min-w-4`} />
+          <LogOutIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
           {!isCollapsed && <span className="ml-3 text-sm">Sign Out</span>}
         </button>
       </div>

@@ -715,22 +715,74 @@ export const supabaseService = {
     async getActive() {
       const { data, error } = await supabase
         .from('announcements')
-        .select('*')
+        .select(`
+          *,
+          creator:users!created_by(
+            id,
+            name,
+            email,
+            role,
+            company
+          )
+        `)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      return data;
+      // Map snake_case to camelCase for frontend compatibility
+      return data?.map(ann => ({
+        id: ann.id,
+        title: ann.title,
+        content: ann.content,
+        type: ann.type,
+        createdBy: ann.created_by,
+        creator: ann.creator ? {
+          id: ann.creator.id,
+          name: ann.creator.name,
+          email: ann.creator.email,
+          role: ann.creator.role,
+          company: ann.creator.company
+        } : null,
+        isActive: ann.is_active,
+        createdAt: ann.created_at,
+        updatedAt: ann.updated_at
+      }));
     },
 
     async getAll() {
       const { data, error } = await supabase
         .from('announcements')
-        .select('*')
+        .select(`
+          *,
+          creator:users!created_by(
+            id,
+            name,
+            email,
+            role,
+            company
+          )
+        `)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      return data;
+      // Map snake_case to camelCase for frontend compatibility
+      return data?.map(ann => ({
+        id: ann.id,
+        title: ann.title,
+        content: ann.content,
+        type: ann.type,
+        createdBy: ann.created_by,
+        creator: ann.creator ? {
+          id: ann.creator.id,
+          name: ann.creator.name,
+          email: ann.creator.email,
+          role: ann.creator.role,
+          company: ann.creator.company
+        } : null,
+        isActive: ann.is_active,
+        createdAt: ann.created_at,
+        updatedAt: ann.updated_at
+      }));
     },
 
     async create(announcement: any) {
@@ -740,11 +792,37 @@ export const supabaseService = {
           ...announcement,
           id: announcement.id || `ANN-${uuidv4().substring(0, 8).toUpperCase()}`
         })
-        .select()
+        .select(`
+          *,
+          creator:users!created_by(
+            id,
+            name,
+            email,
+            role,
+            company
+          )
+        `)
         .single();
-      
+
       if (error) throw error;
-      return data;
+      // Map snake_case to camelCase for frontend compatibility
+      return {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        type: data.type,
+        createdBy: data.created_by,
+        creator: data.creator ? {
+          id: data.creator.id,
+          name: data.creator.name,
+          email: data.creator.email,
+          role: data.creator.role,
+          company: data.creator.company
+        } : null,
+        isActive: data.is_active,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
     },
 
     async update(id: string, updates: any) {
@@ -752,11 +830,37 @@ export const supabaseService = {
         .from('announcements')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          creator:users!created_by(
+            id,
+            name,
+            email,
+            role,
+            company
+          )
+        `)
         .single();
-      
+
       if (error) throw error;
-      return data;
+      // Map snake_case to camelCase for frontend compatibility
+      return {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        type: data.type,
+        createdBy: data.created_by,
+        creator: data.creator ? {
+          id: data.creator.id,
+          name: data.creator.name,
+          email: data.creator.email,
+          role: data.creator.role,
+          company: data.creator.company
+        } : null,
+        isActive: data.is_active,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
     },
 
     async delete(id: string) {

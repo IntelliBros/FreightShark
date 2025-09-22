@@ -279,40 +279,8 @@ async function setupDatabase() {
       console.log(`✅ Created user: ${user.email} (role: ${user.role})`);
     }
 
-    // Create sample announcements
-    console.log('📢 Creating sample announcements...');
-    const announcements = [
-      {
-        id: 'ANN-001',
-        title: 'Shipping Agent Update',
-        content: 'Some Amazon warehouses are experiencing delays due to capacity issues. Please check your shipment status regularly.',
-        type: 'warning',
-        createdBy: 'staff-1'
-      },
-      {
-        id: 'ANN-002',
-        title: 'Holiday Schedule Notice',
-        content: 'Our offices will be closed on December 25th and January 1st. Please plan your shipments accordingly.',
-        type: 'info',
-        createdBy: 'staff-1'
-      },
-      {
-        id: 'ANN-003',
-        title: 'New Feature: Real-time Tracking',
-        content: 'We have enhanced our tracking system with real-time updates. Check your shipment status for live location data.',
-        type: 'success',
-        createdBy: 'staff-1'
-      }
-    ];
-
-    for (const announcement of announcements) {
-      await pool.query(
-        `INSERT INTO announcements (id, title, content, type, created_by)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [announcement.id, announcement.title, announcement.content, announcement.type, announcement.createdBy]
-      );
-    }
-    console.log('✅ Sample announcements created');
+    // Skip creating sample announcements - keeping database clean
+    console.log('⏭️ Skipping sample announcements - keeping database clean');
 
     console.log('\n🎉 Database setup complete!');
     console.log('\n📝 Login credentials:');

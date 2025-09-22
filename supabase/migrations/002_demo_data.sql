@@ -44,31 +44,4 @@ VALUES (
     'Shipping Agent'
 ) ON CONFLICT (email) DO NOTHING;
 
--- Sample Announcements
-INSERT INTO announcements (id, title, content, type, created_by, is_active)
-VALUES 
-    (
-        'ANN-001',
-        'Shipping Agent Update',
-        'Some Amazon warehouses are experiencing delays due to capacity issues. Please check your shipment status regularly.',
-        'warning',
-        'staff-1',
-        true
-    ),
-    (
-        'ANN-002',
-        'Holiday Schedule Notice',
-        'Our offices will be closed on December 25th and January 1st. Please plan your shipments accordingly.',
-        'info',
-        'staff-1',
-        true
-    ),
-    (
-        'ANN-003',
-        'New Feature: Real-time Tracking',
-        'We have enhanced our tracking system with real-time updates. Check your shipment status for live location data.',
-        'success',
-        'staff-1',
-        true
-    )
-ON CONFLICT (id) DO NOTHING;
+-- Skip creating sample announcements - keeping database clean

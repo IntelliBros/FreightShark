@@ -28,10 +28,10 @@ export const AdminSidebar = () => {
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
-  return <aside className={`bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
-      <div className={`p-6 ${isCollapsed ? 'p-4 flex justify-center' : ''}`}>
+  return <aside className={`bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300 relative ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`p-6 ${isCollapsed ? 'p-3 flex justify-center' : ''}`}>
         {isCollapsed ? (
-          <img src="/shark-icon.svg" alt="Freight Shark" className="w-10 h-10" />
+          <img src="/shark-icon.svg" alt="Freight Shark" className="w-14 h-14" />
         ) : (
           <div>
             <img src="/freight-shark-logo.svg" alt="Freight Shark" className="h-10" />
@@ -42,15 +42,15 @@ export const AdminSidebar = () => {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           <li>
-            <Link to="/admin" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/admin') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <LayoutDashboardIcon className="h-4 w-4 min-w-4" />
+            <Link to="/admin" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/admin') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <LayoutDashboardIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Dashboard</span>}
             </Link>
           </li>
           <li>
-            <button onClick={() => toggleExpanded('users')} className={`flex items-center justify-between w-full px-3 py-2 rounded-lg ${isGroupActive('/admin/users') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+            <button onClick={() => toggleExpanded('users')} className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} w-full px-3 py-2 rounded-lg ${isGroupActive('/admin/users') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
               <div className="flex items-center">
-                <UsersIcon className="h-4 w-4 min-w-4" />
+                <UsersIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
                 {!isCollapsed && <span className="ml-3 text-sm">Users</span>}
               </div>
               {!isCollapsed && (expanded.users ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />)}
@@ -74,21 +74,21 @@ export const AdminSidebar = () => {
               </ul>}
           </li>
           <li>
-            <Link to="/admin/analytics" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/admin/analytics') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <BarChart2Icon className="h-4 w-4 min-w-4" />
+            <Link to="/admin/analytics" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/admin/analytics') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <BarChart2Icon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Analytics</span>}
             </Link>
           </li>
           <li>
-            <Link to="/admin/audit-logs" className={`flex items-center px-3 py-2 rounded-lg ${isActive('/admin/audit-logs') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <ActivityIcon className="h-4 w-4 min-w-4" />
+            <Link to="/admin/audit-logs" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/admin/audit-logs') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <ActivityIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Audit Logs</span>}
             </Link>
           </li>
           <li>
-            <button onClick={() => toggleExpanded('system')} className={`flex items-center justify-between w-full px-3 py-2 rounded-lg ${isGroupActive('/admin/system') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+            <button onClick={() => toggleExpanded('system')} className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} w-full px-3 py-2 rounded-lg ${isGroupActive('/admin/system') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
               <div className="flex items-center">
-                <SettingsIcon className="h-4 w-4 min-w-4" />
+                <SettingsIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
                 {!isCollapsed && <span className="ml-3 text-sm">System</span>}
               </div>
               {!isCollapsed && (expanded.system ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />)}
@@ -117,9 +117,9 @@ export const AdminSidebar = () => {
               </ul>}
           </li>
           <li>
-            <button onClick={() => toggleExpanded('security')} className={`flex items-center justify-between w-full px-3 py-2 rounded-lg ${isGroupActive('/admin/security') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+            <button onClick={() => toggleExpanded('security')} className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} w-full px-3 py-2 rounded-lg ${isGroupActive('/admin/security') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
               <div className="flex items-center">
-                <KeyIcon className="h-4 w-4 min-w-4" />
+                <KeyIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
                 {!isCollapsed && <span className="ml-3 text-sm">Security</span>}
               </div>
               {!isCollapsed && (expanded.security ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />)}
@@ -141,15 +141,27 @@ export const AdminSidebar = () => {
       </nav>
       <div className={`p-5 border-t border-gray-100 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
         <button onClick={logout} className={`flex items-center w-full px-3 py-2 mt-2 text-gray-700 hover:bg-gray-50 rounded-lg ${isCollapsed ? 'justify-center' : ''}`}>
-          <LogOutIcon className="h-4 w-4 min-w-4" />
+          <LogOutIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
           {!isCollapsed && <span className="ml-3 text-sm">Sign Out</span>}
         </button>
-        <button onClick={toggleSidebar} className="mt-4 flex items-center justify-center w-full px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 rounded-lg">
-          {isCollapsed ? <ChevronRightIcon className="h-4 w-4" /> : <div className="flex items-center w-full">
-              <ChevronLeftIcon className="h-4 w-4 mr-1.5" />
-              <span>Collapse</span>
-            </div>}
-        </button>
       </div>
+      {!isCollapsed && (
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 bg-[#00b4d8] hover:bg-[#0096b8] text-white rounded-r-md px-1 py-6 shadow-lg transition-all duration-200 hover:px-2 z-10"
+          title="Collapse sidebar"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+      )}
+      {isCollapsed && (
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 bg-[#00b4d8] hover:bg-[#0096b8] text-white rounded-r-md px-1 py-6 shadow-lg transition-all duration-200 hover:px-2 z-10"
+          title="Expand sidebar"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      )}
     </aside>;
 };
