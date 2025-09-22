@@ -132,6 +132,42 @@ export const initializeDatabase = async () => {
       `
     }).catch(() => {});
 
+    // Create suppliers table
+    await supabase.rpc('exec_sql', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS suppliers (
+          id VARCHAR(50) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          address TEXT NOT NULL,
+          city VARCHAR(100),
+          country VARCHAR(100) DEFAULT 'China',
+          contact_name VARCHAR(255),
+          contact_phone VARCHAR(50),
+          contact_email VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+    }).catch(() => {});
+
+    // Create user_carton_templates table
+    await supabase.rpc('exec_sql', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS user_carton_templates (
+          id VARCHAR(50) PRIMARY KEY,
+          user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+          nickname VARCHAR(255) NOT NULL,
+          carton_weight DECIMAL(10,2) NOT NULL,
+          length DECIMAL(10,2) NOT NULL,
+          width DECIMAL(10,2) NOT NULL,
+          height DECIMAL(10,2) NOT NULL,
+          volumetric_weight DECIMAL(10,2),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+    }).catch(() => {});
+
     // Create id_sequences table
     await supabase.rpc('exec_sql', {
       sql: `

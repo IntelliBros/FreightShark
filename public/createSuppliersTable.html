@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Suppliers Table</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Create Suppliers and Carton Templates Tables</h1>
+    <button id="createTables">Create Tables</button>
+    <div id="status"></div>
+    <pre id="output"></pre>
+
+    <script>
+        const { createClient } = supabase;
+
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        document.getElementById('createTables').addEventListener('click', async () => {
+            const status = document.getElementById('status');
+            const output = document.getElementById('output');
+
+            status.innerHTML = 'Creating tables...';
+            output.innerHTML = '';
+
+            try {
+                // First check if suppliers table exists
+                const { data: suppliersCheck, error: checkError } = await supabaseClient
+                    .from('suppliers')
+                    .select('id')
+                    .limit(1);
+
+                if (!checkError || checkError.code !== 'PGRST205') {
+                    output.innerHTML += 'Suppliers table already exists or was created\n';
+
+                    // Try to get count
+                    const { count } = await supabaseClient
+                        .from('suppliers')
+                        .select('*', { count: 'exact', head: true });
+
+                    output.innerHTML += `Current suppliers count: ${count}\n`;
+                } else {
+                    output.innerHTML += 'Error: Suppliers table does not exist.\n';
+                    output.innerHTML += 'Please create it using Supabase SQL Editor with this SQL:\n\n';
+
+                    const createTableSQL = `
+-- Create suppliers table
+CREATE TABLE IF NOT EXISTS suppliers (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'China',
+    contact_name VARCHAR(255),
+    contact_phone VARCHAR(50),
+    contact_email VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name);
+
+-- Create user_carton_templates table
+CREATE TABLE IF NOT EXISTS user_carton_templates (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+    nickname VARCHAR(255) NOT NULL,
+    carton_weight DECIMAL(10,2) NOT NULL,
+    length DECIMAL(10,2) NOT NULL,
+    width DECIMAL(10,2) NOT NULL,
+    height DECIMAL(10,2) NOT NULL,
+    volumetric_weight DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for carton templates
+CREATE INDEX IF NOT EXISTS idx_user_carton_templates_user ON user_carton_templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_carton_templates_nickname ON user_carton_templates(nickname);`;
+
+                    output.innerHTML += createTableSQL;
+                }
+
+                // Check user_carton_templates table
+                const { data: cartonCheck, error: cartonError } = await supabaseClient
+                    .from('user_carton_templates')
+                    .select('id')
+                    .limit(1);
+
+                if (!cartonError || cartonError.code !== 'PGRST205') {
+                    output.innerHTML += '\nUser carton templates table already exists or was created\n';
+                }
+
+                status.innerHTML = 'Check complete!';
+
+            } catch (error) {
+                status.innerHTML = 'Error occurred';
+                output.innerHTML = JSON.stringify(error, null, 2);
+            }
+        });
+
+        // Auto-check on page load
+        window.addEventListener('load', () => {
+            document.getElementById('createTables').click();
+        });
+    </script>
+</body>
+</html>
