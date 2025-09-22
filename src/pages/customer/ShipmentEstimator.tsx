@@ -312,15 +312,15 @@ export function ShipmentEstimator() {
         </div>
       ) : (
         /* Main Grid Layout - Dynamic width based on whether estimate is shown */
-        <div className={`grid gap-4 mb-4 ${showEstimate ? 'lg:grid-cols-[2fr_1fr]' : 'lg:grid-cols-2'}`}>
+        <div className={`grid gap-4 mb-4 items-start ${showEstimate ? 'lg:grid-cols-[2fr_1fr]' : 'lg:grid-cols-2'}`}>
           {/* Left Column - Estimation Form with Results */}
-          <div className="bg-white rounded-lg shadow-sm p-3">
-            <h2 className="text-base font-semibold mb-2">Calculate Estimate</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <h2 className="text-lg font-semibold mb-3">Calculate Estimate</h2>
 
-            {/* Input Section - Very compact layout */}
-            <div className="grid md:grid-cols-2 gap-2.5 mb-2">
+            {/* Input Section */}
+            <div className="grid md:grid-cols-2 gap-4 mb-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   <Package className="w-3 h-3 inline-block mr-1" />
                   Select Warehouse
                 </label>
@@ -330,7 +330,7 @@ export function ShipmentEstimator() {
                     setSelectedWarehouse(e.target.value);
                     setShowEstimate(false);
                   }}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Choose a warehouse...</option>
                   {availableWarehouses.map(warehouse => (
@@ -342,11 +342,11 @@ export function ShipmentEstimator() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   <Weight className="w-3 h-3 inline-block mr-1" />
                   Chargeable Weight (kg)
                 </label>
-                <div className="flex gap-1.5">
+                <div className="flex gap-2">
                   <input
                     type="number"
                     value={chargeableWeight}
@@ -355,14 +355,14 @@ export function ShipmentEstimator() {
                       setShowEstimate(false);
                     }}
                     placeholder="Enter weight in kilograms"
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     step="0.01"
                   />
                   {showCalcResults && calculatedChargeable > 0 && (
                     <button
                       onClick={handleUseCalculatedWeight}
-                      className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
+                      className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
                       title="Use calculated chargeable weight"
                     >
                       Use {calculatedChargeable.toFixed(2)} kg
@@ -375,7 +375,7 @@ export function ShipmentEstimator() {
             <button
               onClick={handleCalculate}
               disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
-              className="w-full px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Calculate Estimate
             </button>
@@ -448,15 +448,15 @@ export function ShipmentEstimator() {
           </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
-        <div className="bg-white rounded-lg shadow-sm p-3">
-          <h2 className="text-base font-semibold mb-2 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Ruler className="w-4 h-4" />
             Chargeable Weight Calculator
           </h2>
 
-          <div className="space-y-1.5">
+          <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 <Box className="w-3 h-3 inline-block mr-1" />
                 Carton Count
               </label>
@@ -468,14 +468,14 @@ export function ShipmentEstimator() {
                   setShowCalcResults(false);
                 }}
                 placeholder="Number of cartons"
-                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="1"
                 step="1"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Carton Dimensions Unit
               </label>
               <div className="flex gap-1">
@@ -503,7 +503,7 @@ export function ShipmentEstimator() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Dimensions Per Carton
               </label>
               <div className="grid grid-cols-3 gap-1">
@@ -562,7 +562,7 @@ export function ShipmentEstimator() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 <Weight className="w-3 h-3 inline-block mr-1" />
                 Weight Per Carton (kg)
               </label>
@@ -574,7 +574,7 @@ export function ShipmentEstimator() {
                   setShowCalcResults(false);
                 }}
                 placeholder="Weight per carton in kilograms"
-                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="0"
                 step="0.01"
               />
@@ -586,7 +586,7 @@ export function ShipmentEstimator() {
             <button
               onClick={handleCalculateChargeable}
               disabled={!calcCartonCount || !calcLength || !calcWidth || !calcHeight || !calcWeight}
-              className="w-full px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Calculate Chargeable Weight
             </button>
