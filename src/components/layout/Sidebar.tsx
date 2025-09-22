@@ -17,10 +17,10 @@ export const Sidebar = () => {
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
-  return <aside className={`bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
-      <div className={`p-6 ${isCollapsed ? 'p-4 flex justify-center' : ''}`}>
+  return <aside className={`bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300 relative ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`p-6 ${isCollapsed ? 'p-3 flex justify-center' : ''}`}>
         {isCollapsed ? (
-          <img src="/shark-icon.svg" alt="Freight Shark" className="w-10 h-10" />
+          <img src="/shark-icon.svg" alt="Freight Shark" className="w-14 h-14" />
         ) : (
           <img src="/freight-shark-logo.svg" alt="Freight Shark" className="h-10" />
         )}
@@ -87,12 +87,23 @@ export const Sidebar = () => {
           <LogOutIcon className="h-4 w-4 min-w-4" />
           {!isCollapsed && <span className="ml-3 text-sm">Sign Out</span>}
         </button>
-        <button onClick={toggleSidebar} className="mt-4 flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200">
-          {isCollapsed ? <ChevronRightIcon className="h-5 w-5" /> : <div className="flex items-center w-full justify-center">
+        {!isCollapsed && (
+          <button onClick={toggleSidebar} className="mt-4 flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200">
+            <div className="flex items-center w-full justify-center">
               <ChevronLeftIcon className="h-5 w-5 mr-2" />
               <span>Collapse</span>
-            </div>}
-        </button>
+            </div>
+          </button>
+        )}
       </div>
+      {isCollapsed && (
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 bg-[#00b4d8] hover:bg-[#0096b8] text-white rounded-r-md px-1 py-6 shadow-lg transition-all duration-200 hover:px-2 z-10"
+          title="Expand sidebar"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      )}
     </aside>;
 };
