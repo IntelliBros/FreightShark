@@ -149,12 +149,13 @@ export const Header = () => {
             </div>
           </button>
           {isProfileOpen && <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-gray-100 py-1 z-10 shadow-lg">
-              <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                Profile
-              </button>
-              <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+              <Link
+                to="/settings"
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setIsProfileOpen(false)}
+              >
                 Settings
-              </button>
+              </Link>
               <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                 Sign out
               </button>
