@@ -189,7 +189,7 @@ export function ShipmentEstimator() {
     const length = parseFloat(calcLength) || 0;
     const width = parseFloat(calcWidth) || 0;
     const height = parseFloat(calcHeight) || 0;
-    const weight = parseFloat(calcWeight) || 0;
+    const weightPerCarton = parseFloat(calcWeight) || 0;
 
     if (count <= 0 || length <= 0 || width <= 0 || height <= 0) {
       return { grossWeight: 0, volumetricWeight: 0, chargeableWeight: 0 };
@@ -207,8 +207,8 @@ export function ShipmentEstimator() {
     // Convert to volumetric weight (using standard divisor of 5000 for air freight)
     const volumetricWeight = totalVolume / 5000;
 
-    // Gross weight is actual weight
-    const grossWeight = weight;
+    // Gross weight is actual weight multiplied by carton count
+    const grossWeight = weightPerCarton * count;
 
     // Chargeable weight is the greater of the two
     const chargeableWeightValue = Math.max(grossWeight, volumetricWeight);
@@ -397,7 +397,7 @@ export function ShipmentEstimator() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dimension Unit
+                Carton Dimensions Unit
               </label>
               <div className="flex gap-2">
                 <button
@@ -423,11 +423,15 @@ export function ShipmentEstimator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Length
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dimensions Per Carton
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Length
+                  </label>
                 <input
                   type="number"
                   value={calcLength}
@@ -440,11 +444,11 @@ export function ShipmentEstimator() {
                   min="0"
                   step="0.01"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Width
-                </label>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Width
+                  </label>
                 <input
                   type="number"
                   value={calcWidth}
@@ -457,11 +461,11 @@ export function ShipmentEstimator() {
                   min="0"
                   step="0.01"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Height
-                </label>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Height
+                  </label>
                 <input
                   type="number"
                   value={calcHeight}
@@ -474,13 +478,14 @@ export function ShipmentEstimator() {
                   min="0"
                   step="0.01"
                 />
+                </div>
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Weight className="w-4 h-4 inline-block mr-1" />
-                Actual Weight (kg)
+                Weight Per Carton (kg)
               </label>
               <input
                 type="number"
@@ -489,11 +494,14 @@ export function ShipmentEstimator() {
                   setCalcWeight(e.target.value);
                   setShowCalcResults(false);
                 }}
-                placeholder="Weight in kilograms"
+                placeholder="Weight per carton in kilograms"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 min="0"
                 step="0.01"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the weight of a single carton. Total weight will be calculated as weight × carton count.
+              </p>
             </div>
 
             <button
@@ -508,11 +516,11 @@ export function ShipmentEstimator() {
             {showCalcResults && calculatedChargeable > 0 && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Gross Weight:</span>
+                  <span className="text-sm text-gray-600">Total Gross Weight:</span>
                   <span className="font-medium">{grossWeight.toFixed(2)} kg</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Volumetric Weight:</span>
+                  <span className="text-sm text-gray-600">Total Volumetric Weight:</span>
                   <span className="font-medium">{volumetricWeight.toFixed(2)} kg</span>
                 </div>
                 <div className="pt-3 border-t border-gray-200">
