@@ -16,26 +16,71 @@ export function ShipmentEstimator() {
   const [chargeableWeight, setChargeableWeight] = useState('');
   const [showEstimate, setShowEstimate] = useState(false);
 
-  // Calculate average rates for each warehouse based on invoiced shipments
+  // Calculate average rates for each warehouse based on recent quotes with pricing
   const warehouseRates = useMemo(() => {
     const rates: { [key: string]: WarehouseRate } = {};
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 45); // 45 days ago
 
-    // Get all invoiced shipments
-    const invoicedShipments = shipments.filter(s =>
-      s.status === 'delivered' &&
-      s.invoice &&
-      s.invoice.status === 'paid'
-    );
+    // Look at all quotes that have pricing (approved or with shipments)
+    quotes.forEach(quote => {
+      // Skip quotes without warehouses or pricing
+      if (!quote.warehouses || quote.warehouses.length === 0) return;
 
-    invoicedShipments.forEach(shipment => {
-      const quote = quotes.find(q => q.id === shipment.quoteId);
-      if (!quote) return;
+      // Use quote creation date or shipment date if available
+      const shipment = shipments.find(s => s.quoteId === quote.id);
+      const dataDate = new Date(shipment?.createdAt || quote.createdAt);
+
+      // Skip old data
+      if (dataDate < cutoffDate) return;
 
       quote.warehouses.forEach(warehouse => {
-        const shipmentDate = new Date(shipment.completedAt || shipment.createdAt);
+        // Skip warehouses without proper pricing
+        if (!warehouse.freightCharge && !warehouse.dutyAndTaxes && !warehouse.deliveryFee) return;
 
+        if (!rates[warehouse.warehouseCode]) {
+          rates[warehouse.warehouseCode] = {
+            warehouseCode: warehouse.warehouseCode,
+            warehouseName: warehouse.warehouseName,
+            averageRatePerKg: 0,
+            sampleSize: 0,
+            lastShipmentDate: dataDate
+          };
+        }
+
+        // Calculate rate per kg for this warehouse
+        const totalWeight = warehouse.estimatedWeight || warehouse.chargeableWeight || 0;
+        const warehouseTotal = (warehouse.freightCharge || 0) + (warehouse.dutyAndTaxes || 0) + (warehouse.deliveryFee || 0);
+
+        if (totalWeight > 0 && warehouseTotal > 0) {
+          const ratePerKg = warehouseTotal / totalWeight;
+          const current = rates[warehouse.warehouseCode];
+
+          // Update average rate
+          current.averageRatePerKg =
+            (current.averageRatePerKg * current.sampleSize + ratePerKg) /
+            (current.sampleSize + 1);
+          current.sampleSize++;
+
+          // Update last shipment date
+          if (dataDate > current.lastShipmentDate) {
+            current.lastShipmentDate = dataDate;
+          }
+        }
+      });
+    });
+
+    // Also include data from invoiced shipments for better accuracy
+    shipments.forEach(shipment => {
+      if (!shipment.invoice) return;
+
+      const quote = quotes.find(q => q.id === shipment.quoteId);
+      if (!quote || !quote.warehouses) return;
+
+      const shipmentDate = new Date(shipment.completedAt || shipment.createdAt);
+      if (shipmentDate < cutoffDate) return;
+
+      quote.warehouses.forEach(warehouse => {
         if (!rates[warehouse.warehouseCode]) {
           rates[warehouse.warehouseCode] = {
             warehouseCode: warehouse.warehouseCode,
@@ -46,11 +91,16 @@ export function ShipmentEstimator() {
           };
         }
 
-        // Calculate rate per kg for this warehouse
-        const totalWeight = warehouse.estimatedWeight || 0;
-        const warehouseTotal = warehouse.freightCharge + warehouse.dutyAndTaxes + warehouse.deliveryFee;
+        // Use actual invoice amounts if available
+        const invoiceWarehouse = shipment.invoice?.warehouses?.find(
+          w => w.warehouseCode === warehouse.warehouseCode
+        );
 
-        if (totalWeight > 0) {
+        const totalWeight = invoiceWarehouse?.actualWeight || warehouse.estimatedWeight || warehouse.chargeableWeight || 0;
+        const warehouseTotal = invoiceWarehouse?.totalAmount ||
+          ((warehouse.freightCharge || 0) + (warehouse.dutyAndTaxes || 0) + (warehouse.deliveryFee || 0));
+
+        if (totalWeight > 0 && warehouseTotal > 0) {
           const ratePerKg = warehouseTotal / totalWeight;
           const current = rates[warehouse.warehouseCode];
 
