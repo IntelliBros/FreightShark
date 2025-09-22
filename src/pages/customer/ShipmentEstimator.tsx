@@ -387,26 +387,27 @@ export function ShipmentEstimator() {
               </button>
             </div>
 
-            {/* Results Section - Now below inputs */}
-            <div className="mt-4">
-              {/* Warning for no recent data */}
-              {selectedWarehouse && !hasRecentData && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-3">
-                  <div className="flex gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-medium text-red-900">No Recent Data Available</p>
-                      <p className="text-xs text-red-700 mt-0.5">
-                        No shipment data in the past 45 days for this warehouse.
-                        Please select a different warehouse.
-                      </p>
+            {/* Results Section - Now below inputs, only show when needed */}
+            {(selectedWarehouse && !hasRecentData) || (showEstimate && selectedWarehouseRate && hasRecentData) ? (
+              <div className="mt-4">
+                {/* Warning for no recent data */}
+                {selectedWarehouse && !hasRecentData && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                    <div className="flex gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-red-900">No Recent Data Available</p>
+                        <p className="text-xs text-red-700 mt-0.5">
+                          No shipment data in the past 45 days for this warehouse.
+                          Please select a different warehouse.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Estimate Results */}
-              {showEstimate && selectedWarehouseRate && hasRecentData ? (
+                {/* Estimate Results */}
+                {showEstimate && selectedWarehouseRate && hasRecentData && (
                 <div>
                   <div className="bg-blue-50 rounded-lg p-3 mb-3">
                     <div className="text-center">
@@ -447,32 +448,9 @@ export function ShipmentEstimator() {
                       </p>
                     </div>
                   </div>
-                </div>
-              ) : !selectedWarehouse || !chargeableWeight ? (
-                /* Empty state when no inputs provided */
-                <div className="flex-1 flex items-center justify-center min-h-[200px]">
-                  <div className="text-center py-6">
-                    <div className="mb-3">
-                      <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <DollarSign className="w-6 h-6 text-gray-400" />
-                      </div>
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-900 mb-1">No Estimate Yet</h3>
-                    <p className="text-xs text-gray-500 mb-3 max-w-[200px] mx-auto">
-                      Select a warehouse and enter weight to calculate shipping estimate
-                    </p>
-                    {availableWarehouses.length === 0 && (
-                      <div className="bg-yellow-50 rounded-lg p-2 mt-3">
-                        <p className="text-xs text-yellow-800">
-                          <Info className="w-3 h-3 inline-block mr-1" />
-                          No historical data available. Request a quote for accurate pricing.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+                )}
+              </div>
+            ) : null}
           </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
