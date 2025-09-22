@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calculator, AlertTriangle, Package, DollarSign, Calendar, Info } from 'lucide-react';
+import { Calculator, AlertTriangle, Package, DollarSign, Calendar, Info, Box, Weight, Ruler } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 
 interface WarehouseRate {
@@ -15,6 +15,15 @@ export function ShipmentEstimator() {
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [chargeableWeight, setChargeableWeight] = useState('');
   const [showEstimate, setShowEstimate] = useState(false);
+
+  // Chargeable Weight Calculator State
+  const [calcCartonCount, setCalcCartonCount] = useState('');
+  const [calcLength, setCalcLength] = useState('');
+  const [calcWidth, setCalcWidth] = useState('');
+  const [calcHeight, setCalcHeight] = useState('');
+  const [calcWeight, setCalcWeight] = useState('');
+  const [calcDimensionUnit, setCalcDimensionUnit] = useState<'cm' | 'in'>('cm');
+  const [showCalcResults, setShowCalcResults] = useState(false);
 
   // Calculate average rates for each warehouse based on recent quotes with pricing
   const warehouseRates = useMemo(() => {
@@ -174,6 +183,57 @@ export function ShipmentEstimator() {
     }
   };
 
+  // Calculate volumetric weight
+  const calculateVolumetricWeight = () => {
+    const count = parseFloat(calcCartonCount) || 0;
+    const length = parseFloat(calcLength) || 0;
+    const width = parseFloat(calcWidth) || 0;
+    const height = parseFloat(calcHeight) || 0;
+    const weight = parseFloat(calcWeight) || 0;
+
+    if (count <= 0 || length <= 0 || width <= 0 || height <= 0) {
+      return { grossWeight: 0, volumetricWeight: 0, chargeableWeight: 0 };
+    }
+
+    // Convert dimensions to cm if needed
+    const lengthCm = calcDimensionUnit === 'in' ? length * 2.54 : length;
+    const widthCm = calcDimensionUnit === 'in' ? width * 2.54 : width;
+    const heightCm = calcDimensionUnit === 'in' ? height * 2.54 : height;
+
+    // Calculate volume in cubic cm
+    const volumePerCarton = lengthCm * widthCm * heightCm;
+    const totalVolume = volumePerCarton * count;
+
+    // Convert to volumetric weight (using standard divisor of 5000 for air freight)
+    const volumetricWeight = totalVolume / 5000;
+
+    // Gross weight is actual weight
+    const grossWeight = weight;
+
+    // Chargeable weight is the greater of the two
+    const chargeableWeightValue = Math.max(grossWeight, volumetricWeight);
+
+    return {
+      grossWeight,
+      volumetricWeight,
+      chargeableWeight: chargeableWeightValue
+    };
+  };
+
+  const handleCalculateChargeable = () => {
+    if (calcCartonCount && calcLength && calcWidth && calcHeight && calcWeight) {
+      setShowCalcResults(true);
+    }
+  };
+
+  const handleUseCalculatedWeight = () => {
+    const { chargeableWeight: calcChargeable } = calculateVolumetricWeight();
+    setChargeableWeight(calcChargeable.toFixed(2));
+    setShowEstimate(false);
+  };
+
+  const { grossWeight, volumetricWeight, chargeableWeight: calculatedChargeable } = calculateVolumetricWeight();
+
   const selectedWarehouseRate = selectedWarehouse ? warehouseRates[selectedWarehouse] : null;
   const hasRecentData = selectedWarehouseRate &&
     selectedWarehouseRate.lastShipmentDate >= new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
@@ -218,80 +278,262 @@ export function ShipmentEstimator() {
         </div>
       </div>
 
-      {/* Estimation Form */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-6">Calculate Estimate</h2>
+      {/* Main Grid Layout */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        {/* Left Column - Estimation Form */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-6">Calculate Estimate</h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Package className="w-4 h-4 inline-block mr-1" />
-              Select Warehouse
-            </label>
-            <select
-              value={selectedWarehouse}
-              onChange={(e) => {
-                setSelectedWarehouse(e.target.value);
-                setShowEstimate(false);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Choose a warehouse...</option>
-              {availableWarehouses.map(warehouse => (
-                <option key={warehouse.warehouseCode} value={warehouse.warehouseCode}>
-                  {warehouse.warehouseName}
-                </option>
-              ))}
-            </select>
-            {availableWarehouses.length === 0 && (
-              <p className="text-sm text-gray-500 mt-2">
-                No warehouses with recent shipment data available
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Chargeable Weight (kg)
-            </label>
-            <input
-              type="number"
-              value={chargeableWeight}
-              onChange={(e) => {
-                setChargeableWeight(e.target.value);
-                setShowEstimate(false);
-              }}
-              placeholder="Enter weight in kilograms"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              min="0"
-              step="0.01"
-            />
-          </div>
-        </div>
-
-        {/* Warning for no recent data */}
-        {selectedWarehouse && !hasRecentData && (
-          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-red-900">No Recent Data Available</p>
-                <p className="text-sm text-red-700 mt-1">
-                  There is no shipment data in the past 45 days for this warehouse.
-                  Please select a different warehouse to get a quick estimate.
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Package className="w-4 h-4 inline-block mr-1" />
+                Select Warehouse
+              </label>
+              <select
+                value={selectedWarehouse}
+                onChange={(e) => {
+                  setSelectedWarehouse(e.target.value);
+                  setShowEstimate(false);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Choose a warehouse...</option>
+                {availableWarehouses.map(warehouse => (
+                  <option key={warehouse.warehouseCode} value={warehouse.warehouseCode}>
+                    {warehouse.warehouseName}
+                  </option>
+                ))}
+              </select>
+              {availableWarehouses.length === 0 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  No warehouses with recent shipment data available
                 </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Weight className="w-4 h-4 inline-block mr-1" />
+                Chargeable Weight (kg)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={chargeableWeight}
+                  onChange={(e) => {
+                    setChargeableWeight(e.target.value);
+                    setShowEstimate(false);
+                  }}
+                  placeholder="Enter weight in kilograms"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                />
+                {showCalcResults && calculatedChargeable > 0 && (
+                  <button
+                    onClick={handleUseCalculatedWeight}
+                    className="px-3 py-2 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                    title="Use calculated chargeable weight"
+                  >
+                    Use {calculatedChargeable.toFixed(2)} kg
+                  </button>
+                )}
               </div>
             </div>
           </div>
-        )}
 
-        <button
-          onClick={handleCalculate}
-          disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
-          className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-        >
-          Calculate Estimate
-        </button>
+          {/* Warning for no recent data */}
+          {selectedWarehouse && !hasRecentData && (
+            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-red-900">No Recent Data Available</p>
+                  <p className="text-sm text-red-700 mt-1">
+                    There is no shipment data in the past 45 days for this warehouse.
+                    Please select a different warehouse to get a quick estimate.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleCalculate}
+            disabled={!selectedWarehouse || !chargeableWeight || parseFloat(chargeableWeight) <= 0 || !hasRecentData}
+            className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors w-full"
+          >
+            Calculate Estimate
+          </button>
+        </div>
+
+        {/* Right Column - Chargeable Weight Calculator */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+            <Ruler className="w-5 h-5" />
+            Chargeable Weight Calculator
+          </h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Box className="w-4 h-4 inline-block mr-1" />
+                Carton Count
+              </label>
+              <input
+                type="number"
+                value={calcCartonCount}
+                onChange={(e) => {
+                  setCalcCartonCount(e.target.value);
+                  setShowCalcResults(false);
+                }}
+                placeholder="Number of cartons"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="1"
+                step="1"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dimension Unit
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCalcDimensionUnit('cm')}
+                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    calcDimensionUnit === 'cm'
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Centimeters (CM)
+                </button>
+                <button
+                  onClick={() => setCalcDimensionUnit('in')}
+                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                    calcDimensionUnit === 'in'
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Inches (IN)
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Length
+                </label>
+                <input
+                  type="number"
+                  value={calcLength}
+                  onChange={(e) => {
+                    setCalcLength(e.target.value);
+                    setShowCalcResults(false);
+                  }}
+                  placeholder="L"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Width
+                </label>
+                <input
+                  type="number"
+                  value={calcWidth}
+                  onChange={(e) => {
+                    setCalcWidth(e.target.value);
+                    setShowCalcResults(false);
+                  }}
+                  placeholder="W"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Height
+                </label>
+                <input
+                  type="number"
+                  value={calcHeight}
+                  onChange={(e) => {
+                    setCalcHeight(e.target.value);
+                    setShowCalcResults(false);
+                  }}
+                  placeholder="H"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Weight className="w-4 h-4 inline-block mr-1" />
+                Actual Weight (kg)
+              </label>
+              <input
+                type="number"
+                value={calcWeight}
+                onChange={(e) => {
+                  setCalcWeight(e.target.value);
+                  setShowCalcResults(false);
+                }}
+                placeholder="Weight in kilograms"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <button
+              onClick={handleCalculateChargeable}
+              disabled={!calcCartonCount || !calcLength || !calcWidth || !calcHeight || !calcWeight}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              Calculate Chargeable Weight
+            </button>
+
+            {/* Calculator Results */}
+            {showCalcResults && calculatedChargeable > 0 && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Gross Weight:</span>
+                  <span className="font-medium">{grossWeight.toFixed(2)} kg</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Volumetric Weight:</span>
+                  <span className="font-medium">{volumetricWeight.toFixed(2)} kg</span>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-900">Chargeable Weight:</span>
+                    <span className={`text-lg font-bold ${
+                      grossWeight > volumetricWeight ? 'text-blue-600' : 'text-green-600'
+                    }`}>
+                      {calculatedChargeable.toFixed(2)} kg
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {grossWeight > volumetricWeight
+                      ? '(Using gross weight - actual weight is higher)'
+                      : '(Using volumetric weight - size/volume is higher)'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Estimate Results */}
