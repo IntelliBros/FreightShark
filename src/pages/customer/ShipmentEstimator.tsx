@@ -448,15 +448,15 @@ export function ShipmentEstimator() {
           </div>
 
         {/* Right Column - Chargeable Weight Calculator */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm p-5">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Ruler className="w-4 h-4" />
             Chargeable Weight Calculator
           </h2>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 <Box className="w-3 h-3 inline-block mr-1" />
                 Carton Count
               </label>
@@ -475,7 +475,7 @@ export function ShipmentEstimator() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Carton Dimensions Unit
               </label>
               <div className="flex gap-1">
@@ -503,7 +503,7 @@ export function ShipmentEstimator() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Dimensions Per Carton
               </label>
               <div className="grid grid-cols-3 gap-1">
@@ -562,7 +562,7 @@ export function ShipmentEstimator() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 <Weight className="w-3 h-3 inline-block mr-1" />
                 Weight Per Carton (kg)
               </label>
@@ -593,7 +593,7 @@ export function ShipmentEstimator() {
 
             {/* Calculator Results */}
             {showCalcResults && calculatedChargeable > 0 && (
-              <div className="mt-2 p-2 bg-gray-50 rounded-lg space-y-1.5">
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-600">Total Gross Weight:</span>
                   <span className="font-medium">{grossWeight.toFixed(2)} kg</span>
