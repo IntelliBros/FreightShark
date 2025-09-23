@@ -659,6 +659,21 @@ export const NewQuote = () => {
         addToast('Please add at least one warehouse destination', 'error');
         return;
       }
+
+      // Check if all destinations have a warehouse selected
+      const hasDestinationWithoutWarehouse = formData.destinations.some(dest => {
+        if (dest.isAmazon) {
+          return !dest.fbaWarehouse || dest.fbaWarehouse.trim() === '';
+        } else {
+          return !dest.customAddress || dest.customAddress.trim() === '';
+        }
+      });
+
+      if (hasDestinationWithoutWarehouse) {
+        addToast('Please select a warehouse or provide a custom address for each destination', 'error');
+        return;
+      }
+
       // Check if any destination has no cartons
       const hasDestinationWithoutCartons = formData.destinations.some(dest => dest.cartonSelections.length === 0);
       if (hasDestinationWithoutCartons) {
@@ -704,6 +719,20 @@ export const NewQuote = () => {
 
     if (formData.destinations.length === 0) {
       addToast('Please add at least one warehouse destination', 'error');
+      return;
+    }
+
+    // Check if all destinations have a warehouse selected
+    const hasDestinationWithoutWarehouse = formData.destinations.some(dest => {
+      if (dest.isAmazon) {
+        return !dest.fbaWarehouse || dest.fbaWarehouse.trim() === '';
+      } else {
+        return !dest.customAddress || dest.customAddress.trim() === '';
+      }
+    });
+
+    if (hasDestinationWithoutWarehouse) {
+      addToast('Please select a warehouse or provide a custom address for each destination', 'error');
       return;
     }
 
