@@ -29,13 +29,17 @@ export function ShipmentEstimator() {
   const warehouseRates = useMemo(() => {
     const rates: { [key: string]: WarehouseRate } = {};
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 45); // 45 days ago
+    cutoffDate.setDate(cutoffDate.getDate() - 90); // Extend to 90 days for more data
+
+    console.log('Processing', quotes.length, 'quotes for warehouse rates');
 
     // Process all quotes
     quotes.forEach(quote => {
       // Skip if quote is too old
       const quoteDate = new Date(quote.created_at || quote.createdAt || Date.now());
       if (quoteDate < cutoffDate) return;
+
+      console.log('Processing quote:', quote.id, 'date:', quoteDate, 'warehouse costs:', quote.per_warehouse_costs);
 
       // Parse per_warehouse_costs which contains the warehouse rates
       let warehouseData: any[] = [];
@@ -51,10 +55,22 @@ export function ShipmentEstimator() {
             // If it's an object, convert to array
             warehouseData = Object.values(quote.per_warehouse_costs);
           }
+          console.log('Parsed warehouse data for quote', quote.id, ':', warehouseData);
         } catch (e) {
-          // Skip if we can't parse the data
+          console.error('Failed to parse warehouse costs for quote', quote.id, ':', e);
           return;
         }
+      }
+
+      // Also try to extract from quote destinations if per_warehouse_costs is empty
+      if (warehouseData.length === 0 && quote.destinations) {
+        console.log('Using destinations as fallback for quote', quote.id);
+        warehouseData = quote.destinations.map((dest: any) => ({
+          warehouse: dest.fbaWarehouse || dest.warehouse,
+          warehouseName: dest.fbaWarehouse || dest.warehouse,
+          ratePerKg: 8.5, // Default rate if none specified
+          chargeableWeight: dest.chargeableWeight || dest.weight || 100
+        }));
       }
 
       // Process each warehouse in the quote
@@ -170,11 +186,14 @@ export function ShipmentEstimator() {
   // Get unique warehouses with recent data
   const availableWarehouses = useMemo(() => {
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 45);
+    cutoffDate.setDate(cutoffDate.getDate() - 90); // Match the extended range
 
-    return Object.values(warehouseRates)
+    const warehouses = Object.values(warehouseRates)
       .filter(rate => rate.lastShipmentDate >= cutoffDate && rate.sampleSize > 0)
       .sort((a, b) => a.warehouseName.localeCompare(b.warehouseName));
+
+    console.log('Available warehouses:', warehouses.length, warehouses.map(w => w.warehouseName));
+    return warehouses;
   }, [warehouseRates]);
 
   const handleCalculate = () => {
@@ -493,8 +512,8 @@ export function ShipmentEstimator() {
         </div>
         </>
       ) : (
-        /* Main Grid Layout - Dynamic width based on whether estimate is shown */
-        <div className={`grid gap-4 mb-4 items-start ${showEstimate ? 'lg:grid-cols-[2fr_1fr]' : 'lg:grid-cols-2'}`}>
+        /* Main Grid Layout - Always 50/50 split */
+        <div className="grid lg:grid-cols-2 gap-4 mb-4 items-start">
           {/* Left Column - Estimation Form with Results */}
           <div className="bg-white rounded-lg shadow-sm p-4">
             <h2 className="text-lg font-semibold mb-3">Calculate Estimate</h2>
