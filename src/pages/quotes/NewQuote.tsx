@@ -643,14 +643,30 @@ export const NewQuote = () => {
   };
   const handleNextStep = () => {
     // Add validation here before proceeding to next step
-    if (currentStep === 0 && !formData.supplier) {
-      addToast('Please select or add a supplier', 'error');
-      return;
+    if (currentStep === 0) {
+      if (!formData.supplier) {
+        addToast('Please select or add a supplier', 'error');
+        return;
+      }
+      if (!formData.shipmentDate) {
+        addToast('Please select an estimated shipment date', 'error');
+        return;
+      }
     }
-    if (currentStep === 1 && formData.destinations.length === 0) {
-      addToast('Please add at least one destination', 'error');
-      return;
+
+    if (currentStep === 1) {
+      if (formData.destinations.length === 0) {
+        addToast('Please add at least one warehouse destination', 'error');
+        return;
+      }
+      // Check if any destination has no cartons
+      const hasDestinationWithoutCartons = formData.destinations.some(dest => dest.cartonSelections.length === 0);
+      if (hasDestinationWithoutCartons) {
+        addToast('Please add at least one carton configuration to each warehouse', 'error');
+        return;
+      }
     }
+
     if (currentStep === 2) {
       if (!formData.productDetails.description.trim()) {
         addToast('Please provide a product description', 'error');
@@ -680,22 +696,34 @@ export const NewQuote = () => {
       addToast('Please select or add a supplier', 'error');
       return;
     }
-    
-    if (formData.destinations.length === 0) {
-      addToast('Please add at least one destination', 'error');
+
+    if (!formData.shipmentDate) {
+      addToast('Please select an estimated shipment date', 'error');
       return;
     }
-    
+
+    if (formData.destinations.length === 0) {
+      addToast('Please add at least one warehouse destination', 'error');
+      return;
+    }
+
+    // Check if any destination has no cartons
+    const hasDestinationWithoutCartons = formData.destinations.some(dest => dest.cartonSelections.length === 0);
+    if (hasDestinationWithoutCartons) {
+      addToast('Please add at least one carton configuration to each warehouse', 'error');
+      return;
+    }
+
     if (!formData.productDetails.description) {
       addToast('Please provide a product description', 'error');
       return;
     }
-    
+
     if (!formData.productDetails.competitorASIN) {
       addToast('Please provide a competitor ASIN', 'error');
       return;
     }
-    
+
     if (!formData.productDetails.regulatedGoods) {
       addToast('Please select regulated goods type', 'error');
       return;
@@ -967,9 +995,9 @@ export const NewQuote = () => {
               </h3>
               <div>
                 <label htmlFor="shipment-date" className="block text-sm font-medium text-gray-700">
-                  When do you expect the shipment to be ready?
+                  When do you expect the shipment to be ready? <span className="text-red-500">*</span>
                 </label>
-                <input type="date" id="shipment-date" value={formData.shipmentDate} onChange={e => setFormData({
+                <input type="date" id="shipment-date" required value={formData.shipmentDate} onChange={e => setFormData({
                 ...formData,
                 shipmentDate: e.target.value
               })} min={new Date().toISOString().split('T')[0]} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
@@ -1645,11 +1673,12 @@ export const NewQuote = () => {
               <div className="space-y-6">
                 <div>
                   <label htmlFor="product-description" className="block text-sm font-medium text-gray-700 mb-2">
-                    Product Description
+                    Product Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="product-description"
                     rows={4}
+                    required
                     value={formData.productDetails.description}
                     onChange={(e) => handleProductDetailsChange('description', e.target.value)}
                     className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -1665,6 +1694,7 @@ export const NewQuote = () => {
                   <input
                     type="text"
                     id="competitor-asin"
+                    required
                     value={formData.productDetails.competitorASIN}
                     onChange={(e) => handleProductDetailsChange('competitorASIN', e.target.value)}
                     className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
