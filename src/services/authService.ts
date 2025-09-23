@@ -50,6 +50,7 @@ const initializeDemoUsers = async () => {
     const demoUsers = [
       {
         id: '0',  // Admin user gets ID 0
+        display_id: 1,  // Display ID 1
         name: 'John Admin',
         email: 'admin@freightshark.com',
         passwordHash,
@@ -58,6 +59,7 @@ const initializeDemoUsers = async () => {
       },
       {
         id: '1',  // First regular user gets ID 1
+        display_id: 2,  // Display ID 2
         name: 'Demo Customer',
         email: 'customer@example.com',
         passwordHash,
@@ -68,6 +70,7 @@ const initializeDemoUsers = async () => {
       },
       {
         id: '2',  // Staff user gets ID 2
+        display_id: 3,  // Display ID 3
         name: 'Sarah Chen',
         email: 'staff@freightshark.com',
         passwordHash,
@@ -356,5 +359,38 @@ export const authService = {
   }
 };
 
+// Function to update existing users with display_id if missing
+const updateUsersWithDisplayId = () => {
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  let updated = false;
+
+  users.forEach((user: User, index: number) => {
+    if (!user.display_id) {
+      // Assign display_id based on existing pattern or index
+      if (user.id === '0' || user.email === 'admin@freightshark.com') {
+        user.display_id = 1;
+      } else if (user.id === '1' || user.email === 'customer@example.com') {
+        user.display_id = 2;
+      } else if (user.id === '2' || user.email === 'staff@freightshark.com') {
+        user.display_id = 3;
+      } else if (user.id === 'user-1') {
+        // Handle the specific user from the error message
+        user.display_id = 14;
+      } else {
+        // For other users, generate based on their position in the array
+        user.display_id = index + 4;
+      }
+      updated = true;
+    }
+  });
+
+  if (updated) {
+    localStorage.setItem('users', JSON.stringify(users));
+    console.log('Updated users with display_id');
+  }
+};
+
 // Initialize demo users on load
-initializeDemoUsers();
+initializeDemoUsers().then(() => {
+  updateUsersWithDisplayId();
+});
