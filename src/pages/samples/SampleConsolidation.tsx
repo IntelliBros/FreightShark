@@ -253,6 +253,9 @@ export const SampleConsolidation = () => {
     const requestToUse = request || currentRequest;
     if (!requestToUse || !user) return;
 
+    console.log('Downloading label for:', requestToUse);
+    console.log('Sample delivery address:', sampleDeliveryAddress);
+
     const labelData = {
       userId: user.id,
       userName: user.name || 'Customer',
@@ -260,13 +263,15 @@ export const SampleConsolidation = () => {
       sampleId: requestToUse.id,
       warehouseAddress: {
         warehouse: 'Sample Delivery Address',
-        street: sampleDeliveryAddress,
+        street: sampleDeliveryAddress || DEFAULT_WAREHOUSE_ADDRESS,
         city: '',
         province: '',
         postal: '',
         country: ''
       }
     };
+
+    console.log('Label data being sent:', labelData);
 
     try {
       await generateShippingLabel(labelData);

@@ -19,7 +19,7 @@ export const generateShippingLabel = async (data: LabelData) => {
   // Create a canvas element for the label
   const canvas = document.createElement('canvas');
   canvas.width = 400;
-  canvas.height = 350;
+  canvas.height = 380;
 
   // Temporarily add to DOM to ensure it's accessible
   canvas.style.display = 'none';
@@ -45,18 +45,44 @@ export const generateShippingLabel = async (data: LabelData) => {
   // Draw border
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 2;
-  ctx.strokeRect(10, 10, 380, 330);
+  ctx.strokeRect(10, 10, 380, 360);
 
   // Sample Information
-  ctx.font = 'bold 16px Arial';
+  ctx.font = 'bold 14px Arial';
   ctx.textAlign = 'left';
-  ctx.fillText('SAMPLE INFORMATION', 30, 80);
+  ctx.fillText('SAMPLE INFORMATION', 30, 70);
 
-  ctx.font = '14px Arial';
-  ctx.fillText(`Product: ${data.productName}`, 30, 110);
-  ctx.fillText(`Sample ID: ${data.sampleId}`, 30, 135);
-  ctx.fillText(`User ID: ${data.userId}`, 30, 160);
-  ctx.fillText(`User Name: ${data.userName}`, 30, 185);
+  ctx.font = '12px Arial';
+  ctx.fillText(`Product: ${data.productName}`, 30, 90);
+  ctx.fillText(`Sample ID: ${data.sampleId}`, 30, 110);
+  ctx.fillText(`User ID: ${data.userId}`, 30, 130);
+  ctx.fillText(`User Name: ${data.userName}`, 30, 150);
+
+  // Ship To Address
+  ctx.font = 'bold 14px Arial';
+  ctx.fillText('SHIP TO:', 30, 180);
+
+  ctx.font = '12px Arial';
+  // Split address into lines if it's too long
+  const addressText = data.warehouseAddress.street || 'No address specified';
+  const words = addressText.split(' ');
+  let lines = [];
+  let currentLine = '';
+
+  words.forEach(word => {
+    if (ctx.measureText(currentLine + ' ' + word).width < 340) {
+      currentLine = currentLine ? currentLine + ' ' + word : word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  });
+  if (currentLine) lines.push(currentLine);
+
+  // Draw address lines
+  lines.forEach((line, index) => {
+    ctx.fillText(line, 30, 200 + (index * 15));
+  });
 
   // Generate label with or without QR code
   const generateLabel = async (includeQR: boolean = true) => {
@@ -78,18 +104,18 @@ export const generateShippingLabel = async (data: LabelData) => {
           }
         });
 
-        // Draw QR code on main canvas
+        // Draw QR code on main canvas (adjusted position for address)
         const qrX = (canvas.width - 120) / 2;
-        ctx.drawImage(qrCanvas, qrX, 210, 120, 120);
+        ctx.drawImage(qrCanvas, qrX, 250, 100, 100);
 
         // Remove temporary QR canvas
         document.body.removeChild(qrCanvas);
 
         // Add QR code label
-        ctx.font = '12px Arial';
+        ctx.font = '11px Arial';
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
-        ctx.fillText('Scan QR Code', 200, 345);
+        ctx.fillText('Scan QR Code', 200, 360);
       } catch (qrError) {
         console.error('QR generation failed, generating without QR:', qrError);
         // Continue without QR code
@@ -100,7 +126,7 @@ export const generateShippingLabel = async (data: LabelData) => {
     ctx.font = '10px Arial';
     ctx.fillStyle = 'gray';
     ctx.textAlign = 'center';
-    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, includeQR ? 325 : 230);
+    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, 365);
 
     // Add manual sample ID text if no QR
     if (!includeQR) {
