@@ -197,10 +197,20 @@ export const SampleShipments = () => {
                   <div className="mb-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">Tracking Number</p>
                     <div className="flex items-center gap-2">
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">{request.tracking_number}</code>
+                      <a
+                        href={`https://t.17track.net/en#nums=${request.tracking_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                      >
+                        <TruckIcon className="w-3 h-3" />
+                        <span className="font-mono">{request.tracking_number}</span>
+                        <ExternalLinkIcon className="w-3 h-3" />
+                      </a>
                       <button
                         onClick={() => copyToClipboard(request.tracking_number!, 'Tracking number')}
                         className="text-gray-500 hover:text-gray-700"
+                        title="Copy tracking number"
                       >
                         <CopyIcon className="w-4 h-4" />
                       </button>
