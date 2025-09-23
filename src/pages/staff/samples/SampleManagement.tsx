@@ -362,7 +362,6 @@ export const SampleManagement = () => {
     setSamplePhoto('');
     setShowPhotoCapture(false);
     setSelectedRequestId('');
-    setShowRequestSelection(false);
     setScanResult(`Sample received successfully: ${request.productName}`);
     setScanError('');
 
