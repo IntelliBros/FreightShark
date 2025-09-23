@@ -42,21 +42,37 @@ export const Dashboard = () => {
   // Filter shipments for current user
   const userShipments = useMemo(() => {
     if (!user) return [];
-    return shipments.filter(shipment =>
+    console.log('Dashboard - All shipments:', shipments);
+    console.log('Dashboard - Current user:', user.id);
+    const filtered = shipments.filter(shipment =>
       // Check both camelCase and snake_case for compatibility
       (shipment.customerId === user.id) || (shipment.customer_id === user.id)
     );
+    console.log('Dashboard - User shipments:', filtered);
+    return filtered;
   }, [shipments, user]);
   
   // Get active shipments (any shipment with approved quote that is not yet complete/delivered)
   const activeShipments = useMemo(() => {
-    return userShipments
-      .filter(shipment =>
-        // Active = has an approved quote and is not delivered
-        shipment.quote_id && // Has an associated quote
-        shipment.status !== 'Delivered' && // Not yet complete
-        shipment.status !== 'Cancelled' // Not cancelled
-      )
+    console.log('Dashboard - Filtering active shipments from:', userShipments);
+    const active = userShipments
+      .filter(shipment => {
+        const hasQuote = shipment.quoteId || shipment.quote_id;
+        const isNotDelivered = shipment.status !== 'Delivered';
+        const isNotCancelled = shipment.status !== 'Cancelled';
+        console.log('Shipment check:', {
+          id: shipment.id,
+          hasQuote,
+          quoteId: shipment.quoteId,
+          quote_id: shipment.quote_id,
+          status: shipment.status,
+          isNotDelivered,
+          isNotCancelled,
+          passes: hasQuote && isNotDelivered && isNotCancelled
+        });
+        // Active = has an associated quote and is not delivered
+        return hasQuote && isNotDelivered && isNotCancelled;
+      })
       .map(shipment => {
         // Calculate progress based on status
         // Status flow: Waiting for Pickup (20%) -> Invoice Payment (10%) -> Shipment IDs (10%) -> In Progress (40%) -> Delivered (20%)
@@ -113,6 +129,9 @@ export const Dashboard = () => {
           progress
         };
       });
+
+    console.log('Dashboard - Active shipments result:', active);
+    return active;
   }, [userShipments]);
   
   // Calculate stats
