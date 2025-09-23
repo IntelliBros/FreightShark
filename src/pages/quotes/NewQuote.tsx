@@ -242,6 +242,12 @@ export const NewQuote = () => {
     });
   };
   const handleAddNewSupplier = async () => {
+    // Validate all required fields
+    if (!newSupplier.name || !newSupplier.address || !newSupplier.contact || !newSupplier.wechatPhone) {
+      addToast('Please fill in all required fields', 'error');
+      return;
+    }
+
     try {
       if (!user?.id) {
         addToast('Please log in to add suppliers', 'error');
@@ -748,45 +754,46 @@ export const NewQuote = () => {
                       <XIcon className="h-5 w-5" />
                     </button>
                   </div>
+                  <p className="text-sm text-gray-500">All fields marked with <span className="text-red-500">*</span> are required</p>
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="supplier-name" className="block text-sm font-medium text-gray-700">
-                        Supplier Name
+                        Supplier Name <span className="text-red-500">*</span>
                       </label>
-                      <input type="text" id="supplier-name" value={newSupplier.name} onChange={e => setNewSupplier({
+                      <input type="text" id="supplier-name" required value={newSupplier.name} onChange={e => setNewSupplier({
                     ...newSupplier,
                     name: e.target.value
-                  })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter supplier name" />
                     </div>
                     <div>
                       <label htmlFor="supplier-address" className="block text-sm font-medium text-gray-700">
-                        Address in China
+                        Address in China <span className="text-red-500">*</span>
                       </label>
-                      <input type="text" id="supplier-address" value={newSupplier.address} onChange={e => setNewSupplier({
+                      <input type="text" id="supplier-address" required value={newSupplier.address} onChange={e => setNewSupplier({
                     ...newSupplier,
                     address: e.target.value
-                  })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter supplier address" />
                     </div>
                     <div>
                       <label htmlFor="supplier-contact" className="block text-sm font-medium text-gray-700">
-                        Contact Person Name
+                        Contact Person Name <span className="text-red-500">*</span>
                       </label>
-                      <input type="text" id="supplier-contact" value={newSupplier.contact} onChange={e => setNewSupplier({
+                      <input type="text" id="supplier-contact" required value={newSupplier.contact} onChange={e => setNewSupplier({
                     ...newSupplier,
                     contact: e.target.value
-                  })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter contact person name" />
                     </div>
                     <div>
                       <label htmlFor="supplier-wechat-phone" className="block text-sm font-medium text-gray-700">
-                        Supplier WeChat/Phone Number
+                        Supplier WeChat/Phone Number <span className="text-red-500">*</span>
                       </label>
-                      <input type="text" id="supplier-wechat-phone" value={newSupplier.wechatPhone} onChange={e => setNewSupplier({
+                      <input type="text" id="supplier-wechat-phone" required value={newSupplier.wechatPhone} onChange={e => setNewSupplier({
                     ...newSupplier,
                     wechatPhone: e.target.value
-                  })} placeholder="WeChat ID or Phone Number" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  })} placeholder="Enter WeChat ID or Phone Number" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
                     <div className="flex justify-end">
-                      <Button variant="primary" onClick={handleAddNewSupplier} disabled={!newSupplier.name || !newSupplier.address}>
+                      <Button variant="primary" onClick={handleAddNewSupplier} disabled={!newSupplier.name || !newSupplier.address || !newSupplier.contact || !newSupplier.wechatPhone}>
                         Add Supplier
                       </Button>
                     </div>
