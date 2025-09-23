@@ -35,6 +35,7 @@ import { CompletedShipments } from './pages/staff/shipments/CompletedShipments';
 import { StaffAnnouncements } from './pages/staff/Announcements';
 import { Reports } from './pages/staff/Reports';
 import { Settings as StaffSettings } from './pages/staff/Settings';
+import { SampleManagement } from './pages/staff/samples/SampleManagement';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
@@ -98,6 +99,7 @@ export function App() {
                 <Route path="messages" element={<MessagesInbox />} />
                 <Route path="messages/inbox" element={<MessagesInbox />} />
                 <Route path="messages/sent" element={<MessagesInbox />} />
+                <Route path="samples" element={<SampleManagement />} />
               </Route>
               {/* Admin dashboard */}
               <Route path="/admin" element={<AdminLayout />}>

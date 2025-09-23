@@ -24,6 +24,8 @@ interface SampleRequest {
   createdAt: string;
   status: 'pending' | 'receiving' | 'complete';
   receivedSamples: number;
+  userId?: string;
+  userName?: string;
 }
 
 interface IncomingSample {
@@ -69,8 +71,15 @@ export const SampleConsolidation = () => {
       expectedSamples,
       createdAt: new Date().toISOString(),
       status: 'pending',
-      receivedSamples: 0
+      receivedSamples: 0,
+      userId: user?.id || '',
+      userName: user?.name || 'Customer'
     };
+
+    // Store the sample request in localStorage for staff to access
+    const existingRequests = JSON.parse(localStorage.getItem('sampleRequests') || '[]');
+    existingRequests.push(newRequest);
+    localStorage.setItem('sampleRequests', JSON.stringify(existingRequests));
 
     setCurrentRequest(newRequest);
     setShowRequestForm(false);

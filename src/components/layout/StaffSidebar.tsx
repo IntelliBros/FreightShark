@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboardIcon, FileTextIcon, TruckIcon, BarChartIcon, SettingsIcon, ChevronDownIcon, ChevronRightIcon, LogOutIcon, ChevronLeftIcon, ClipboardCheckIcon, DollarSignIcon, ReceiptIcon, MessageCircleIcon, InboxIcon, BellIcon } from 'lucide-react';
+import { LayoutDashboardIcon, FileTextIcon, TruckIcon, BarChartIcon, SettingsIcon, ChevronDownIcon, ChevronRightIcon, LogOutIcon, ChevronLeftIcon, ClipboardCheckIcon, DollarSignIcon, ReceiptIcon, MessageCircleIcon, InboxIcon, BellIcon, Package } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 export const StaffSidebar = () => {
   const location = useLocation();
@@ -114,6 +114,12 @@ export const StaffSidebar = () => {
             <Link to="/staff/messages" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/staff/messages') || isActive('/staff/messages/inbox') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
               <MessageCircleIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Messages</span>}
+            </Link>
+          </li>
+          <li>
+            <Link to="/staff/samples" className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/staff/samples') ? 'bg-[#E6EDF8] text-[#1E2A45]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <Package className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
+              {!isCollapsed && <span className="ml-3 text-sm">Samples</span>}
             </Link>
           </li>
           <li>
