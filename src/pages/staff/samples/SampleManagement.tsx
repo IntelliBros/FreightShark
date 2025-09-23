@@ -229,13 +229,9 @@ export const SampleManagement = () => {
 
     const trimmedSampleId = sampleId.trim();
 
-    // Check if this barcode has already been scanned
-    const barcodeExists = await sampleService.checkBarcodeExists(trimmedSampleId);
-
-    if (barcodeExists) {
-      setScanError('This sample has already been received');
-      return;
-    }
+    // Allow unlimited scanning of the same sample ID
+    // Staff can process the same sample ID multiple times for different consolidation requests
+    // or if they need to re-process samples
 
     // Store the scanned sample ID and show consolidation request selection
     setScannedSampleId(trimmedSampleId);
