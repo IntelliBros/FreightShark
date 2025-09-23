@@ -1395,15 +1395,48 @@ export const ShipmentTracking = () => {
                       </p>
                     </div>
                   </div>
-                  <button type="button" className="text-[#2E3B55] hover:text-[#1e2940] flex-shrink-0" title="Download">
+                  <button
+                    type="button"
+                    className="text-[#2E3B55] hover:text-[#1e2940] flex-shrink-0"
+                    title="Download"
+                    onClick={() => {
+                      // Handle document download
+                      if (doc.url && doc.url !== '#') {
+                        window.open(doc.url, '_blank');
+                      } else {
+                        // Create a sample download
+                        const content = `Document: ${doc.name}\nType: ${doc.type}\nShipment: ${shipment.id}`;
+                        const blob = new Blob([content], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = doc.name || 'document.txt';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }
+                    }}
+                  >
                     <DownloadIcon className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
                   <span className="text-xs text-gray-500">
-                    Uploaded on {shipment.createdAt}
+                    Uploaded on {doc.uploadedAt || shipment.createdAt}
                   </span>
-                  <button type="button" className="text-xs text-[#2E3B55] hover:text-[#1e2940]">
+                  <button
+                    type="button"
+                    className="text-xs text-[#2E3B55] hover:text-[#1e2940]"
+                    onClick={() => {
+                      // Same as download for now
+                      if (doc.url && doc.url !== '#') {
+                        window.open(doc.url, '_blank');
+                      } else {
+                        addToast('Document preview not available', 'info');
+                      }
+                    }}
+                  >
                     View
                   </button>
                 </div>

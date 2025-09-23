@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Test Documents</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #718096;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #3182ce;
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #48bb78;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .error {
+            background: #f56565;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .log {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4299e1;
+            padding-left: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 Upload Test Documents</h1>
+        <p class="description">
+            This tool will add sample documents to shipments to test the Documents Hub functionality.
+        </p>
+
+        <div>
+            <button onclick="uploadDocumentsToShipments()">Upload Sample Documents to All Shipments</button>
+            <button onclick="clearDocuments()">Clear All Documents</button>
+            <button onclick="testLocalStorage()">Test LocalStorage Upload</button>
+        </div>
+
+        <div id="stats" class="stats"></div>
+        <div id="status"></div>
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://jqcbgpwheckblkdejuwv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxY2JncHdoZWNrYmxrZGVqdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNjMzMTUsImV4cCI6MjA3MjkzOTMxNX0.n6uAu_3phhkm0FqPuJxX4LM2alBBqquEqzOCL7ubmHI';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = type === 'error' ? 'error' : 'success';
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        function addLog(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showStats(shipments, documentsAdded) {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${shipments}</div>
+                    <div class="stat-label">Total Shipments</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${documentsAdded}</div>
+                    <div class="stat-label">Documents Added</div>
+                </div>
+            `;
+        }
+
+        async function uploadDocumentsToShipments() {
+            try {
+                addLog('Starting document upload process...');
+
+                // Get all shipments
+                const { data: shipments, error: shipError } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (shipError) throw shipError;
+
+                addLog(`Found ${shipments.length} shipments`);
+
+                let docCount = 0;
+
+                const sampleDocuments = [
+                    {
+                        name: '310139227_5700367715891131_3131494239113055082_n.jpg',
+                        type: 'customs',
+                        size: '256KB',
+                        url: '#sample-image-1'
+                    },
+                    {
+                        name: '2 (3).png',
+                        type: 'customs',
+                        size: '128KB',
+                        url: '#sample-image-2'
+                    },
+                    {
+                        name: 'Invoice_INV-1757992215447_FS-00015.pdf',
+                        type: 'invoice',
+                        size: 'PDF',
+                        url: '#sample-invoice'
+                    },
+                    {
+                        name: 'IMG_9673.JPG',
+                        type: 'customs',
+                        size: '512KB',
+                        url: '#sample-image-3'
+                    },
+                    {
+                        name: '7bd88e1cceb7a2f6e1d6e9947e2a4b19af91903d_m.jpg',
+                        type: 'customs',
+                        size: '384KB',
+                        url: '#sample-image-4'
+                    },
+                    {
+                        name: 'amazon_changes_history_master_tracking_in_Flex.png',
+                        type: 'customs',
+                        size: '256KB',
+                        url: '#sample-image-5'
+                    },
+                    {
+                        name: 'shipping-label-SMPL-USER-1-17579918906721.pdf',
+                        type: 'customs',
+                        size: 'PDF',
+                        url: '#sample-label-1'
+                    },
+                    {
+                        name: 'shipping-label-SMPL0013-USER-1-1757931900814.pdf',
+                        type: 'customs',
+                        size: 'PDF',
+                        url: '#sample-label-2'
+                    }
+                ];
+
+                for (const shipment of shipments) {
+                    // Randomly select 3-5 documents for each shipment
+                    const numDocs = Math.floor(Math.random() * 3) + 3;
+                    const selectedDocs = [];
+                    const usedIndices = new Set();
+
+                    for (let i = 0; i < Math.min(numDocs, sampleDocuments.length); i++) {
+                        let index;
+                        do {
+                            index = Math.floor(Math.random() * sampleDocuments.length);
+                        } while (usedIndices.has(index));
+
+                        usedIndices.add(index);
+                        const doc = { ...sampleDocuments[index] };
+                        doc.id = `DOC-${shipment.id}-${Date.now()}-${i}`;
+                        doc.uploadedAt = new Date().toISOString().split('T')[0];
+                        doc.uploadedBy = 'System Test';
+                        selectedDocs.push(doc);
+                    }
+
+                    // Update shipment with documents
+                    const { error: updateError } = await supabase
+                        .from('shipments')
+                        .update({
+                            documents: selectedDocs,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', shipment.id);
+
+                    if (updateError) {
+                        addLog(`Error updating ${shipment.id}: ${updateError.message}`);
+                    } else {
+                        addLog(`✅ Added ${selectedDocs.length} documents to ${shipment.id}`);
+                        docCount += selectedDocs.length;
+                    }
+                }
+
+                showStats(shipments.length, docCount);
+                showStatus(`Successfully added ${docCount} documents to ${shipments.length} shipments!`);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearDocuments() {
+            try {
+                if (!confirm('Are you sure you want to clear all documents from all shipments?')) return;
+
+                addLog('Clearing all documents...');
+
+                const { data: shipments, error: shipError } = await supabase
+                    .from('shipments')
+                    .select('id');
+
+                if (shipError) throw shipError;
+
+                let clearedCount = 0;
+
+                for (const shipment of shipments) {
+                    const { error: updateError } = await supabase
+                        .from('shipments')
+                        .update({
+                            documents: [],
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', shipment.id);
+
+                    if (!updateError) {
+                        addLog(`Cleared documents from ${shipment.id}`);
+                        clearedCount++;
+                    }
+                }
+
+                showStats(shipments.length, 0);
+                showStatus(`Cleared documents from ${clearedCount} shipments`);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function testLocalStorage() {
+            try {
+                addLog('Testing localStorage upload...');
+
+                // Get existing shipments from localStorage
+                const shipmentsKey = 'freightshark_shipments';
+                const existingData = localStorage.getItem(shipmentsKey);
+
+                if (!existingData) {
+                    showStatus('No shipments found in localStorage', 'error');
+                    return;
+                }
+
+                const shipments = JSON.parse(existingData);
+                addLog(`Found ${shipments.length} shipments in localStorage`);
+
+                let docCount = 0;
+
+                // Add sample documents to each shipment
+                shipments.forEach(shipment => {
+                    const numDocs = 2 + Math.floor(Math.random() * 3);
+                    const docs = [];
+
+                    for (let i = 0; i < numDocs; i++) {
+                        docs.push({
+                            id: `DOC-${shipment.id}-${Date.now()}-${i}`,
+                            name: `Sample Document ${i + 1}.pdf`,
+                            type: ['invoice', 'customs', 'packing-list', 'awb'][Math.floor(Math.random() * 4)],
+                            size: `${100 + Math.floor(Math.random() * 900)}KB`,
+                            uploadedAt: new Date().toISOString().split('T')[0],
+                            uploadedBy: 'Test User',
+                            url: '#'
+                        });
+                    }
+
+                    shipment.documents = docs;
+                    docCount += docs.length;
+                    addLog(`Added ${docs.length} documents to ${shipment.id}`);
+                });
+
+                // Save back to localStorage
+                localStorage.setItem(shipmentsKey, JSON.stringify(shipments));
+
+                showStats(shipments.length, docCount);
+                showStatus(`Successfully added ${docCount} documents to localStorage!`);
+
+                addLog('Reload the page to see documents in Documents Hub');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Load initial stats
+        window.addEventListener('load', async () => {
+            try {
+                const { data: shipments, error } = await supabase
+                    .from('shipments')
+                    .select('documents');
+
+                if (error) {
+                    console.error('Error loading stats:', error);
+                    showStats(0, 0);
+                } else if (shipments) {
+                    const docCount = shipments.reduce((sum, s) => sum + (s.documents?.length || 0), 0);
+                    showStats(shipments.length, docCount);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                showStats(0, 0);
+            }
+        });
+    </script>
+</body>
+</html>
