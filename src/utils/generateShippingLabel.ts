@@ -21,8 +21,16 @@ export const generateShippingLabel = async (data: LabelData) => {
   canvas.width = 400;
   canvas.height = 350;
 
+  // Temporarily add to DOM to ensure it's accessible
+  canvas.style.display = 'none';
+  document.body.appendChild(canvas);
+
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    document.body.removeChild(canvas);
+    console.error('Failed to get canvas context');
+    return;
+  }
 
   // White background
   ctx.fillStyle = 'white';
@@ -92,12 +100,49 @@ export const generateShippingLabel = async (data: LabelData) => {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         }
+        // Remove canvas from DOM
+        if (canvas.parentNode) {
+          document.body.removeChild(canvas);
+        }
       });
     };
     qrImage.src = qrCodeDataUrl;
   } catch (error) {
     console.error('Error generating QR code:', error);
+    // Remove canvas from DOM on error
+    if (canvas.parentNode) {
+      document.body.removeChild(canvas);
+    }
+    // Try to generate without QR code as fallback
+    generateFallbackLabel(data);
   }
+};
+
+// Fallback function to generate label without QR code
+const generateFallbackLabel = (data: LabelData) => {
+  const content = `
+SAMPLE SHIPPING LABEL
+=====================
+Product: ${data.productName}
+Sample ID: ${data.sampleId}
+User ID: ${data.userId}
+User Name: ${data.userName}
+
+SHIP TO:
+${data.warehouseAddress.street}
+
+Generated: ${new Date().toLocaleDateString()}
+  `.trim();
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `shipping-label-${data.sampleId}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 // Helper to get next sample sequence number
