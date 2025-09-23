@@ -138,10 +138,12 @@ export const NewQuote = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true);
+  const [isLoadingCartons, setIsLoadingCartons] = useState(true);
 
-  // Load suppliers from database on component mount
+  // Load suppliers and carton configurations from database on component mount
   useEffect(() => {
     loadSuppliers();
+    loadCartonConfigurations();
   }, []);
 
   const loadSuppliers = async () => {
@@ -165,6 +167,33 @@ export const NewQuote = () => {
       addToast('Failed to load suppliers', 'error');
     } finally {
       setIsLoadingSuppliers(false);
+    }
+  };
+
+  const loadCartonConfigurations = async () => {
+    try {
+      setIsLoadingCartons(true);
+      if (!user?.id) {
+        console.error('No user ID available');
+        return;
+      }
+      const cartons = await DataService.getUserCartonConfigurations(user.id);
+      // Transform the data to match the component's CartonConfiguration type
+      const transformedCartons = cartons.map((c: any) => ({
+        id: c.id,
+        nickname: c.name,
+        cartonWeight: c.weight,
+        length: c.length,
+        width: c.width,
+        height: c.height,
+        volumetricWeight: calculateVolumetricWeight(c.length, c.width, c.height, formData.masterCargoDetails.dimensions.unit)
+      }));
+      setSavedCartonConfigs(transformedCartons);
+    } catch (error) {
+      console.error('Error loading carton configurations:', error);
+      // Don't show error toast as this might be the first time
+    } finally {
+      setIsLoadingCartons(false);
     }
   };
 
@@ -251,38 +280,63 @@ export const NewQuote = () => {
     }
   };
   
-  const handleSaveNewCartonConfig = () => {
-    if (!newCartonConfig.nickname || newCartonConfig.cartonWeight <= 0 || 
+  const handleSaveNewCartonConfig = async () => {
+    if (!newCartonConfig.nickname || newCartonConfig.cartonWeight <= 0 ||
         newCartonConfig.length <= 0 || newCartonConfig.width <= 0 || newCartonConfig.height <= 0) {
       addToast('Please fill in all carton configuration fields', 'error');
       return;
     }
-    
-    const volumetricWeight = calculateVolumetricWeight(
-      newCartonConfig.length,
-      newCartonConfig.width,
-      newCartonConfig.height,
-      formData.masterCargoDetails.dimensions.unit
-    );
-    
-    const savedConfig = {
-      ...newCartonConfig,
-      id: `saved-${Date.now()}`,
-      volumetricWeight
-    };
-    
-    setSavedCartonConfigs([...savedCartonConfigs, savedConfig]);
-    setShowNewCartonForm(false);
-    setNewCartonConfig({
-      id: '',
-      nickname: '',
-      cartonWeight: 0,
-      length: 0,
-      width: 0,
-      height: 0,
-      volumetricWeight: 0
-    });
-    addToast('Carton configuration saved successfully!', 'success');
+
+    try {
+      if (!user?.id) {
+        addToast('Please log in to save carton configurations', 'error');
+        return;
+      }
+
+      const cartonToSave = {
+        name: newCartonConfig.nickname,
+        length: newCartonConfig.length,
+        width: newCartonConfig.width,
+        height: newCartonConfig.height,
+        weight: newCartonConfig.cartonWeight,
+        user_id: user.id
+      };
+
+      const savedCarton = await DataService.createCartonConfiguration(cartonToSave);
+
+      const volumetricWeight = calculateVolumetricWeight(
+        savedCarton.length,
+        savedCarton.width,
+        savedCarton.height,
+        formData.masterCargoDetails.dimensions.unit
+      );
+
+      const savedConfig = {
+        id: savedCarton.id,
+        nickname: savedCarton.name,
+        cartonWeight: savedCarton.weight,
+        length: savedCarton.length,
+        width: savedCarton.width,
+        height: savedCarton.height,
+        volumetricWeight
+      };
+
+      setSavedCartonConfigs([...savedCartonConfigs, savedConfig]);
+      setShowNewCartonForm(false);
+      setNewCartonConfig({
+        id: '',
+        nickname: '',
+        cartonWeight: 0,
+        length: 0,
+        width: 0,
+        height: 0,
+        volumetricWeight: 0
+      });
+      addToast('Carton configuration saved successfully', 'success');
+    } catch (error) {
+      console.error('Error saving carton configuration:', error);
+      addToast('Failed to save carton configuration', 'error');
+    }
   };
   const handleDimensionUnitChange = (unit: 'cm' | 'in') => {
     setFormData({

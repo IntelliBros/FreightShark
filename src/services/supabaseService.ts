@@ -1295,5 +1295,99 @@ export const supabaseService = {
       if (error) throw error;
       return { success: true };
     }
+  },
+
+  // Carton configurations management - USER SPECIFIC
+  cartonConfigurations: {
+    async getByUserId(userId: string) {
+      console.log('Getting carton configurations for user:', userId);
+
+      const { data, error } = await supabase
+        .from('carton_configurations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching carton configurations:', error);
+        // Return empty array if table doesn't exist yet
+        if (error.code === '42P01') {
+          return [];
+        }
+        throw error;
+      }
+
+      console.log('Fetched carton configurations from database:', data);
+      return data || [];
+    },
+
+    async create(config: {
+      name: string;
+      length: number;
+      width: number;
+      height: number;
+      weight: number;
+      user_id: string;
+    }) {
+      console.log('Creating carton configuration in database:', config);
+
+      const newConfig = {
+        id: `carton-${Date.now()}`,
+        ...config,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('carton_configurations')
+        .insert([newConfig])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating carton configuration:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      console.log('Created carton configuration:', data);
+      return data;
+    },
+
+    async update(id: string, updates: Partial<{
+      name: string;
+      length: number;
+      width: number;
+      height: number;
+      weight: number;
+    }>) {
+      const { data, error } = await supabase
+        .from('carton_configurations')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string) {
+      const { error } = await supabase
+        .from('carton_configurations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true };
+    }
   }
 };

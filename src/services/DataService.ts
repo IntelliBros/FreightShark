@@ -894,6 +894,34 @@ export const DataService = {
     return await supabaseService.suppliers.delete(id);
   },
 
+  // Carton Configuration methods - USER SPECIFIC
+  async getUserCartonConfigurations(userId: string) {
+    await simulateDelay(200);
+    return await supabaseService.cartonConfigurations.getByUserId(userId);
+  },
+
+  async createCartonConfiguration(config: {
+    name: string;
+    length: number;
+    width: number;
+    height: number;
+    weight: number;
+    user_id: string;
+  }) {
+    await simulateDelay(300);
+    return await supabaseService.cartonConfigurations.create(config);
+  },
+
+  async updateCartonConfiguration(id: string, updates: any) {
+    await simulateDelay(300);
+    return await supabaseService.cartonConfigurations.update(id, updates);
+  },
+
+  async deleteCartonConfiguration(id: string) {
+    await simulateDelay(300);
+    return await supabaseService.cartonConfigurations.delete(id);
+  },
+
   // Commission rate methods
   async getCommissionRate() {
     await simulateDelay(100);

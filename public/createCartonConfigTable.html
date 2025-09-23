@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Carton Configuration Table</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .sql-box {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📦 Create Carton Configuration Table</h1>
+
+    <div class="info">
+        <h2>ℹ️ Purpose</h2>
+        <p>This creates a table to store user-specific carton configurations that can be reused across quote requests.</p>
+        <p>Each user can only see and use their own carton configurations.</p>
+    </div>
+
+    <h2>SQL to Execute</h2>
+    <div class="sql-box">-- Create carton_configurations table with user-specific access
+CREATE TABLE IF NOT EXISTS carton_configurations (
+  id VARCHAR(50) PRIMARY KEY DEFAULT ('carton-' || substr(md5(random()::text), 1, 8)),
+  user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  length DECIMAL(10,2) NOT NULL,
+  width DECIMAL(10,2) NOT NULL,
+  height DECIMAL(10,2) NOT NULL,
+  weight DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, name)
+);
+
+-- Create indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_carton_configurations_user ON carton_configurations(user_id);
+CREATE INDEX IF NOT EXISTS idx_carton_configurations_name ON carton_configurations(name);
+
+-- Enable Row Level Security
+ALTER TABLE carton_configurations ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies (relaxed for mock auth)
+-- Users can only see their own carton configurations
+CREATE POLICY "Users can view own carton configurations" ON carton_configurations
+  FOR SELECT USING (user_id IS NOT NULL);
+
+-- Users can only create carton configurations for themselves
+CREATE POLICY "Users can create own carton configurations" ON carton_configurations
+  FOR INSERT WITH CHECK (user_id IS NOT NULL);
+
+-- Users can only update their own carton configurations
+CREATE POLICY "Users can update own carton configurations" ON carton_configurations
+  FOR UPDATE USING (user_id IS NOT NULL);
+
+-- Users can only delete their own carton configurations
+CREATE POLICY "Users can delete own carton configurations" ON carton_configurations
+  FOR DELETE USING (user_id IS NOT NULL);
+
+-- Grant permissions
+GRANT ALL ON carton_configurations TO authenticated;
+GRANT ALL ON carton_configurations TO anon;
+
+-- Add trigger to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_carton_configurations_updated_at
+  BEFORE UPDATE ON carton_configurations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Check if table was created successfully
+SELECT
+  column_name,
+  data_type,
+  is_nullable,
+  column_default
+FROM information_schema.columns
+WHERE table_name = 'carton_configurations'
+ORDER BY ordinal_position;</div>
+
+    <h2>Instructions:</h2>
+    <ol>
+        <li>Copy the SQL above</li>
+        <li>Go to your <a href="https://app.supabase.com" target="_blank">Supabase Dashboard</a></li>
+        <li>Navigate to SQL Editor</li>
+        <li>Paste and run the SQL</li>
+    </ol>
+
+    <button onclick="checkStatus()">Check Table Status</button>
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        async function checkStatus() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Checking...';
+
+            try {
+                // Try to query the table
+                const { data, error } = await supabaseClient
+                    .from('carton_configurations')
+                    .select('id')
+                    .limit(1);
+
+                if (error) {
+                    if (error.code === '42P01') {
+                        output.innerHTML = `<div class="error">❌ Table 'carton_configurations' does not exist. Please run the SQL above.</div>`;
+                    } else {
+                        output.innerHTML = `<div class="info">⚠️ Table exists but there was an error: ${error.message}</div>`;
+                    }
+                } else {
+                    output.innerHTML = `<div class="success">✅ Table 'carton_configurations' exists and is accessible!</div>`;
+
+                    // Try to count records
+                    const { count, error: countError } = await supabaseClient
+                        .from('carton_configurations')
+                        .select('*', { count: 'exact', head: true });
+
+                    if (!countError) {
+                        output.innerHTML += `<div class="info">Total carton configurations in database: ${count || 0}</div>`;
+                    }
+                }
+            } catch (e) {
+                output.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', checkStatus);
+    </script>
+</body>
+</html>
