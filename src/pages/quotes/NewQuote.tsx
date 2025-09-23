@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { TruckIcon, PackageIcon, BuildingIcon, CheckCircleIcon, PlusIcon, MinusIcon, InfoIcon, AlertCircleIcon, XIcon, ChevronRightIcon, CheckIcon, CopyIcon, TrashIcon, SearchIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, BuildingIcon, CheckCircleIcon, PlusIcon, MinusIcon, InfoIcon, AlertCircleIcon, XIcon, ChevronRightIcon, CheckIcon, CopyIcon, TrashIcon, SearchIcon, EditIcon } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { DataService } from '../../services/DataService';
 import { useAuth } from '../../context/AuthContext';
@@ -141,6 +141,8 @@ export const NewQuote = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true);
   const [isLoadingCartons, setIsLoadingCartons] = useState(true);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [showEditSupplierForm, setShowEditSupplierForm] = useState(false);
 
   // Load suppliers and carton configurations from database on component mount
   useEffect(() => {
@@ -291,7 +293,82 @@ export const NewQuote = () => {
       addToast('Failed to add supplier', 'error');
     }
   };
-  
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setShowEditSupplierForm(true);
+    setShowNewSupplierForm(false);
+  };
+
+  const handleUpdateSupplier = async () => {
+    if (!editingSupplier) return;
+
+    // Validate all required fields
+    if (!editingSupplier.name || !editingSupplier.address || !editingSupplier.contact || !editingSupplier.wechatPhone) {
+      addToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    try {
+      // Update in database
+      await DataService.updateSupplier(editingSupplier.id, {
+        name: editingSupplier.name,
+        address: editingSupplier.address,
+        contact_name: editingSupplier.contact,
+        wechat_phone: editingSupplier.wechatPhone
+      });
+
+      // Update local state
+      const updatedSuppliers = savedSuppliers.map(s =>
+        s.id === editingSupplier.id ? editingSupplier : s
+      );
+      setSavedSuppliers(updatedSuppliers);
+
+      // Update selected supplier if it's the one being edited
+      if (formData.supplier?.id === editingSupplier.id) {
+        setFormData({
+          ...formData,
+          supplier: editingSupplier
+        });
+      }
+
+      setShowEditSupplierForm(false);
+      setEditingSupplier(null);
+      addToast('Supplier updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      addToast('Failed to update supplier', 'error');
+    }
+  };
+
+  const handleDeleteSupplier = async (supplierId: string) => {
+    if (!window.confirm('Are you sure you want to delete this supplier?')) {
+      return;
+    }
+
+    try {
+      // Delete from database
+      await DataService.deleteSupplier(supplierId);
+
+      // Update local state
+      const updatedSuppliers = savedSuppliers.filter(s => s.id !== supplierId);
+      setSavedSuppliers(updatedSuppliers);
+
+      // Clear selection if deleted supplier was selected
+      if (formData.supplier?.id === supplierId) {
+        setFormData({
+          ...formData,
+          supplier: null
+        });
+      }
+
+      addToast('Supplier deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      addToast('Failed to delete supplier', 'error');
+    }
+  };
+
   const handleSaveNewCartonConfig = async () => {
     if (!newCartonConfig.nickname || newCartonConfig.cartonWeight <= 0 ||
         newCartonConfig.length <= 0 || newCartonConfig.width <= 0 || newCartonConfig.height <= 0) {
@@ -711,7 +788,7 @@ export const NewQuote = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Select a Supplier
               </h3>
-              {!showNewSupplierForm ? <div className="space-y-4">
+              {!showNewSupplierForm && !showEditSupplierForm ? <div className="space-y-4">
                   {isLoadingSuppliers ? (
                     <div className="text-center py-6 text-gray-500">
                       <p>Loading suppliers...</p>
@@ -722,9 +799,9 @@ export const NewQuote = () => {
                       <p className="text-sm">Click below to add your first supplier</p>
                     </div>
                   ) : null}
-                  {!isLoadingSuppliers && savedSuppliers.map(supplier => <div key={supplier.id} className={`border rounded-lg p-4 cursor-pointer transition ${formData.supplier?.id === supplier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`} onClick={() => handleSupplierSelect(supplier)}>
+                  {!isLoadingSuppliers && savedSuppliers.map(supplier => <div key={supplier.id} className={`border rounded-lg p-4 transition ${formData.supplier?.id === supplier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
                       <div className="flex justify-between">
-                        <div>
+                        <div className="flex-1 cursor-pointer" onClick={() => handleSupplierSelect(supplier)}>
                           <h4 className="font-medium text-gray-900">
                             {supplier.name}
                           </h4>
@@ -740,13 +817,97 @@ export const NewQuote = () => {
                             </p>
                           )}
                         </div>
-                        {formData.supplier?.id === supplier.id && <CheckCircleIcon className="h-6 w-6 text-blue-500" />}
+                        <div className="flex items-start space-x-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditSupplier(supplier);
+                            }}
+                            className="text-blue-600 hover:text-blue-800 p-1"
+                            title="Edit supplier"
+                          >
+                            <EditIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSupplier(supplier.id);
+                            }}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            title="Delete supplier"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                          {formData.supplier?.id === supplier.id && <CheckCircleIcon className="h-6 w-6 text-blue-500" />}
+                        </div>
                       </div>
                     </div>)}
                   <button type="button" onClick={() => setShowNewSupplierForm(true)} className="flex items-center text-blue-600 hover:text-blue-800 font-medium">
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add New Supplier
                   </button>
+                </div> : showEditSupplierForm && editingSupplier ? <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium text-gray-900">Edit Supplier</h4>
+                    <button type="button" onClick={() => {
+                      setShowEditSupplierForm(false);
+                      setEditingSupplier(null);
+                    }} className="text-gray-400 hover:text-gray-600">
+                      <XIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">All fields marked with <span className="text-red-500">*</span> are required</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="edit-supplier-name" className="block text-sm font-medium text-gray-700">
+                        Supplier Name <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text" id="edit-supplier-name" required value={editingSupplier.name} onChange={e => setEditingSupplier({
+                        ...editingSupplier,
+                        name: e.target.value
+                      })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter supplier name" />
+                    </div>
+                    <div>
+                      <label htmlFor="edit-supplier-address" className="block text-sm font-medium text-gray-700">
+                        Address in China <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text" id="edit-supplier-address" required value={editingSupplier.address} onChange={e => setEditingSupplier({
+                        ...editingSupplier,
+                        address: e.target.value
+                      })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter supplier address" />
+                    </div>
+                    <div>
+                      <label htmlFor="edit-supplier-contact" className="block text-sm font-medium text-gray-700">
+                        Contact Person Name <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text" id="edit-supplier-contact" required value={editingSupplier.contact} onChange={e => setEditingSupplier({
+                        ...editingSupplier,
+                        contact: e.target.value
+                      })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter contact person name" />
+                    </div>
+                    <div>
+                      <label htmlFor="edit-supplier-wechat-phone" className="block text-sm font-medium text-gray-700">
+                        Supplier WeChat/Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text" id="edit-supplier-wechat-phone" required value={editingSupplier.wechatPhone || ''} onChange={e => setEditingSupplier({
+                        ...editingSupplier,
+                        wechatPhone: e.target.value
+                      })} placeholder="Enter WeChat ID or Phone Number" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div className="flex justify-end space-x-3">
+                      <Button variant="outline" onClick={() => {
+                        setShowEditSupplierForm(false);
+                        setEditingSupplier(null);
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button variant="primary" onClick={handleUpdateSupplier} disabled={!editingSupplier.name || !editingSupplier.address || !editingSupplier.contact || !editingSupplier.wechatPhone}>
+                        Update Supplier
+                      </Button>
+                    </div>
+                  </div>
                 </div> : <div className="border rounded-lg p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium text-gray-900">New Supplier</h4>
