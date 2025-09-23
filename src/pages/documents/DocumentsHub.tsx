@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { FileTextIcon, FileIcon, DownloadIcon, UploadIcon, FolderIcon, SearchIcon, FilterIcon, MoreHorizontalIcon, PlusIcon, TrashIcon, FileArchiveIcon } from 'lucide-react';
+import { FileTextIcon, FileIcon, DownloadIcon, UploadIcon, FolderIcon, SearchIcon, FilterIcon, MoreHorizontalIcon, PlusIcon, FileArchiveIcon } from 'lucide-react';
 import { DataService } from '../../services/DataService';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -201,19 +201,8 @@ export const DocumentsHub = () => {
     }
   };
 
-  const handleDeleteSelected = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedDocuments.length} document(s)?`)) {
-      try {
-        // In real implementation, would call DataService.deleteDocument for each
-        addToast(`${selectedDocuments.length} document(s) deleted`, 'success');
-        setSelectedDocuments([]);
-        await loadDocuments();
-      } catch (error) {
-        console.error('Error deleting documents:', error);
-        addToast('Failed to delete documents', 'error');
-      }
-    }
-  };
+  // Delete functionality removed for customer-facing documents page
+  // Only staff/admin should be able to delete documents
 
   const getDocumentIcon = (type: string) => {
     switch (type) {
@@ -472,14 +461,6 @@ export const DocumentsHub = () => {
                 >
                   <FileArchiveIcon className="h-4 w-4 mr-1" />
                   Archive
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  onClick={handleDeleteSelected}
-                >
-                  <TrashIcon className="h-4 w-4 mr-1" />
-                  Delete
                 </button>
               </div>
             </div>
