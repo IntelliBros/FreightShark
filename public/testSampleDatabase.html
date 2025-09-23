@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sample Database Connection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-4">Sample Database Test & Migration</h1>
+
+            <div class="mb-6 p-4 bg-yellow-50 rounded-lg">
+                <h2 class="font-semibold text-yellow-900 mb-2">⚠️ Important:</h2>
+                <p class="text-yellow-800">This will test your Supabase connection and optionally create the sample tables.</p>
+            </div>
+
+            <div class="space-y-4">
+                <button onclick="testConnection()"
+                        class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                    Test Supabase Connection
+                </button>
+
+                <button onclick="checkTables()"
+                        class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">
+                    Check if Tables Exist
+                </button>
+
+                <button onclick="runMigration()"
+                        class="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition">
+                    Create Sample Tables (Run Migration)
+                </button>
+
+                <button onclick="testInsert()"
+                        class="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition">
+                    Test Insert Sample Request
+                </button>
+            </div>
+
+            <div id="result" class="mt-6">
+                <h3 class="font-semibold mb-2">Results:</h3>
+                <pre id="resultContent" class="bg-gray-100 p-4 rounded overflow-x-auto text-sm"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        // Get Supabase config from environment
+        const supabaseUrl = localStorage.getItem('supabaseUrl') || 'https://kfcqyawmnqnknoqvzkhp.supabase.co';
+        const supabaseKey = localStorage.getItem('supabaseAnonKey') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY3F5YXdtbnFua25vcXZ6a2hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU3MTcyNjUsImV4cCI6MjA0MTI5MzI2NX0.H-4RnN_hJHMrmw0y1jlMCpGQAtoAOE5N3RM40jKCWWI';
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        function updateResult(message, isError = false) {
+            const resultContent = document.getElementById('resultContent');
+            const timestamp = new Date().toLocaleTimeString();
+            resultContent.textContent += `[${timestamp}] ${message}\n`;
+            resultContent.className = isError ?
+                'bg-red-100 p-4 rounded text-red-800 text-sm' :
+                'bg-gray-100 p-4 rounded overflow-x-auto text-sm';
+        }
+
+        window.testConnection = async function() {
+            updateResult('Testing Supabase connection...');
+            try {
+                // Try to query any table to test connection
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+
+                if (error && error.code !== 'PGRST116') {
+                    updateResult(`Connection error: ${error.message}`, true);
+                } else {
+                    updateResult('✅ Supabase connection successful!');
+                }
+            } catch (error) {
+                updateResult(`Exception: ${error.message}`, true);
+            }
+        }
+
+        window.checkTables = async function() {
+            updateResult('Checking if sample tables exist...');
+            try {
+                // Check sample_requests table
+                const { data: reqData, error: reqError } = await supabase
+                    .from('sample_requests')
+                    .select('id')
+                    .limit(1);
+
+                if (reqError && reqError.code === '42P01') {
+                    updateResult('❌ sample_requests table does NOT exist');
+                } else if (reqError) {
+                    updateResult(`Error checking sample_requests: ${reqError.message}`, true);
+                } else {
+                    updateResult('✅ sample_requests table exists');
+                }
+
+                // Check received_samples table
+                const { data: recData, error: recError } = await supabase
+                    .from('received_samples')
+                    .select('id')
+                    .limit(1);
+
+                if (recError && recError.code === '42P01') {
+                    updateResult('❌ received_samples table does NOT exist');
+                } else if (recError) {
+                    updateResult(`Error checking received_samples: ${recError.message}`, true);
+                } else {
+                    updateResult('✅ received_samples table exists');
+                }
+            } catch (error) {
+                updateResult(`Exception: ${error.message}`, true);
+            }
+        }
+
+        window.runMigration = async function() {
+            updateResult('Running migration to create sample tables...');
+            updateResult('NOTE: Copy the SQL below and run it in Supabase SQL Editor:');
+
+            const migrationSQL = `
+-- Drop existing tables if they exist (for clean setup)
+DROP TABLE IF EXISTS received_samples CASCADE;
+DROP TABLE IF EXISTS sample_requests CASCADE;
+
+-- Create sample_requests table
+CREATE TABLE sample_requests (
+    id VARCHAR(100) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+    product_name VARCHAR(255) NOT NULL,
+    expected_samples INTEGER NOT NULL,
+    received_samples INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'partially_received', 'completed')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create received_samples table
+CREATE TABLE received_samples (
+    id VARCHAR(100) PRIMARY KEY,
+    sample_request_id VARCHAR(100) REFERENCES sample_requests(id) ON DELETE CASCADE,
+    barcode VARCHAR(255) NOT NULL UNIQUE,
+    received_by VARCHAR(50) REFERENCES users(id),
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'in_warehouse' CHECK (status IN ('in_warehouse', 'consolidated', 'shipped')),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes
+CREATE INDEX idx_sample_requests_user_id ON sample_requests(user_id);
+CREATE INDEX idx_sample_requests_status ON sample_requests(status);
+CREATE INDEX idx_received_samples_request_id ON received_samples(sample_request_id);
+CREATE INDEX idx_received_samples_barcode ON received_samples(barcode);
+
+-- Disable RLS for now
+ALTER TABLE sample_requests DISABLE ROW LEVEL SECURITY;
+ALTER TABLE received_samples DISABLE ROW LEVEL SECURITY;
+
+-- Grant permissions
+GRANT ALL ON sample_requests TO authenticated;
+GRANT ALL ON sample_requests TO anon;
+GRANT ALL ON received_samples TO authenticated;
+GRANT ALL ON received_samples TO anon;`;
+
+            updateResult('\n' + migrationSQL);
+            updateResult('\n📋 Copy the SQL above and paste it in your Supabase SQL Editor');
+        }
+
+        window.testInsert = async function() {
+            updateResult('Testing insert into sample_requests...');
+            try {
+                const testId = `TEST-${Date.now()}`;
+                const { data, error } = await supabase
+                    .from('sample_requests')
+                    .insert({
+                        id: testId,
+                        user_id: 'user-1',
+                        product_name: 'Test Product',
+                        expected_samples: 5,
+                        received_samples: 0,
+                        status: 'pending'
+                    })
+                    .select()
+                    .single();
+
+                if (error) {
+                    updateResult(`Insert error: ${error.message}`, true);
+                    updateResult(`Error code: ${error.code}`, true);
+                    updateResult(`Error hint: ${error.hint}`, true);
+
+                    if (error.code === '42P01') {
+                        updateResult('⚠️ Table does not exist. Please run the migration first!', true);
+                    }
+                } else {
+                    updateResult('✅ Insert successful!');
+                    updateResult(`Created sample request: ${JSON.stringify(data, null, 2)}`);
+
+                    // Try to delete the test record
+                    await supabase
+                        .from('sample_requests')
+                        .delete()
+                        .eq('id', testId);
+                    updateResult('Test record cleaned up.');
+                }
+            } catch (error) {
+                updateResult(`Exception: ${error.message}`, true);
+            }
+        }
+
+        // Auto-run connection test on load
+        window.addEventListener('load', () => {
+            testConnection();
+        });
+    </script>
+</body>
+</html>

@@ -69,6 +69,8 @@ class SampleService {
   // Get all sample requests for a user
   async getUserSampleRequests(userId: string): Promise<SampleRequest[]> {
     try {
+      console.log('🔍 Fetching sample requests for user:', userId);
+
       const { data, error } = await supabase
         .from('sample_requests')
         .select('*')
@@ -76,13 +78,26 @@ class SampleService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user sample requests:', error);
+        console.error('❌ Error fetching user sample requests:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+
+        if (error.code === '42P01') {
+          console.error('⚠️ sample_requests table does not exist!');
+          console.error('Please run the migration to create the table.');
+        }
         return [];
       }
 
+      console.log('✅ Found sample requests:', data?.length || 0);
+      console.log('Sample requests data:', data);
+
       return data || [];
     } catch (error) {
-      console.error('Error in getUserSampleRequests:', error);
+      console.error('Exception in getUserSampleRequests:', error);
       return [];
     }
   }

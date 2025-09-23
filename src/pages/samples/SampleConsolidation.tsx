@@ -64,9 +64,15 @@ export const SampleConsolidation = () => {
   }, [user]);
 
   const loadConsolidationHistory = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('📜 Skipping history load - no user');
+      return;
+    }
 
+    console.log('📜 Loading consolidation history for user:', user.id);
     const requests = await sampleService.getUserSampleRequests(user.id);
+    console.log('📜 Raw requests from database:', requests);
+
     const formattedRequests = requests.map(req => ({
       id: req.id,
       productName: req.product_name,
@@ -79,39 +85,58 @@ export const SampleConsolidation = () => {
       userId: req.user_id,
       userName: user.name
     }));
+    console.log('📜 Formatted requests for UI:', formattedRequests);
     setConsolidationHistory(formattedRequests);
   };
 
   const handleCreateRequest = async () => {
+    console.log('===== STARTING SAMPLE CONSOLIDATION CREATION =====');
+    console.log('Product Name:', productName);
+    console.log('Expected Samples:', expectedSamples);
+    console.log('User:', user);
+
     if (!productName.trim()) {
+      console.error('❌ Validation failed: Product name is empty');
       addToast('Please enter a product name', 'error');
       return;
     }
 
     if (expectedSamples < 1) {
+      console.error('❌ Validation failed: Expected samples < 1');
       addToast('Expected samples must be at least 1', 'error');
       return;
     }
 
     if (!user) {
+      console.error('❌ Validation failed: User not logged in');
       addToast('Please login to create a request', 'error');
       return;
     }
 
     const sampleId = generateSampleId(user.id);
+    console.log('📋 Generated Sample ID:', sampleId);
 
-    // Save to database
-    const dbRequest = await sampleService.createSampleRequest({
+    // Prepare data for database
+    const requestData = {
       id: sampleId,
       user_id: user.id,
       product_name: productName.trim(),
       expected_samples: expectedSamples
-    });
+    };
+    console.log('📦 Request data to save:', requestData);
+
+    // Save to database
+    console.log('💾 Attempting to save to database...');
+    const dbRequest = await sampleService.createSampleRequest(requestData);
 
     if (!dbRequest) {
+      console.error('❌ Database save FAILED');
+      console.error('Check browser console for detailed error from sampleService');
       addToast('Failed to create sample request. Please try again.', 'error');
       return;
     }
+
+    console.log('✅ Database save successful:', dbRequest);
 
     // Create local request object for UI
     const newRequest: SampleRequest = {
@@ -124,17 +149,25 @@ export const SampleConsolidation = () => {
       userId: user.id,
       userName: user.name || 'Customer'
     };
+    console.log('📝 Local request object created:', newRequest);
 
     // Also store in localStorage for backward compatibility
+    console.log('💾 Saving to localStorage for backup...');
     const existingRequests = JSON.parse(localStorage.getItem('sampleRequests') || '[]');
     existingRequests.push(newRequest);
     localStorage.setItem('sampleRequests', JSON.stringify(existingRequests));
+    console.log('✅ Saved to localStorage');
 
     // Update consolidation history
+    console.log('📜 Updating consolidation history...');
     setConsolidationHistory([...consolidationHistory, newRequest]);
 
     setCurrentRequest(newRequest);
     setShowRequestForm(false);
+
+    console.log('===== SAMPLE CONSOLIDATION CREATION COMPLETE =====');
+    console.log('Final request:', newRequest);
+
     addToast('Sample consolidation request created successfully!', 'success');
   };
 
