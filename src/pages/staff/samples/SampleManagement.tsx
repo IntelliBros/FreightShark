@@ -42,6 +42,8 @@ export const SampleManagement = () => {
   const [scannedSampleId, setScannedSampleId] = useState<string>('');
   const [samplePhoto, setSamplePhoto] = useState<string>('');
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState<string>('');
+  const [showRequestSelection, setShowRequestSelection] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
@@ -217,54 +219,47 @@ export const SampleManagement = () => {
   };
 
   const processScanResult = async (sampleId: string) => {
-    // Parse the sample ID to extract user and product info
-    // Format: SMPL-USERID-TIMESTAMP-RANDOM
-    const parts = sampleId.split('-');
+    console.log('🔍 Processing scanned sample:', sampleId);
 
-    if (parts.length < 4 || parts[0] !== 'SMPL') {
-      setScanError('Invalid sample ID format');
+    // Basic validation - accept any non-empty string as a valid sample ID
+    if (!sampleId || sampleId.trim().length === 0) {
+      setScanError('Invalid sample ID - cannot be empty');
       return;
     }
 
-    // Find the corresponding sample request
-    const request = sampleRequests.find(r => r.id === sampleId);
+    const trimmedSampleId = sampleId.trim();
 
-    if (!request) {
-      setScanError('Sample request not found');
-      return;
-    }
-
-    // Check if barcode already exists in database
-    const barcodeExists = await sampleService.checkBarcodeExists(sampleId);
+    // Check if this barcode has already been scanned
+    const barcodeExists = await sampleService.checkBarcodeExists(trimmedSampleId);
 
     if (barcodeExists) {
       setScanError('This sample has already been received');
       return;
     }
 
-    // Store the scanned sample ID and show photo capture
-    setScannedSampleId(sampleId);
-    setShowPhotoCapture(true);
-    setScanResult(`Sample scanned: ${request.productName}. Please take a photo.`);
+    // Store the scanned sample ID and show consolidation request selection
+    setScannedSampleId(trimmedSampleId);
+    setShowRequestSelection(true);
+    setScanResult(`Sample ID: ${trimmedSampleId} - Please select consolidation request`);
     setScanError('');
   };
 
   const completeReceivedSample = async () => {
-    if (!scannedSampleId || !samplePhoto) {
-      setScanError('Please scan a sample and take a photo');
+    if (!scannedSampleId || !samplePhoto || !selectedRequestId) {
+      setScanError('Please scan a sample, select a consolidation request, and take a photo');
       return;
     }
 
-    const request = sampleRequests.find(r => r.id === scannedSampleId);
+    const request = sampleRequests.find(r => r.id === selectedRequestId);
     if (!request) {
-      setScanError('Sample request not found');
+      setScanError('Selected consolidation request not found');
       return;
     }
 
     // Record the received sample in database with photo
     const dbSample = await sampleService.recordReceivedSample({
       id: `RS-${Date.now()}`,
-      sample_request_id: scannedSampleId,
+      sample_request_id: selectedRequestId,
       barcode: scannedSampleId,
       received_by: user?.id || '',
       received_at: new Date().toISOString(),
@@ -302,6 +297,8 @@ export const SampleManagement = () => {
     setScannedSampleId('');
     setSamplePhoto('');
     setShowPhotoCapture(false);
+    setSelectedRequestId('');
+    setShowRequestSelection(false);
     setScanResult(`Sample received successfully: ${request.productName}`);
     setScanError('');
 
@@ -317,6 +314,15 @@ export const SampleManagement = () => {
       processScanResult(manualInput.trim());
       setManualInput('');
     }
+  };
+
+  const handleRequestSelection = (requestId: string) => {
+    setSelectedRequestId(requestId);
+    setShowRequestSelection(false);
+    setShowPhotoCapture(true);
+
+    const request = sampleRequests.find(r => r.id === requestId);
+    setScanResult(`Sample ${scannedSampleId} assigned to ${request?.productName}. Please take a photo.`);
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -439,6 +445,55 @@ export const SampleManagement = () => {
                 )}
               </div>
 
+              {showRequestSelection && (
+                <div className="bg-green-50 rounded-lg p-6 border-2 border-green-300">
+                  <h3 className="text-lg font-semibold mb-4 text-green-900">
+                    <Package className="h-5 w-5 inline mr-2" />
+                    Select Consolidation Request
+                  </h3>
+                  <div className="space-y-4">
+                    {scannedSampleId && (
+                      <p className="text-sm text-green-800">
+                        Sample ID: <span className="font-mono font-bold">{scannedSampleId}</span>
+                      </p>
+                    )}
+                    <p className="text-sm text-green-700 mb-4">
+                      Choose which consolidation request this sample belongs to:
+                    </p>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {sampleRequests.map((request) => (
+                        <div
+                          key={request.id}
+                          onClick={() => handleRequestSelection(request.id)}
+                          className="p-4 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-green-900">{request.productName}</h4>
+                              <p className="text-sm text-green-700">Request ID: {request.id}</p>
+                              <p className="text-sm text-green-600">
+                                {request.receivedSamples} samples received (unlimited allowed)
+                              </p>
+                            </div>
+                            <div className="text-sm text-green-600">
+                              {request.userName || 'Unknown Customer'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {sampleRequests.length === 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-green-700">No consolidation requests found.</p>
+                        <p className="text-sm text-green-600 mt-1">
+                          Ask customers to create a consolidation request first.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {showPhotoCapture && (
                 <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-300">
                   <h3 className="text-lg font-semibold mb-4 text-blue-900">
@@ -506,8 +561,8 @@ export const SampleManagement = () => {
                 <h3 className="text-lg font-semibold mb-4">Manual Entry</h3>
                 <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    💡 <strong>Tip:</strong> If camera scanning doesn't work, you can manually enter the sample ID from the barcode label.
-                    The sample ID format is: <span className="font-mono">SMPL-USER-TIMESTAMP-RANDOM</span>
+                    💡 <strong>Tip:</strong> If QR code scanning doesn't work, you can manually enter any sample ID from the label.
+                    Any format is accepted (barcode, QR code, text, numbers, etc.)
                   </p>
                 </div>
                 <form onSubmit={handleManualSubmit} className="flex gap-3">
@@ -515,7 +570,7 @@ export const SampleManagement = () => {
                     type="text"
                     value={manualInput}
                     onChange={(e) => setManualInput(e.target.value)}
-                    placeholder="Enter Sample ID (e.g., SMPL-USER01-1234567890-123)"
+                    placeholder="Enter any Sample ID or barcode text"
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent"
                   />
                   <button
@@ -577,14 +632,11 @@ export const SampleManagement = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-600">
-                              {request.receivedSamples}/{request.expectedSamples}
+                              {request.receivedSamples} samples received
                             </span>
-                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-[#00b4d8] h-2 rounded-full"
-                                style={{ width: `${(request.receivedSamples / request.expectedSamples) * 100}%` }}
-                              />
-                            </div>
+                            <span className="text-xs text-gray-500">
+                              (originally expected: {request.expectedSamples})
+                            </span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
