@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { SaveIcon, GlobeIcon, MailIcon, BellIcon, ServerIcon, CloudIcon } from 'lucide-react';
+import { SaveIcon, GlobeIcon, MailIcon, BellIcon, ServerIcon, CloudIcon, Package } from 'lucide-react';
+import { settingsService } from '../../services/settingsService';
 export const SystemSettings = () => {
   const [settings, setSettings] = useState({
     companyName: 'DDP Freight',
@@ -14,7 +15,8 @@ export const SystemSettings = () => {
     quotesExpirationDays: 7,
     autoBackup: true,
     backupFrequency: 'daily',
-    maintenanceMode: false
+    maintenanceMode: false,
+    sampleDeliveryAddress: ''
   });
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const {
@@ -27,10 +29,31 @@ export const SystemSettings = () => {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : type === 'number' ? Number(value) : value
     });
   };
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const systemSettings = await settingsService.getSettings();
+    if (systemSettings) {
+      setSettings(prev => ({
+        ...prev,
+        sampleDeliveryAddress: systemSettings.sample_delivery_address || ''
+      }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real application, this would save to the backend
-    alert('Settings saved successfully!');
+
+    // Save sample delivery address to database
+    const success = await settingsService.updateSampleDeliveryAddress(settings.sampleDeliveryAddress);
+
+    if (success) {
+      alert('Settings saved successfully!');
+    } else {
+      alert('Failed to save settings. Please try again.');
+    }
   };
   return <div className="max-w-7xl mx-auto">
       <div className="mb-6">
@@ -90,6 +113,27 @@ export const SystemSettings = () => {
                   Quote Expiration (Days)
                 </label>
                 <input type="number" id="quotesExpirationDays" name="quotesExpirationDays" value={settings.quotesExpirationDays} onChange={handleInputChange} min="1" max="30" className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              </div>
+            </div>
+          </Card>
+          <Card title="Sample Settings" color="green">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="sampleDeliveryAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                  Sample Delivery Address
+                </label>
+                <input
+                  type="text"
+                  id="sampleDeliveryAddress"
+                  name="sampleDeliveryAddress"
+                  value={settings.sampleDeliveryAddress}
+                  onChange={handleInputChange}
+                  placeholder="Enter the complete address where customers should send samples"
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  This address will be displayed to customers when they need to send product samples for inspection.
+                </p>
               </div>
             </div>
           </Card>

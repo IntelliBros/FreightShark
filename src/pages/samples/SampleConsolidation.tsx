@@ -7,16 +7,10 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { generateShippingLabel, generateSampleId } from '../../utils/generateShippingLabel';
 import { sampleService, type SampleRequest as DBSampleRequest } from '../../services/sampleService';
+import { settingsService } from '../../services/settingsService';
 
-// Warehouse address for sample consolidation
-const WAREHOUSE_ADDRESS = {
-  warehouse: 'DDP Freight Consolidation Center',
-  street: '123 Logistics Avenue, Building 7',
-  city: 'Guangzhou',
-  province: 'Guangdong',
-  postal: '510000',
-  country: 'China'
-};
+// Default warehouse address for sample consolidation (fallback)
+const DEFAULT_WAREHOUSE_ADDRESS = 'DDP Freight Consolidation Center, 123 Logistics Avenue, Building 7, Guangzhou, Guangdong 510000, China';
 
 interface SampleRequest {
   id: string;
@@ -52,14 +46,25 @@ export const SampleConsolidation = () => {
   const [selectedSamples, setSelectedSamples] = useState<string[]>([]);
   const [consolidationHistory, setConsolidationHistory] = useState<SampleRequest[]>([]);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<SampleRequest | null>(null);
+  const [sampleDeliveryAddress, setSampleDeliveryAddress] = useState<string>('');
 
   // Load consolidation history and incoming samples on component mount
   React.useEffect(() => {
     if (user) {
       loadConsolidationHistory();
       loadIncomingSamples();
+      loadSampleDeliveryAddress();
     }
   }, [user]);
+
+  const loadSampleDeliveryAddress = async () => {
+    const settings = await settingsService.getSettings();
+    if (settings && settings.sample_delivery_address) {
+      setSampleDeliveryAddress(settings.sample_delivery_address);
+    } else {
+      setSampleDeliveryAddress(DEFAULT_WAREHOUSE_ADDRESS);
+    }
+  };
 
   const loadConsolidationHistory = async () => {
     if (!user) {
@@ -253,7 +258,14 @@ export const SampleConsolidation = () => {
       userName: user.name || 'Customer',
       productName: requestToUse.productName,
       sampleId: requestToUse.id,
-      warehouseAddress: WAREHOUSE_ADDRESS
+      warehouseAddress: {
+        warehouse: 'Sample Delivery Address',
+        street: sampleDeliveryAddress,
+        city: '',
+        province: '',
+        postal: '',
+        country: ''
+      }
     };
 
     try {
@@ -267,15 +279,12 @@ export const SampleConsolidation = () => {
 
   const handleCopyAddress = () => {
     const addressText = `
-${WAREHOUSE_ADDRESS.warehouse}
-${WAREHOUSE_ADDRESS.street}
-${WAREHOUSE_ADDRESS.city}, ${WAREHOUSE_ADDRESS.province} ${WAREHOUSE_ADDRESS.postal}
-${WAREHOUSE_ADDRESS.country}
+${sampleDeliveryAddress}
 Sample ID: ${currentRequest?.id || 'N/A'}
     `.trim();
 
     navigator.clipboard.writeText(addressText);
-    addToast('Warehouse address copied to clipboard!', 'success');
+    addToast('Sample delivery address copied to clipboard!', 'success');
   };
 
   const handleToggleSampleSelection = (id: string) => {
@@ -462,14 +471,9 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                   </div>
 
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h3 className="font-medium text-gray-900 mb-3">Warehouse Address</h3>
+                    <h3 className="font-medium text-gray-900 mb-3">Sample Delivery Address</h3>
                     <div className="bg-white p-3 rounded border border-gray-200 mb-3">
-                      <p className="text-sm font-medium text-gray-900">{WAREHOUSE_ADDRESS.warehouse}</p>
-                      <p className="text-sm text-gray-600">{WAREHOUSE_ADDRESS.street}</p>
-                      <p className="text-sm text-gray-600">
-                        {WAREHOUSE_ADDRESS.city}, {WAREHOUSE_ADDRESS.province} {WAREHOUSE_ADDRESS.postal}
-                      </p>
-                      <p className="text-sm text-gray-600">{WAREHOUSE_ADDRESS.country}</p>
+                      <p className="text-sm text-gray-600">{sampleDeliveryAddress}</p>
                       <p className="text-sm font-medium text-blue-600 mt-2">
                         Sample ID: {currentRequest.id}
                       </p>
@@ -873,12 +877,9 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                             </dl>
                           </div>
                           <div>
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Warehouse Address</h4>
-                            <div className="text-sm text-gray-600 space-y-1">
-                              <p>{WAREHOUSE_ADDRESS.warehouse}</p>
-                              <p>{WAREHOUSE_ADDRESS.street}</p>
-                              <p>{WAREHOUSE_ADDRESS.city}, {WAREHOUSE_ADDRESS.province}</p>
-                              <p>{WAREHOUSE_ADDRESS.postal}, {WAREHOUSE_ADDRESS.country}</p>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Sample Delivery Address</h4>
+                            <div className="text-sm text-gray-600">
+                              <p>{sampleDeliveryAddress}</p>
                             </div>
                             <button
                               onClick={(e) => {

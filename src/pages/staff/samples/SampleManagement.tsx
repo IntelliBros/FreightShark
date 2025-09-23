@@ -25,7 +25,6 @@ interface ReceivedSample {
   receivedBy: string;
   status: 'in_warehouse' | 'consolidated' | 'shipped';
   notes?: string;
-  deliveryAddress?: string;
 }
 
 export const SampleManagement = () => {
@@ -44,7 +43,6 @@ export const SampleManagement = () => {
   const [samplePhoto, setSamplePhoto] = useState<string>('');
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>('');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [currentCameraFacing, setCurrentCameraFacing] = useState<'environment' | 'user'>('environment');
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
 
@@ -88,8 +86,7 @@ export const SampleManagement = () => {
       receivedAt: sample.received_at,
       receivedBy: sample.received_by,
       status: sample.status,
-      notes: sample.notes,
-      deliveryAddress: sample.delivery_address
+      notes: sample.notes
     }));
     setReceivedSamples(formattedReceived);
 
@@ -331,8 +328,7 @@ export const SampleManagement = () => {
       received_by: user?.id || '',
       received_at: new Date().toISOString(),
       status: 'in_warehouse',
-      photo: samplePhoto,
-      delivery_address: deliveryAddress
+      photo: samplePhoto
     });
 
     if (!dbSample) {
@@ -364,7 +360,6 @@ export const SampleManagement = () => {
     // Reset states
     setScannedSampleId('');
     setSamplePhoto('');
-    setDeliveryAddress('');
     setShowPhotoCapture(false);
     setSelectedRequestId('');
     setScanResult(`Sample received successfully: ${request.productName}`);
@@ -578,23 +573,6 @@ export const SampleManagement = () => {
                       </div>
                     )}
                   </div>
-
-                  {/* Delivery Address Input */}
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-blue-900 mb-2">
-                      Delivery Address
-                    </label>
-                    <input
-                      type="text"
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="Enter complete delivery address"
-                      className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="mt-1 text-xs text-blue-600">
-                      Enter the full address where this sample should be delivered
-                    </p>
-                  </div>
                 </div>
               )}
 
@@ -750,11 +728,6 @@ export const SampleManagement = () => {
                     {sample.notes && (
                       <p className="mt-3 text-sm text-gray-600 bg-gray-50 rounded p-2">
                         Notes: {sample.notes}
-                      </p>
-                    )}
-                    {sample.deliveryAddress && (
-                      <p className="mt-3 text-sm text-gray-600 bg-blue-50 rounded p-2">
-                        <strong>Delivery Address:</strong> {sample.deliveryAddress}
                       </p>
                     )}
                   </div>
