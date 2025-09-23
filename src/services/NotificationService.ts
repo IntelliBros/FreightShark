@@ -360,10 +360,18 @@ class NotificationService {
 
       console.log('Sending sample email with data:', JSON.stringify(emailData, null, 2));
 
+      // Use 'shipment-update' template since backend doesn't have 'sample-received'
+      // The backend will recognize this template and send the email
       await emailService.sendNotification(
         customer.email,
-        'sample-received',
-        emailData.variables
+        'shipment-update',  // Using existing template that backend recognizes
+        {
+          shipmentId: sample.id,  // Use sample ID as shipment ID
+          customerName: customer.name || 'Valued Customer',
+          status: 'Sample Received',  // Custom status for samples
+          trackingInfo: `Sample ${sample.product_name} received at warehouse`,
+          estimatedDelivery: ''  // No delivery date for sample receipt
+        }
       );
       console.log(`✅ Sample received email sent successfully to ${customer.email}`);
     } catch (error) {
