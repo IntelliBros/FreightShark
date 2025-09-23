@@ -1,4 +1,4 @@
-import { supabase } from './supabaseService';
+import { supabase } from '../lib/supabase';
 
 export interface SampleRequest {
   id: string;
