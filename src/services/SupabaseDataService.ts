@@ -143,8 +143,53 @@ class SupabaseDataService {
     // Also store in localStorage for offline support
     try {
       localStorage.setItem(`cache_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
-    } catch (error) {
-      console.warn('Failed to cache in localStorage:', error);
+    } catch (error: any) {
+      // If quota exceeded, try to clear old cache and retry
+      if (error.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded, clearing old cache...');
+        this.clearOldCache();
+        try {
+          // Try one more time after clearing
+          localStorage.setItem(`cache_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
+        } catch (retryError) {
+          console.warn('Failed to cache even after clearing:', retryError);
+        }
+      } else {
+        console.warn('Failed to cache in localStorage:', error);
+      }
+    }
+  }
+
+  // Helper function to clear old cache entries
+  private clearOldCache(): void {
+    const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('cache_'));
+    const now = Date.now();
+    let clearedCount = 0;
+
+    // Clear entries older than 1 hour
+    for (const key of cacheKeys) {
+      try {
+        const cached = localStorage.getItem(key);
+        if (cached) {
+          const { timestamp } = JSON.parse(cached);
+          if (now - timestamp > 3600000) { // 1 hour
+            localStorage.removeItem(key);
+            clearedCount++;
+          }
+        }
+      } catch (e) {
+        // Invalid cache entry, remove it
+        localStorage.removeItem(key);
+        clearedCount++;
+      }
+    }
+
+    // If still not enough space cleared, remove half of all cache entries
+    if (clearedCount === 0) {
+      const halfCount = Math.floor(cacheKeys.length / 2);
+      for (let i = 0; i < halfCount; i++) {
+        localStorage.removeItem(cacheKeys[i]);
+      }
     }
   }
 

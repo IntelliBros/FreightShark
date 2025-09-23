@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{
         setUser(result.user);
         setToken(result.token);
         localStorage.setItem('authToken', result.token);
-        
+
         // Navigate based on role
         if (result.user.role === 'admin') {
           navigate('/admin');
@@ -76,6 +76,9 @@ export const AuthProvider: React.FC<{
         } else {
           navigate('/');
         }
+
+        // Return the result for the caller
+        return result;
       } else {
         throw new Error('Invalid email or password');
       }

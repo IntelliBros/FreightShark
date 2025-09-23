@@ -24,8 +24,8 @@ export const UnifiedLogin = () => {
 
     try {
       const result = await login(email, password);
-      
-      if (result.user) {
+
+      if (result && result.user) {
         // Redirect based on role
         switch (result.user.role) {
           case 'admin':
@@ -39,7 +39,10 @@ export const UnifiedLogin = () => {
             navigate('/dashboard');
             break;
         }
-        
+
+        showToast('Login successful!', 'success');
+      } else {
+        // The login function handles navigation, just show success message
         showToast('Login successful!', 'success');
       }
     } catch (error: any) {
