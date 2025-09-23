@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run System Settings Migration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #00b4d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0096c7;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 System Settings Migration</h1>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> This will create the system_settings table for storing global configuration like sample delivery addresses.
+        </div>
+
+        <button onclick="runMigration()">Run Migration</button>
+        <button onclick="checkTable()">Check Table Status</button>
+        <button onclick="testSettings()">Test Settings</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NDc4MTAsImV4cCI6MjA1MDUyMzgxMH0.jClrCvPtmGLlWJvdv3cAq0F5BQVXZF6w3YTCwtGHG84';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function runMigration() {
+            log('Starting system settings migration...', 'info');
+
+            try {
+                // Create system_settings table
+                const createTableSQL = `
+                    CREATE TABLE IF NOT EXISTS system_settings (
+                        id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+                        sample_delivery_address TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                `;
+
+                log('Creating system_settings table...', 'info');
+                const { error: createError } = await supabase.rpc('exec_sql', {
+                    sql: createTableSQL
+                }).catch(err => {
+                    // If RPC doesn't exist, try direct approach
+                    return { error: err };
+                });
+
+                if (createError) {
+                    log(`Note: Could not create table via RPC: ${createError.message}`, 'info');
+
+                    // Try alternative approach - insert default record
+                    log('Attempting to create table by inserting default record...', 'info');
+                    const { error: insertError } = await supabase
+                        .from('system_settings')
+                        .insert({
+                            id: 'default',
+                            sample_delivery_address: 'DDP Freight Consolidation Center, 123 Logistics Avenue, Building 7, Guangzhou, Guangdong 510000, China'
+                        });
+
+                    if (insertError && insertError.code !== '23505') { // Ignore duplicate key error
+                        log(`Error creating default settings: ${insertError.message}`, 'error');
+                        return;
+                    }
+                }
+
+                // Check if default settings exist
+                log('Checking for existing settings...', 'info');
+                const { data: existing, error: checkError } = await supabase
+                    .from('system_settings')
+                    .select('*')
+                    .eq('id', 'default')
+                    .single();
+
+                if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows found
+                    log(`Error checking settings: ${checkError.message}`, 'error');
+                }
+
+                if (!existing) {
+                    // Insert default settings
+                    log('Inserting default settings...', 'info');
+                    const { data, error: insertError } = await supabase
+                        .from('system_settings')
+                        .insert({
+                            id: 'default',
+                            sample_delivery_address: 'DDP Freight Consolidation Center, 123 Logistics Avenue, Building 7, Guangzhou, Guangdong 510000, China'
+                        })
+                        .select()
+                        .single();
+
+                    if (insertError) {
+                        log(`Error inserting default settings: ${insertError.message}`, 'error');
+                        return;
+                    }
+
+                    log('Default settings created successfully!', 'success');
+                    log(`Default address: ${data.sample_delivery_address}`, 'info');
+                } else {
+                    log('Settings already exist', 'info');
+                    log(`Current address: ${existing.sample_delivery_address}`, 'info');
+                }
+
+                log('\n✅ Migration completed successfully!', 'success');
+
+            } catch (error) {
+                log(`Error during migration: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkTable() {
+            log('Checking system_settings table...', 'info');
+
+            try {
+                const { data, error } = await supabase
+                    .from('system_settings')
+                    .select('*');
+
+                if (error) {
+                    log(`Table check failed: ${error.message}`, 'error');
+                    log('Table may not exist yet. Run the migration first.', 'info');
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    log(`✅ Table exists with ${data.length} record(s)`, 'success');
+                    data.forEach(record => {
+                        log(`\nRecord ID: ${record.id}`, 'info');
+                        log(`Sample Delivery Address: ${record.sample_delivery_address || '(not set)'}`, 'info');
+                        log(`Created: ${record.created_at}`, 'info');
+                        log(`Updated: ${record.updated_at}`, 'info');
+                    });
+                } else {
+                    log('Table exists but has no records', 'info');
+                }
+
+            } catch (error) {
+                log(`Error checking table: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSettings() {
+            log('Testing settings operations...', 'info');
+
+            try {
+                // Test read
+                log('\n1. Testing READ operation...', 'info');
+                const { data: readData, error: readError } = await supabase
+                    .from('system_settings')
+                    .select('*')
+                    .eq('id', 'default')
+                    .single();
+
+                if (readError) {
+                    log(`Read failed: ${readError.message}`, 'error');
+                    return;
+                }
+                log('✅ Read successful', 'success');
+
+                // Test update
+                log('\n2. Testing UPDATE operation...', 'info');
+                const testAddress = 'Test Warehouse, 456 Test Street, Test City, Test State 12345';
+                const { error: updateError } = await supabase
+                    .from('system_settings')
+                    .update({
+                        sample_delivery_address: testAddress,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', 'default');
+
+                if (updateError) {
+                    log(`Update failed: ${updateError.message}`, 'error');
+                    return;
+                }
+                log('✅ Update successful', 'success');
+
+                // Restore original
+                log('\n3. Restoring original address...', 'info');
+                const { error: restoreError } = await supabase
+                    .from('system_settings')
+                    .update({
+                        sample_delivery_address: readData.sample_delivery_address,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', 'default');
+
+                if (restoreError) {
+                    log(`Restore failed: ${restoreError.message}`, 'error');
+                    return;
+                }
+                log('✅ Restore successful', 'success');
+
+                log('\n✅ All tests passed!', 'success');
+
+            } catch (error) {
+                log(`Test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            log('Ready to run system settings migration', 'info');
+            log('Click "Check Table Status" to see current state', 'info');
+        };
+    </script>
+</body>
+</html>

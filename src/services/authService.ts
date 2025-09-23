@@ -49,7 +49,7 @@ const initializeDemoUsers = async () => {
 
     const demoUsers = [
       {
-        id: '0',  // Admin user gets ID 0
+        id: 'admin-demo-user',  // Use string ID that won't conflict
         display_id: 1,  // Display ID 1
         name: 'John Admin',
         email: 'admin@freightshark.com',
@@ -58,7 +58,7 @@ const initializeDemoUsers = async () => {
         role: 'admin' as const
       },
       {
-        id: '1',  // First regular user gets ID 1
+        id: 'customer-demo-user',  // Use string ID that won't conflict
         display_id: 2,  // Display ID 2
         name: 'Demo Customer',
         email: 'customer@example.com',
@@ -69,7 +69,7 @@ const initializeDemoUsers = async () => {
         einTaxId: '12-3456789'
       },
       {
-        id: '2',  // Staff user gets ID 2
+        id: 'staff-demo-user',  // Use string ID that won't conflict
         display_id: 3,  // Display ID 3
         name: 'Sarah Chen',
         email: 'staff@freightshark.com',

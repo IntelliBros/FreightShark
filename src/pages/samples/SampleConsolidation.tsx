@@ -444,6 +444,36 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                     </div>
                   </div>
 
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <AlertCircleIcon className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-yellow-800">Important Instructions</h3>
+                        <ol className="mt-2 text-sm text-yellow-700 space-y-1 list-decimal list-inside">
+                          <li>Download and print shipping labels for each supplier</li>
+                          <li>Send labels to your suppliers</li>
+                          <li>Instruct suppliers to attach labels to sample packages</li>
+                          <li>Ensure barcode is clearly visible on the outside</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button variant="primary" onClick={handleDownloadLabel}>
+                      <DownloadIcon className="h-4 w-4 mr-1" />
+                      Download Shipping Label
+                    </Button>
+                    <Button variant="secondary" onClick={() => {
+                      setShowRequestForm(true);
+                      setCurrentRequest(null);
+                      setProductName('');
+                      setExpectedSamples(1);
+                    }}>
+                      Create New Request
+                    </Button>
+                  </div>
+
                   <div className="border border-gray-200 rounded-lg p-4">
                     <h3 className="font-medium text-gray-900 mb-3">Request Details</h3>
                     <dl className="space-y-2">
@@ -481,36 +511,6 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                     <Button variant="secondary" size="sm" onClick={handleCopyAddress}>
                       <CopyIcon className="h-4 w-4 mr-1" />
                       Copy Address
-                    </Button>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <AlertCircleIcon className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-yellow-800">Important Instructions</h3>
-                        <ol className="mt-2 text-sm text-yellow-700 space-y-1 list-decimal list-inside">
-                          <li>Download and print shipping labels for each supplier</li>
-                          <li>Send labels to your suppliers</li>
-                          <li>Instruct suppliers to attach labels to sample packages</li>
-                          <li>Ensure barcode is clearly visible on the outside</li>
-                        </ol>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button variant="primary" onClick={handleDownloadLabel}>
-                      <DownloadIcon className="h-4 w-4 mr-1" />
-                      Download Shipping Label
-                    </Button>
-                    <Button variant="secondary" onClick={() => {
-                      setShowRequestForm(true);
-                      setCurrentRequest(null);
-                      setProductName('');
-                      setExpectedSamples(1);
-                    }}>
-                      Create New Request
                     </Button>
                   </div>
                 </div>
