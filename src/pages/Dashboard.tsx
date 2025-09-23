@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { TruckIcon, PackageIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, AlertCircleIcon, BellIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, AlertCircleIcon, BellIcon, BoxIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -177,11 +177,7 @@ export const Dashboard = () => {
               </p>
             </div>
             <div className="w-24 h-24 flex items-center justify-center">
-              <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 7v10M13 7l4-4M13 7l-4-4" stroke="#00b4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M3 12h18" stroke="#0096b8" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-                <path d="M7 17l-4 4M17 17l4 4" stroke="#00b4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
-              </svg>
+              <TruckIcon className="w-16 h-16 text-[#00b4d8]" />
             </div>
           </div>
           <Link to="/quotes/new">
@@ -202,12 +198,7 @@ export const Dashboard = () => {
               </p>
             </div>
             <div className="w-24 h-24 flex items-center justify-center">
-              <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="4" y="8" width="7" height="8" stroke="#00b4d8" strokeWidth="1.5" rx="1"/>
-                <rect x="13" y="6" width="7" height="10" stroke="#0096b8" strokeWidth="1.5" rx="1" opacity="0.7"/>
-                <path d="M7.5 11.5h0M16.5 10h0" stroke="#00b4d8" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M2 20h20" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" opacity="0.3"/>
-              </svg>
+              <BoxIcon className="w-16 h-16 text-[#00b4d8]" />
             </div>
           </div>
           <Link to="/samples">
