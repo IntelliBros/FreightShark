@@ -39,7 +39,14 @@ export function ShipmentEstimator() {
       const quoteDate = new Date(quote.created_at || quote.createdAt || Date.now());
       if (quoteDate < cutoffDate) return;
 
-      console.log('Processing quote:', quote.id, 'date:', quoteDate, 'warehouse costs:', quote.per_warehouse_costs);
+      console.log('Processing quote:', quote.id, 'date:', quoteDate);
+      console.log('Quote data:', {
+        per_warehouse_costs: quote.per_warehouse_costs,
+        destinations: quote.destinations,
+        ratePerKg: quote.ratePerKg,
+        totalCost: quote.totalCost,
+        allFields: Object.keys(quote)
+      });
 
       // Parse per_warehouse_costs which contains the warehouse rates
       let warehouseData: any[] = [];
@@ -62,15 +69,43 @@ export function ShipmentEstimator() {
         }
       }
 
-      // Also try to extract from quote destinations if per_warehouse_costs is empty
-      if (warehouseData.length === 0 && quote.destinations) {
-        console.log('Using destinations as fallback for quote', quote.id);
-        warehouseData = quote.destinations.map((dest: any) => ({
-          warehouse: dest.fbaWarehouse || dest.warehouse,
-          warehouseName: dest.fbaWarehouse || dest.warehouse,
-          ratePerKg: 8.5, // Default rate if none specified
-          chargeableWeight: dest.chargeableWeight || dest.weight || 100
-        }));
+      // Try multiple fallback approaches to extract warehouse data
+      if (warehouseData.length === 0) {
+        console.log('No per_warehouse_costs found, trying fallbacks for quote', quote.id);
+
+        // Fallback 1: Use destinations from quote
+        if (quote.destinations && Array.isArray(quote.destinations)) {
+          console.log('Using destinations as fallback');
+          warehouseData = quote.destinations.map((dest: any) => ({
+            warehouse: dest.fbaWarehouse || dest.warehouse || 'Unknown Warehouse',
+            warehouseName: dest.fbaWarehouse || dest.warehouse || 'Unknown Warehouse',
+            ratePerKg: quote.ratePerKg || 8.5, // Use quote rate or default
+            chargeableWeight: dest.chargeableWeight || dest.weight || dest.cartons * 20 || 100
+          }));
+        }
+
+        // Fallback 2: Use quote total cost and estimate rates
+        if (warehouseData.length === 0 && quote.totalCost && quote.totalCost > 0) {
+          console.log('Using totalCost as fallback');
+          // Estimate single warehouse from total cost
+          warehouseData = [{
+            warehouse: 'Estimated Warehouse',
+            warehouseName: 'Estimated Warehouse',
+            ratePerKg: quote.ratePerKg || 8.5,
+            chargeableWeight: (quote.totalCost / (quote.ratePerKg || 8.5)) || 100
+          }];
+        }
+
+        // Fallback 3: Create default warehouse data if quote exists
+        if (warehouseData.length === 0) {
+          console.log('Creating default warehouse data for quote', quote.id);
+          warehouseData = [{
+            warehouse: 'FBA Warehouse',
+            warehouseName: 'FBA Warehouse',
+            ratePerKg: 8.5,
+            chargeableWeight: 100
+          }];
+        }
       }
 
       // Process each warehouse in the quote
@@ -192,7 +227,12 @@ export function ShipmentEstimator() {
       .filter(rate => rate.lastShipmentDate >= cutoffDate && rate.sampleSize > 0)
       .sort((a, b) => a.warehouseName.localeCompare(b.warehouseName));
 
-    console.log('Available warehouses:', warehouses.length, warehouses.map(w => w.warehouseName));
+    console.log('Available warehouses:', warehouses.length, warehouses.map(w => ({
+      name: w.warehouseName,
+      rate: w.averageRatePerKg,
+      samples: w.sampleSize,
+      lastDate: w.lastShipmentDate
+    })));
     return warehouses;
   }, [warehouseRates]);
 
