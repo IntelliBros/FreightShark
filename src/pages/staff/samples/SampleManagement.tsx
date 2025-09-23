@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, Scan, CheckCircle, XCircle, Search, Filter, Download, AlertCircle } from 'lucide-react';
+import { Package, Scan, CheckCircle, XCircle, Search, Filter, Download, AlertCircle, Camera, Upload } from 'lucide-react';
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -39,9 +39,13 @@ export const SampleManagement = () => {
   const [manualInput, setManualInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [scannedSampleId, setScannedSampleId] = useState<string>('');
+  const [samplePhoto, setSamplePhoto] = useState<string>('');
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSampleData();
@@ -183,14 +187,34 @@ export const SampleManagement = () => {
       return;
     }
 
-    // Record the received sample in database
+    // Store the scanned sample ID and show photo capture
+    setScannedSampleId(sampleId);
+    setShowPhotoCapture(true);
+    setScanResult(`Sample scanned: ${request.productName}. Please take a photo.`);
+    setScanError('');
+  };
+
+  const completeReceivedSample = async () => {
+    if (!scannedSampleId || !samplePhoto) {
+      setScanError('Please scan a sample and take a photo');
+      return;
+    }
+
+    const request = sampleRequests.find(r => r.id === scannedSampleId);
+    if (!request) {
+      setScanError('Sample request not found');
+      return;
+    }
+
+    // Record the received sample in database with photo
     const dbSample = await sampleService.recordReceivedSample({
       id: `RS-${Date.now()}`,
-      sample_request_id: sampleId,
-      barcode: sampleId,
+      sample_request_id: scannedSampleId,
+      barcode: scannedSampleId,
       received_by: user?.id || '',
       received_at: new Date().toISOString(),
-      status: 'in_warehouse'
+      status: 'in_warehouse',
+      photo: samplePhoto
     });
 
     if (!dbSample) {
@@ -219,6 +243,10 @@ export const SampleManagement = () => {
     // Reload data to get updated counts from database
     await loadSampleData();
 
+    // Reset states
+    setScannedSampleId('');
+    setSamplePhoto('');
+    setShowPhotoCapture(false);
     setScanResult(`Sample received successfully: ${request.productName}`);
     setScanError('');
 
@@ -234,6 +262,18 @@ export const SampleManagement = () => {
       processScanResult(manualInput.trim());
       setManualInput('');
     }
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setSamplePhoto(base64String);
+    };
+    reader.readAsDataURL(file);
   };
 
   const filteredRequests = sampleRequests.filter(request => {
@@ -343,6 +383,69 @@ export const SampleManagement = () => {
                   </div>
                 )}
               </div>
+
+              {showPhotoCapture && (
+                <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-300">
+                  <h3 className="text-lg font-semibold mb-4 text-blue-900">
+                    <Camera className="h-5 w-5 inline mr-2" />
+                    Take Sample Photo
+                  </h3>
+
+                  <div className="space-y-4">
+                    {scannedSampleId && (
+                      <p className="text-sm text-blue-800">
+                        Sample ID: <span className="font-mono font-bold">{scannedSampleId}</span>
+                      </p>
+                    )}
+
+                    {!samplePhoto ? (
+                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center">
+                        <Camera className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                        <p className="text-blue-700 mb-4">Upload a photo of the sample</p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                        >
+                          <Upload className="h-4 w-4 inline mr-2" />
+                          Choose Photo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <img
+                          src={samplePhoto}
+                          alt="Sample"
+                          className="w-full max-w-md mx-auto rounded-lg shadow-lg"
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setSamplePhoto('')}
+                            className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                          >
+                            Retake Photo
+                          </button>
+                          <button
+                            onClick={completeReceivedSample}
+                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 inline mr-2" />
+                            Complete Receipt
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Manual Entry</h3>

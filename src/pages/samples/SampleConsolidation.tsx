@@ -119,7 +119,7 @@ export const SampleConsolidation = () => {
           arrivalDate: sample.received_at,
           weight: 0, // Would need to be added to database
           volumetricWeight: 0, // Would need to be added to database
-          photos: [],
+          photos: sample.photo ? [sample.photo] : [], // Include photo if available
           barcode: sample.barcode,
           status: sample.status as 'received' | 'consolidated' | 'shipped'
         };
@@ -671,15 +671,35 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                       </Badge>
                     </div>
                     {sample.photos.length > 0 && (
-                      <div className="mt-3 flex gap-2">
-                        {sample.photos.map((photo, idx) => (
-                          <div
-                            key={idx}
-                            className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center"
-                          >
-                            <ImageIcon className="h-8 w-8 text-gray-400" />
-                          </div>
-                        ))}
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-500 mb-2">Sample Photos:</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {sample.photos.map((photo, idx) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={photo}
+                                alt={`Sample ${idx + 1}`}
+                                className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => {
+                                  // Create modal to view larger image
+                                  const modal = document.createElement('div');
+                                  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                                  modal.onclick = () => modal.remove();
+
+                                  const img = document.createElement('img');
+                                  img.src = photo;
+                                  img.className = 'max-w-4xl max-h-4xl rounded-lg';
+
+                                  modal.appendChild(img);
+                                  document.body.appendChild(modal);
+                                }}
+                              />
+                              <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {idx + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

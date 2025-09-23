@@ -19,6 +19,7 @@ export interface ReceivedSample {
   received_at: string;
   status: 'in_warehouse' | 'consolidated' | 'shipped';
   notes?: string;
+  photo?: string; // Base64 encoded image
   created_at: string;
   updated_at: string;
 }
@@ -146,6 +147,12 @@ class SampleService {
   // Record a received sample (for staff)
   async recordReceivedSample(sample: Omit<ReceivedSample, 'created_at' | 'updated_at'>): Promise<ReceivedSample | null> {
     try {
+      console.log('📸 Recording received sample with photo:', {
+        id: sample.id,
+        hasPhoto: !!sample.photo,
+        photoSize: sample.photo?.length || 0
+      });
+
       const { data, error } = await supabase
         .from('received_samples')
         .insert({
@@ -155,16 +162,23 @@ class SampleService {
           received_by: sample.received_by,
           received_at: sample.received_at,
           status: sample.status,
-          notes: sample.notes
+          notes: sample.notes,
+          photo: sample.photo
         })
         .select()
         .single();
 
       if (error) {
         console.error('Error recording received sample:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
         return null;
       }
 
+      console.log('✅ Received sample recorded successfully with photo');
       return data;
     } catch (error) {
       console.error('Error in recordReceivedSample:', error);
