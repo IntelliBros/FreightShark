@@ -52,6 +52,7 @@ export const SampleManagement = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [packagePhoto, setPackagePhoto] = useState<string>('');
   const [shipmentSampleDetails, setShipmentSampleDetails] = useState<Record<string, any>>({});
+  const [isUploadingSample, setIsUploadingSample] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
@@ -343,14 +344,23 @@ export const SampleManagement = () => {
       return;
     }
 
+    // Prevent double-clicking
+    if (isUploadingSample) {
+      return;
+    }
+
     const request = sampleRequests.find(r => r.id === selectedRequestId);
     if (!request) {
       setScanError('Selected consolidation request not found');
       return;
     }
 
-    // Record the received sample in database with photo and delivery address
-    const dbSample = await sampleService.recordReceivedSample({
+    // Set loading state
+    setIsUploadingSample(true);
+
+    try {
+      // Record the received sample in database with photo and delivery address
+      const dbSample = await sampleService.recordReceivedSample({
       id: `RS-${Date.now()}`,
       sample_request_id: selectedRequestId,
       barcode: scannedSampleId,
@@ -360,44 +370,51 @@ export const SampleManagement = () => {
       photo: samplePhoto
     });
 
-    if (!dbSample) {
-      setScanError('Failed to record sample. Please try again.');
-      return;
+      if (!dbSample) {
+        setScanError('Failed to record sample. Please try again.');
+        setIsUploadingSample(false);
+        return;
+      }
+
+      // Create local sample for UI update
+      const newSample: ReceivedSample = {
+        id: dbSample.id,
+        sampleId: dbSample.barcode,
+        userId: request.userId,
+        productName: request.productName,
+        receivedAt: dbSample.received_at,
+        receivedBy: user?.name || 'Staff',
+        status: dbSample.status
+      };
+
+      // Update UI
+      const updatedReceived = [...receivedSamples, newSample];
+      setReceivedSamples(updatedReceived);
+
+      // Also update localStorage for backward compatibility
+      localStorage.setItem('receivedSamples', JSON.stringify(updatedReceived));
+
+      // Reload data to get updated counts from database
+      await loadSampleData();
+
+      // Reset states
+      setScannedSampleId('');
+      setSamplePhoto('');
+      setShowPhotoCapture(false);
+      setSelectedRequestId('');
+      setScanResult(`Sample received successfully: ${request.productName}`);
+      setScanError('');
+
+      // Show success for 3 seconds then clear
+      setTimeout(() => {
+        setScanResult('');
+      }, 3000);
+    } catch (error) {
+      console.error('Error completing sample receipt:', error);
+      setScanError('Failed to complete sample receipt. Please try again.');
+    } finally {
+      setIsUploadingSample(false);
     }
-
-    // Create local sample for UI update
-    const newSample: ReceivedSample = {
-      id: dbSample.id,
-      sampleId: dbSample.barcode,
-      userId: request.userId,
-      productName: request.productName,
-      receivedAt: dbSample.received_at,
-      receivedBy: user?.name || 'Staff',
-      status: dbSample.status
-    };
-
-    // Update UI
-    const updatedReceived = [...receivedSamples, newSample];
-    setReceivedSamples(updatedReceived);
-
-    // Also update localStorage for backward compatibility
-    localStorage.setItem('receivedSamples', JSON.stringify(updatedReceived));
-
-    // Reload data to get updated counts from database
-    await loadSampleData();
-
-    // Reset states
-    setScannedSampleId('');
-    setSamplePhoto('');
-    setShowPhotoCapture(false);
-    setSelectedRequestId('');
-    setScanResult(`Sample received successfully: ${request.productName}`);
-    setScanError('');
-
-    // Show success for 3 seconds then clear
-    setTimeout(() => {
-      setScanResult('');
-    }, 3000);
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
@@ -598,16 +615,35 @@ export const SampleManagement = () => {
                         <div className="flex gap-3">
                           <button
                             onClick={() => setSamplePhoto('')}
-                            className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                            disabled={isUploadingSample}
+                            className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                              isUploadingSample
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-gray-500 hover:bg-gray-600'
+                            }`}
                           >
                             Retake Photo
                           </button>
                           <button
                             onClick={completeReceivedSample}
-                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                            disabled={isUploadingSample}
+                            className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                              isUploadingSample
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
                           >
-                            <CheckCircle className="h-4 w-4 inline mr-2" />
-                            Complete Receipt
+                            {isUploadingSample ? (
+                              <>
+                                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 inline mr-2" />
+                                Complete Receipt
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
