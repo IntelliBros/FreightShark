@@ -1,17 +1,34 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { TruckIcon, PackageIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, AlertCircleIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, AlertCircleIcon, BellIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { DataService } from '../services/DataService';
+
 export const Dashboard = () => {
   const { user } = useAuth();
   const { shipments } = useData();
-  
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
   usePageTitle('Dashboard');
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const data = await DataService.getAnnouncements();
+        // Get only the 3 most recent announcements
+        setAnnouncements(data.slice(0, 3));
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+      }
+    };
+
+    fetchAnnouncements();
+  }, []);
   
   // Filter shipments for current user
   const userShipments = useMemo(() => {
@@ -261,17 +278,63 @@ export const Dashboard = () => {
             </div>}
         </Card>
         <Card title="Announcements" subtitle="Latest updates and notifications">
-          <div className="text-center py-8">
-            <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-              <ClockIcon className="w-6 h-6 text-gray-400" />
+          {announcements.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                <ClockIcon className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">
+                No announcements
+              </h3>
+              <p className="text-xs text-gray-500">
+                Check back later for important updates
+              </p>
             </div>
-            <h3 className="text-sm font-medium text-gray-700 mb-1">
-              No announcements
-            </h3>
-            <p className="text-xs text-gray-500">
-              Check back later for important updates
-            </p>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {announcements.map((announcement) => (
+                <div key={announcement.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-gray-900">
+                        {announcement.title}
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        {announcement.content}
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          announcement.priority === 'high'
+                            ? 'bg-red-100 text-red-800'
+                            : announcement.priority === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          <BellIcon className="w-3 h-3 mr-1" />
+                          {announcement.priority}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-3">
+                          {new Date(announcement.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    to={`/announcements/${announcement.id}`}
+                    className="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block"
+                  >
+                    Read more →
+                  </Link>
+                </div>
+              ))}
+              <Link
+                to="/announcements"
+                className="block text-center text-sm text-blue-600 hover:text-blue-800 pt-2 border-t"
+              >
+                View all announcements →
+              </Link>
+            </div>
+          )}
         </Card>
       </div>
     </div>;
