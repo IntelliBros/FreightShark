@@ -96,15 +96,31 @@ export const authService = {
       // Ensure user exists in Supabase database for foreign key constraints
       try {
         const { supabase } = await import('../lib/supabase');
-        // Check if user exists in Supabase
-        const { data: existingUser, error: checkError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .single();
 
-        if (!existingUser || checkError?.code === 'PGRST116') {
-          // Create user in Supabase if doesn't exist
+        // Always try to upsert the user to ensure they exist
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            password_hash: user.passwordHash || 'mock_hash',
+            company: user.company,
+            role: user.role,
+            amazon_seller_id: user.amazonSellerId,
+            ein_tax_id: user.einTaxId,
+            staff_position: user.staffPosition,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          });
+
+        if (upsertError) {
+          console.warn('Error upserting user in Supabase:', upsertError);
+
+          // If upsert fails, try insert as fallback
           const { error: insertError } = await supabase.from('users').insert({
             id: user.id,
             name: user.name,
@@ -121,9 +137,11 @@ export const authService = {
 
           if (!insertError) {
             console.log('Created user in Supabase:', user.id);
-          } else if (insertError.code !== '23505') { // Ignore unique constraint errors
+          } else if (insertError.code !== '23505') {
             console.warn('Error creating user in Supabase:', insertError);
           }
+        } else {
+          console.log('User synced to Supabase:', user.id);
         }
       } catch (supabaseError) {
         console.warn('Could not sync user to Supabase:', supabaseError);
@@ -175,24 +193,31 @@ export const authService = {
       // Create user in Supabase immediately for foreign key constraints
       try {
         const { supabase } = await import('../lib/supabase');
-        const { error: insertError } = await supabase.from('users').insert({
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          password_hash: passwordHash || 'mock_hash',
-          company: newUser.company,
-          role: newUser.role,
-          amazon_seller_id: newUser.amazonSellerId,
-          ein_tax_id: newUser.einTaxId,
-          staff_position: newUser.staffPosition,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
 
-        if (!insertError) {
-          console.log('Created user in Supabase:', newUser.id);
-        } else if (insertError.code !== '23505') {
-          console.warn('Error creating user in Supabase:', insertError);
+        // Use upsert to ensure user exists
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert({
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            password_hash: passwordHash || 'mock_hash',
+            company: newUser.company,
+            role: newUser.role,
+            amazon_seller_id: newUser.amazonSellerId,
+            ein_tax_id: newUser.einTaxId,
+            staff_position: newUser.staffPosition,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          });
+
+        if (upsertError) {
+          console.warn('Error upserting user in Supabase:', upsertError);
+        } else {
+          console.log('User created in Supabase:', newUser.id);
         }
       } catch (supabaseError) {
         console.warn('Could not sync user to Supabase:', supabaseError);

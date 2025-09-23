@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login and Sync User</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.success {
+            background-color: #28a745;
+        }
+        button.success:hover {
+            background-color: #218838;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Login and Sync User</h1>
+
+    <div class="info">
+        <h2>Quick Setup</h2>
+        <p>This will log you in as a demo customer and ensure the user exists in the database so you can save suppliers and carton configurations.</p>
+    </div>
+
+    <button onclick="loginAsCustomer()" class="success">Login as Demo Customer</button>
+    <button onclick="loginAsStaff()">Login as Staff</button>
+    <button onclick="loginAsAdmin()">Login as Admin</button>
+
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        async function hashPassword(password) {
+            const salt = await bcrypt.genSalt(10);
+            return await bcrypt.hash(password, salt);
+        }
+
+        async function loginAsCustomer() {
+            await loginAndSync({
+                id: 'user-1',
+                name: 'Demo Customer',
+                email: 'customer@example.com',
+                password: 'Password123!',
+                company: 'Acme Imports',
+                role: 'user',
+                amazonSellerId: 'A1B2C3D4E5',
+                einTaxId: '12-3456789'
+            });
+        }
+
+        async function loginAsStaff() {
+            await loginAndSync({
+                id: 'staff-1',
+                name: 'Sarah Chen',
+                email: 'staff@freightshark.com',
+                password: 'Password123!',
+                company: 'FreightShark',
+                role: 'staff',
+                staffPosition: 'Shipping Agent'
+            });
+        }
+
+        async function loginAsAdmin() {
+            await loginAndSync({
+                id: 'admin-1',
+                name: 'John Admin',
+                email: 'admin@freightshark.com',
+                password: 'Password123!',
+                company: 'FreightShark',
+                role: 'admin'
+            });
+        }
+
+        async function loginAndSync(userData) {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="info">Logging in and syncing user...</div>';
+
+            try {
+                // Step 1: Create the password hash
+                const passwordHash = await hashPassword(userData.password);
+
+                // Step 2: Set up the user in localStorage (mock auth)
+                const user = {
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    passwordHash: passwordHash,
+                    company: userData.company,
+                    role: userData.role,
+                    amazonSellerId: userData.amazonSellerId,
+                    einTaxId: userData.einTaxId,
+                    staffPosition: userData.staffPosition
+                };
+
+                // Store users array
+                const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                const userIndex = existingUsers.findIndex(u => u.id === user.id);
+                if (userIndex >= 0) {
+                    existingUsers[userIndex] = user;
+                } else {
+                    existingUsers.push(user);
+                }
+                localStorage.setItem('users', JSON.stringify(existingUsers));
+
+                // Also store with ddp_ prefix if that's what the app uses
+                localStorage.setItem('ddp_users', JSON.stringify(existingUsers));
+
+                // Create auth token
+                const token = btoa(JSON.stringify({
+                    userId: user.id,
+                    email: user.email,
+                    role: user.role
+                }));
+                localStorage.setItem('authToken', token);
+
+                // Store session
+                const session = {
+                    userId: user.id,
+                    email: user.email,
+                    role: user.role,
+                    user: user,
+                    token: token,
+                    createdAt: new Date().toISOString()
+                };
+                localStorage.setItem('ddp_sessions', JSON.stringify([session]));
+
+                output.innerHTML += `<div class="success">✅ Logged in as ${user.name}</div>`;
+
+                // Step 3: Sync to Supabase database
+                output.innerHTML += '<div class="info">Syncing to database...</div>';
+
+                // Check if user exists
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('users')
+                    .select('id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!existingUser || checkError?.code === 'PGRST116') {
+                    // Create user in database
+                    const { data: newUser, error: createError } = await supabaseClient
+                        .from('users')
+                        .insert({
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            password_hash: passwordHash,
+                            company: user.company,
+                            role: user.role,
+                            amazon_seller_id: user.amazonSellerId,
+                            ein_tax_id: user.einTaxId,
+                            staff_position: user.staffPosition,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        })
+                        .select()
+                        .single();
+
+                    if (createError && createError.code !== '23505') {
+                        output.innerHTML += `<div class="error">Database sync error: ${createError.message}</div>`;
+                    } else {
+                        output.innerHTML += '<div class="success">✅ User synced to database!</div>';
+                    }
+                } else {
+                    output.innerHTML += '<div class="success">✅ User already exists in database!</div>';
+                }
+
+                output.innerHTML += `<div class="success"><strong>Success!</strong><br>
+                    You are now logged in as ${user.name} and can:<br>
+                    • Create and save suppliers<br>
+                    • Create and save carton configurations<br>
+                    • Create quote requests<br><br>
+                    <a href="http://localhost:5173/quotes/new" style="color: #007bff;">Go to New Quote Page →</a>
+                </div>`;
+
+            } catch (error) {
+                output.innerHTML += `<div class="error">Error: ${error.message}</div>`;
+                console.error('Full error:', error);
+            }
+        }
+
+        // Show current status on load
+        window.addEventListener('load', () => {
+            const output = document.getElementById('output');
+            const authToken = localStorage.getItem('authToken');
+            if (authToken) {
+                try {
+                    const decoded = JSON.parse(atob(authToken));
+                    output.innerHTML = `<div class="info">Currently logged in as: ${decoded.email} (${decoded.role})</div>`;
+                } catch (e) {
+                    output.innerHTML = '<div class="info">No user currently logged in</div>';
+                }
+            } else {
+                output.innerHTML = '<div class="info">No user currently logged in</div>';
+            }
+        });
+    </script>
+</body>
+</html>

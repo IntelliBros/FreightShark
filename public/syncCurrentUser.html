@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sync Current User to Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Sync Current User to Database</h1>
+
+    <div class="info">
+        <h2>Quick Fix for Foreign Key Errors</h2>
+        <p>This will sync your current logged-in user to the Supabase database so you can create suppliers and carton configurations.</p>
+    </div>
+
+    <button onclick="syncUser()">Sync Current User to Database</button>
+
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        async function syncUser() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="info">Syncing user...</div>';
+
+            // Try multiple methods to get current user
+            let userId = null;
+            let email = null;
+            let role = null;
+            let currentUser = null;
+
+            // Method 1: Check ddp_sessions (DDP prefix for localStorage)
+            const ddpSessions = localStorage.getItem('ddp_sessions');
+            if (ddpSessions) {
+                try {
+                    const sessions = JSON.parse(ddpSessions);
+                    // Get the first session or active session
+                    const activeSession = Array.isArray(sessions) ? sessions[0] : sessions;
+                    if (activeSession && activeSession.userId) {
+                        userId = activeSession.userId;
+                        email = activeSession.email;
+                        role = activeSession.role;
+                        currentUser = activeSession.user || activeSession;
+                        console.log('Found user from ddp_sessions:', { userId, email, role });
+                    }
+                } catch (e) {
+                    console.log('Could not parse ddp_sessions:', e);
+                }
+            }
+
+            // Method 2: Check ddp_users
+            if (!userId) {
+                const ddpUsers = localStorage.getItem('ddp_users');
+                if (ddpUsers) {
+                    try {
+                        const users = JSON.parse(ddpUsers);
+                        // Get the first user as current
+                        const user = Array.isArray(users) && users.length > 0 ? users[0] : users;
+                        if (user && user.id) {
+                            userId = user.id;
+                            email = user.email;
+                            role = user.role;
+                            currentUser = user;
+                            console.log('Found user from ddp_users:', { userId, email, role });
+                        }
+                    } catch (e) {
+                        console.log('Could not parse ddp_users:', e);
+                    }
+                }
+            }
+
+            // Method 3: Check regular authToken (fallback)
+            if (!userId) {
+                const authToken = localStorage.getItem('authToken');
+                if (authToken) {
+                    try {
+                        const decoded = JSON.parse(atob(authToken));
+                        userId = decoded.userId;
+                        email = decoded.email;
+                        role = decoded.role;
+                        console.log('Found user from authToken:', { userId, email, role });
+                    } catch (e) {
+                        console.log('Could not decode authToken:', e);
+                    }
+                }
+            }
+
+            if (!userId) {
+                output.innerHTML = '<div class="error">No user logged in. Please log in to the app first.<br><br>Debug info:<br>';
+                output.innerHTML += 'ddp_sessions: ' + (ddpSessions ? 'present' : 'missing') + '<br>';
+                output.innerHTML += 'ddp_users: ' + (localStorage.getItem('ddp_users') ? 'present' : 'missing') + '<br>';
+                output.innerHTML += 'authToken: ' + (localStorage.getItem('authToken') ? 'present' : 'missing') + '<br>';
+                output.innerHTML += 'All localStorage keys: ' + Object.keys(localStorage).join(', ') + '<br><br>';
+
+                // Show contents for debugging
+                if (ddpSessions) {
+                    output.innerHTML += 'ddp_sessions content: <pre>' + ddpSessions.substring(0, 200) + '...</pre>';
+                }
+                if (localStorage.getItem('ddp_users')) {
+                    output.innerHTML += 'ddp_users content: <pre>' + localStorage.getItem('ddp_users').substring(0, 200) + '...</pre>';
+                }
+                output.innerHTML += '</div>';
+                return;
+            }
+
+            try {
+                // Use currentUser if we have it, otherwise try to get from ddp_users
+                let user = currentUser;
+
+                if (!user) {
+                    const users = JSON.parse(localStorage.getItem('ddp_users') || localStorage.getItem('users') || '[]');
+                    user = Array.isArray(users) ? users.find(u => u.id === userId) : users;
+                }
+
+                // If not found in users array, create a basic user object
+                if (!user) {
+                    user = {
+                        id: userId,
+                        email: email,
+                        name: email ? email.split('@')[0] : 'User',
+                        role: role || 'user',
+                        company: 'Test Company'
+                    };
+                    console.log('Created basic user object:', user);
+                }
+
+                output.innerHTML += `<div class="info">Found user: ${user.name} (${user.email})</div>`;
+
+                // Check if user exists in database
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('users')
+                    .select('id')
+                    .eq('id', userId)
+                    .single();
+
+                if (existingUser && !checkError) {
+                    output.innerHTML += '<div class="success">✅ User already exists in database! You should be able to create suppliers and carton configurations now.</div>';
+                    return;
+                }
+
+                // Create user in database
+                const { data: newUser, error: createError } = await supabaseClient
+                    .from('users')
+                    .insert({
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        password_hash: user.passwordHash || '$2a$10$mock_hash',
+                        company: user.company,
+                        role: user.role,
+                        amazon_seller_id: user.amazonSellerId,
+                        ein_tax_id: user.einTaxId,
+                        staff_position: user.staffPosition,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (createError) {
+                    if (createError.code === '23505') {
+                        output.innerHTML += '<div class="success">✅ User already exists in database (duplicate key). You should be able to create suppliers and carton configurations now.</div>';
+                    } else {
+                        output.innerHTML += `<div class="error">Error creating user: ${createError.message}</div>`;
+                    }
+                } else {
+                    output.innerHTML += '<div class="success">✅ User successfully synced to database! You can now create suppliers and carton configurations.</div>';
+                }
+            } catch (e) {
+                output.innerHTML += `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        // Auto-sync on load
+        window.addEventListener('load', () => {
+            setTimeout(syncUser, 500);
+        });
+    </script>
+</body>
+</html>

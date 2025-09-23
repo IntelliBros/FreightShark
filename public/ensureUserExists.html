@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ensure User Exists in Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .sql-box {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>👤 Ensure User Exists in Database</h1>
+
+    <div class="info">
+        <h2>ℹ️ Current Issue</h2>
+        <p>The mock user from localStorage doesn't exist in the Supabase database, causing foreign key constraint errors when creating suppliers or carton configurations.</p>
+    </div>
+
+    <button onclick="checkCurrentUser()">Check Current User</button>
+    <button onclick="createUserInDatabase()">Create User in Database</button>
+    <button onclick="listAllUsers()">List All Users</button>
+
+    <div id="output"></div>
+
+    <h2>Manual SQL Fix (if buttons don't work)</h2>
+    <div class="sql-box" id="sqlBox">-- SQL will be generated based on your current user</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        function getCurrentUser() {
+            // Check localStorage for auth token
+            const authToken = localStorage.getItem('authToken');
+            if (authToken) {
+                try {
+                    const decoded = JSON.parse(atob(authToken));
+                    return decoded;
+                } catch (e) {
+                    console.error('Error decoding auth token:', e);
+                }
+            }
+
+            // Check for users in localStorage
+            const users = localStorage.getItem('users');
+            if (users) {
+                try {
+                    const userList = JSON.parse(users);
+                    if (userList.length > 0) {
+                        // Return the first user as current
+                        const user = userList[0];
+                        return {
+                            userId: user.id,
+                            email: user.email,
+                            role: user.role,
+                            name: user.name,
+                            company: user.company
+                        };
+                    }
+                } catch (e) {
+                    console.error('Error parsing users:', e);
+                }
+            }
+
+            return null;
+        }
+
+        async function checkCurrentUser() {
+            const output = document.getElementById('output');
+            const sqlBox = document.getElementById('sqlBox');
+
+            output.innerHTML = 'Checking...';
+
+            const currentUser = getCurrentUser();
+
+            if (!currentUser) {
+                output.innerHTML = `<div class="error">No user logged in locally. Please log in to the app first.</div>`;
+                return;
+            }
+
+            output.innerHTML = `<div class="info">Current local user:<br>
+                ID: <strong>${currentUser.userId}</strong><br>
+                Email: ${currentUser.email}<br>
+                Name: ${currentUser.name || 'Unknown'}<br>
+                Role: ${currentUser.role}</div>`;
+
+            // Generate SQL for this user
+            sqlBox.textContent = `-- Insert user if doesn't exist
+INSERT INTO users (id, name, email, password_hash, company, role, created_at, updated_at)
+VALUES (
+    '${currentUser.userId}',
+    '${currentUser.name || 'Test User'}',
+    '${currentUser.email}',
+    '$2a$10$mock_hash_for_testing',
+    '${currentUser.company || 'Test Company'}',
+    '${currentUser.role || 'user'}',
+    NOW(),
+    NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+    updated_at = NOW();`;
+
+            try {
+                // Check if user exists in database
+                const { data: user, error } = await supabaseClient
+                    .from('users')
+                    .select('id, name, email, role')
+                    .eq('id', currentUser.userId)
+                    .single();
+
+                if (error && error.code === 'PGRST116') {
+                    output.innerHTML += `<div class="error">❌ User <strong>${currentUser.userId}</strong> does NOT exist in database!<br>
+                        Click "Create User in Database" button to fix this.</div>`;
+                } else if (user) {
+                    output.innerHTML += `<div class="success">✅ User exists in database!</div>`;
+                } else if (error) {
+                    output.innerHTML += `<div class="error">Error checking database: ${error.message}</div>`;
+                }
+            } catch (e) {
+                output.innerHTML += `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        async function createUserInDatabase() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Creating user...';
+
+            const currentUser = getCurrentUser();
+
+            if (!currentUser) {
+                output.innerHTML = `<div class="error">No user logged in locally. Please log in to the app first.</div>`;
+                return;
+            }
+
+            try {
+                // First check if user exists
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('users')
+                    .select('id')
+                    .eq('id', currentUser.userId)
+                    .single();
+
+                if (existingUser && !checkError) {
+                    output.innerHTML = `<div class="info">User already exists in database!</div>`;
+                    return;
+                }
+
+                // Create the user
+                const { data: newUser, error: createError } = await supabaseClient
+                    .from('users')
+                    .insert([{
+                        id: currentUser.userId,
+                        name: currentUser.name || 'Test User',
+                        email: currentUser.email,
+                        password_hash: '$2a$10$mock_hash_for_testing',
+                        company: currentUser.company || 'Test Company',
+                        role: currentUser.role || 'user',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (createError) {
+                    if (createError.code === '23505') {
+                        output.innerHTML = `<div class="info">User already exists (duplicate key).</div>`;
+                    } else {
+                        output.innerHTML = `<div class="error">Error creating user: ${createError.message}</div>`;
+                    }
+                } else {
+                    output.innerHTML = `<div class="success">✅ User created successfully in database!<br>
+                        ID: ${newUser.id}<br>
+                        Name: ${newUser.name}<br>
+                        Email: ${newUser.email}</div>`;
+                }
+            } catch (e) {
+                output.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        async function listAllUsers() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Loading users...';
+
+            try {
+                const { data: users, error } = await supabaseClient
+                    .from('users')
+                    .select('id, name, email, role, created_at')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    output.innerHTML = `<div class="error">Error loading users: ${error.message}</div>`;
+                } else if (!users || users.length === 0) {
+                    output.innerHTML = `<div class="info">No users found in database.</div>`;
+                } else {
+                    let html = `<div class="info"><h3>Users in Database (${users.length})</h3><table style="width:100%; border-collapse: collapse;">`;
+                    html += '<tr style="border-bottom: 2px solid #ddd;"><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Created</th></tr>';
+
+                    users.forEach(user => {
+                        const created = new Date(user.created_at).toLocaleDateString();
+                        html += `<tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 5px;">${user.id}</td>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td>${user.role}</td>
+                            <td>${created}</td>
+                        </tr>`;
+                    });
+
+                    html += '</table></div>';
+                    output.innerHTML = html;
+                }
+            } catch (e) {
+                output.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', checkCurrentUser);
+    </script>
+</body>
+</html>
