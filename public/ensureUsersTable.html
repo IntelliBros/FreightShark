@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ensure Users Table - Freight Shark</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2E3B55;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #00b4d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0096b8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #00b4d8;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+            color: #dc3545;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+            color: #28a745;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+            color: #856404;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Ensure Users Table</h1>
+        <p class="subtitle">This tool ensures the users table exists and has the correct structure</p>
+
+        <div class="step">
+            <h3>Step 1: Check/Create Users Table</h3>
+            <p>This will check if the users table exists and create it if needed.</p>
+            <button id="checkTableBtn" onclick="checkAndCreateTable()">Check & Create Table</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Add Current User to Database</h3>
+            <p>This will add your current logged-in user to the database.</p>
+            <button id="addUserBtn" onclick="addCurrentUser()" disabled>Add Current User</button>
+        </div>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0Nzg0MDYsImV4cCI6MjA0NzA1NDQwNn0.gNrkPnv2ittL0lZzV8nz8LxXdyp14xKMRpWNqD6DNMU';
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `output ${type}`;
+            div.textContent = message;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+
+        async function checkAndCreateTable() {
+            clearOutput();
+            const btn = document.getElementById('checkTableBtn');
+            btn.disabled = true;
+
+            try {
+                log('🔍 Checking if users table exists...');
+
+                // First, try to query the table
+                const checkResponse = await fetch(
+                    `${SUPABASE_URL}/rest/v1/users?select=id&limit=1`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+
+                if (checkResponse.ok) {
+                    log('✅ Users table already exists!', 'success');
+                    document.getElementById('addUserBtn').disabled = false;
+                    return;
+                }
+
+                log('📦 Table doesn\'t exist or is empty. Creating table structure...', 'warning');
+
+                // Create the table using SQL
+                const createTableSQL = `
+                    CREATE TABLE IF NOT EXISTS users (
+                        id TEXT PRIMARY KEY,
+                        email TEXT NOT NULL,
+                        name TEXT,
+                        role TEXT DEFAULT 'user',
+                        display_id INTEGER,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+
+                    -- Create an index on email for faster lookups
+                    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+                    -- Create an index on display_id for faster lookups
+                    CREATE INDEX IF NOT EXISTS idx_users_display_id ON users(display_id);
+
+                    -- Enable RLS
+                    ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+                    -- Create a policy that allows all operations for now
+                    CREATE POLICY "Enable all access for users" ON users
+                        FOR ALL USING (true);
+                `;
+
+                // Note: Supabase doesn't allow direct SQL execution from the client
+                // So we need to use the admin panel or create the table via REST API
+
+                log('⚠️ Table creation requires admin access.', 'warning');
+                log('Please run the following SQL in your Supabase SQL Editor:', 'warning');
+                log(createTableSQL, 'info');
+
+                log('\nOR use the temporary workaround below:', 'info');
+                document.getElementById('addUserBtn').disabled = false;
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function addCurrentUser() {
+            clearOutput();
+            const btn = document.getElementById('addUserBtn');
+            btn.disabled = true;
+
+            try {
+                // Get current user from localStorage
+                const currentUser = JSON.parse(localStorage.getItem('freight_shark_current_user') || 'null');
+
+                if (!currentUser) {
+                    log('❌ No logged-in user found. Please log in first.', 'error');
+                    return;
+                }
+
+                log(`📝 Found current user: ${currentUser.name} (${currentUser.id})`, 'info');
+
+                // Try to insert the user
+                const userData = {
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    name: currentUser.name,
+                    role: currentUser.role || 'user',
+                    display_id: currentUser.display_id || Math.floor(Math.random() * 10000)
+                };
+
+                log('📤 Attempting to add user to database...', 'info');
+
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/users?on_conflict=id`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(userData)
+                    }
+                );
+
+                if (response.ok || response.status === 201 || response.status === 409) {
+                    log('✅ User successfully added/updated in database!', 'success');
+                    log(JSON.stringify(userData, null, 2), 'success');
+
+                    // Also update all users in localStorage to be in sync
+                    const allUsers = JSON.parse(localStorage.getItem('freight_shark_users') || '[]');
+                    const updatedUsers = allUsers.map(u =>
+                        u.id === currentUser.id ? {...u, ...userData} : u
+                    );
+                    localStorage.setItem('freight_shark_users', JSON.stringify(updatedUsers));
+
+                    log('\n✅ You can now create sample consolidation requests!', 'success');
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to add user: ${errorText}`);
+                }
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+
+                // Provide alternative solution
+                log('\n📝 Alternative: Manually run this SQL in Supabase:', 'warning');
+                const currentUser = JSON.parse(localStorage.getItem('freight_shark_current_user') || '{}');
+                const insertSQL = `
+INSERT INTO users (id, email, name, role, display_id)
+VALUES (
+    '${currentUser.id}',
+    '${currentUser.email}',
+    '${currentUser.name}',
+    '${currentUser.role || 'user'}',
+    ${currentUser.display_id || Math.floor(Math.random() * 10000)}
+)
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    name = EXCLUDED.name,
+    updated_at = NOW();`;
+                log(insertSQL, 'info');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            log('👋 Welcome! Click "Check & Create Table" to begin.', 'info');
+        };
+    </script>
+</body>
+</html>

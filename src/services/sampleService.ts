@@ -30,39 +30,34 @@ class SampleService {
     try {
       console.log('Creating sample request:', request);
 
-      // First, ensure user exists in database
-      const { data: existingUser, error: userCheckError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', request.user_id)
-        .single();
+      // Get user details from localStorage first
+      const storedUsers = localStorage.getItem('freight_shark_users');
+      const users = storedUsers ? JSON.parse(storedUsers) : [];
+      const localUser = users.find((u: any) => u.id === request.user_id);
 
-      if (userCheckError && userCheckError.code === 'PGRST116') {
-        // User doesn't exist, create them
-        console.log('User not found in database, creating user:', request.user_id);
+      if (localUser) {
+        // Always try to upsert the user to ensure they exist
+        console.log('Ensuring user exists in database:', request.user_id);
 
-        // Get user details from localStorage
-        const storedUsers = localStorage.getItem('freight_shark_users');
-        const users = storedUsers ? JSON.parse(storedUsers) : [];
-        const localUser = users.find((u: any) => u.id === request.user_id);
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert({
+            id: request.user_id,
+            email: localUser.email || 'unknown@example.com',
+            name: localUser.name || 'Unknown User',
+            role: localUser.role || 'user',
+            display_id: localUser.display_id || Math.floor(Math.random() * 10000),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          });
 
-        if (localUser) {
-          const { error: createUserError } = await supabase
-            .from('users')
-            .insert({
-              id: request.user_id,
-              email: localUser.email || 'unknown@example.com',
-              name: localUser.name || 'Unknown User',
-              role: localUser.role || 'user',
-              display_id: localUser.display_id || Math.floor(Math.random() * 10000)
-            });
-
-          if (createUserError) {
-            console.error('Failed to create user:', createUserError);
-            // Continue anyway - the user might exist with different data
-          } else {
-            console.log('✅ User created successfully');
-          }
+        if (upsertError) {
+          console.error('Failed to upsert user:', upsertError);
+          // Try to continue anyway
+        } else {
+          console.log('✅ User ensured in database');
         }
       }
 
@@ -112,7 +107,11 @@ class SampleService {
                 email: localUser.email || 'unknown@example.com',
                 name: localUser.name || 'Unknown User',
                 role: localUser.role || 'user',
-                display_id: localUser.display_id || Math.floor(Math.random() * 10000)
+                display_id: localUser.display_id || Math.floor(Math.random() * 10000),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'id'
               });
 
             if (!upsertError) {
