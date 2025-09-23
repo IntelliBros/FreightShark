@@ -719,42 +719,6 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                 </li>
               </ul>
             </Card>
-
-            <Card>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Pricing
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">
-                    Consolidation Fee:
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">
-                    $5 per sample
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">
-                    Storage (first 30 days):
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">
-                    Free
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">
-                    Photos:
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">
-                    Included
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-3">
-                *Shipping costs calculated separately based on weight and
-                destination
-              </p>
-            </Card>
           </div>
         </div>
       )}
