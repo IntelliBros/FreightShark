@@ -173,6 +173,13 @@ export const SampleConsolidation = () => {
       return;
     }
 
+    console.log('📋 Current user details:', {
+      id: user.id,
+      display_id: user.display_id,
+      email: user.email,
+      name: user.name
+    });
+
     if (!user.display_id) {
       console.error('❌ Validation failed: User does not have display_id');
       addToast('User account needs to be updated. Please contact support.', 'error');
@@ -180,7 +187,7 @@ export const SampleConsolidation = () => {
     }
 
     const sampleId = generateSampleId(user.id, user.display_id);
-    console.log('📋 Generated Sample ID:', sampleId);
+    console.log('📋 Generated Sample ID:', sampleId, 'for user display_id:', user.display_id);
 
     // Prepare data for database
     const requestData = {

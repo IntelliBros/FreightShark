@@ -116,6 +116,7 @@ export const authService = {
             const passwordHash = await hashPassword(password);
             user = {
               id: dbUser.id,
+              display_id: dbUser.display_id,
               name: dbUser.name,
               email: dbUser.email,
               passwordHash: passwordHash,
@@ -156,6 +157,7 @@ export const authService = {
           .from('users')
           .upsert({
             id: user.id,
+            display_id: user.display_id,
             name: user.name,
             email: user.email,
             password_hash: user.passwordHash || 'mock_hash',
@@ -177,6 +179,7 @@ export const authService = {
           // If upsert fails, try insert as fallback
           const { error: insertError } = await supabase.from('users').insert({
             id: user.id,
+            display_id: user.display_id,
             name: user.name,
             email: user.email,
             password_hash: user.passwordHash || 'mock_hash',
