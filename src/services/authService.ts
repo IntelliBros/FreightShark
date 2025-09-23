@@ -311,7 +311,6 @@ export const authService = {
         user: userWithoutPassword,
         token
       };
-    }
   },
   
   validate: async () => {
