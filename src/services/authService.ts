@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { authAPI } from './api';
+// Removed authAPI import - using localStorage/Supabase directly
 
 // Types
 type User = {
@@ -212,13 +212,8 @@ export const authService = {
   },
   
   register: async (userData: any) => {
-    try {
-      // Try backend API first
-      const result = await authAPI.register(userData);
-      return result;
-    } catch (error) {
-      // Fallback to localStorage
-      console.log('Backend unavailable, using localStorage fallback');
+    // Skip backend API and use localStorage/Supabase directly
+    console.log('Using localStorage registration');
 
       const users = JSON.parse(localStorage.getItem('users') || '[]');
 
@@ -320,13 +315,8 @@ export const authService = {
   },
   
   validate: async () => {
-    try {
-      // Try backend API first
-      const result = await authAPI.validate();
-      return result;
-    } catch (error) {
-      // Fallback to localStorage
-      const token = localStorage.getItem('authToken');
+    // Skip backend API and use localStorage directly
+    const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('No token found');
       }
@@ -345,16 +335,11 @@ export const authService = {
       } catch {
         throw new Error('Invalid token');
       }
-    }
   },
   
   logout: async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      // Continue with local logout even if API fails
-      console.log('Backend logout failed, clearing local session');
-    }
+    // Skip backend API and clear local session directly
+    console.log('Clearing local session');
     localStorage.removeItem('authToken');
   }
 };
