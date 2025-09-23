@@ -44,21 +44,22 @@ export const generateInvoicePDF = (shipment: any, invoice: any) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(107, 114, 128);
-  
+
   // Left side - Invoice details
   doc.text('Invoice #', 20, yPos);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text(invoice.id, 20, yPos + 5);
-  
+  doc.text(invoice.invoice_number || invoice.id || `INV-${shipment.id}`, 20, yPos + 5);
+
   // Center - Date
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(107, 114, 128);
   doc.text('Date', 80, yPos);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text(new Date(invoice.createdAt).toLocaleDateString(), 80, yPos + 5);
-  
+  const invoiceDate = invoice.issue_date || invoice.createdAt || invoice.created_at || new Date().toISOString();
+  doc.text(new Date(invoiceDate).toLocaleDateString(), 80, yPos + 5);
+
   // Right side - Status
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(107, 114, 128);
@@ -214,15 +215,17 @@ export const generateInvoicePDF = (shipment: any, invoice: any) => {
   doc.setTextColor(107, 114, 128);
   doc.text('Subtotal', totalBoxX, yPos);
   doc.setTextColor(31, 41, 55);
-  doc.text(`$${(invoice.subtotal || invoice.amount).toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
-  
+  const subtotalAmount = invoice.subtotal || invoice.amount || invoice.total_amount || invoice.totalAmount || 0;
+  doc.text(`$${Number(subtotalAmount).toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
+
   // Tax
   yPos += 6;
   doc.setTextColor(107, 114, 128);
   doc.text('Tax', totalBoxX, yPos);
   doc.setTextColor(31, 41, 55);
-  doc.text('$0.00', totalBoxX + totalBoxWidth, yPos, { align: 'right' });
-  
+  const taxAmount = invoice.tax || 0;
+  doc.text(`$${Number(taxAmount).toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
+
   // Total amount - emphasized but not with background
   yPos += 8;
   doc.setFont('helvetica', 'bold');
@@ -230,7 +233,8 @@ export const generateInvoicePDF = (shipment: any, invoice: any) => {
   doc.setTextColor(37, 99, 235);
   doc.text('Total', totalBoxX, yPos);
   doc.setFontSize(12);
-  doc.text(`$${invoice.amount.toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
+  const totalAmount = invoice.total_amount || invoice.totalAmount || invoice.amount || (Number(subtotalAmount) + Number(taxAmount));
+  doc.text(`$${Number(totalAmount).toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
   
   // Notes section
   if (invoice.notes) {
@@ -274,5 +278,6 @@ export const generateInvoicePDF = (shipment: any, invoice: any) => {
   doc.text('Freight Shark | www.freightshark.com | support@freightshark.com', pageWidth / 2, footerY, { align: 'center' });
   
   // Save the PDF
-  doc.save(`Invoice_${invoice.id}_${shipment.id}.pdf`);
+  const invoiceNumber = invoice.invoice_number || invoice.id || `INV-${shipment.id}`;
+  doc.save(`Invoice_${invoiceNumber}_${shipment.id}.pdf`);
 };

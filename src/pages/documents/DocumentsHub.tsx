@@ -66,64 +66,78 @@ export const DocumentsHub = () => {
     try {
       console.log('📁 Loading documents from shipments...');
       console.log('📦 Total shipments:', shipments?.length || 0);
-      console.log('📦 Shipments data:', shipments);
 
       // Collect all documents from all user's shipments
       const allDocuments: Document[] = [];
 
       if (shipments && shipments.length > 0) {
-        shipments.forEach((shipment, index) => {
-          console.log(`📦 Processing shipment ${index + 1}/${shipments.length}: ${shipment.id}`);
-          console.log('   Has invoice:', !!shipment.invoice);
-          console.log('   Has documents:', !!shipment.documents);
-          console.log('   Invoice data:', shipment.invoice);
-          console.log('   Documents data:', shipment.documents);
+        // Filter shipments for current user if not staff/admin
+        const userShipments = user?.role === 'customer'
+          ? shipments.filter(s => s.customerId === user.id || s.customer_id === user.id)
+          : shipments;
 
-          // Add invoice if it exists
+        userShipments.forEach((shipment, index) => {
+          console.log(`📦 Processing shipment ${index + 1}/${userShipments.length}: ${shipment.id}`);
+
+          // Add invoice if it exists - handle both embedded invoice data and status-only invoices
           if (shipment.invoice) {
+            const invoiceData = shipment.invoice;
+
+            // Create a complete invoice object with all necessary fields
+            const completeInvoice = {
+              id: invoiceData.id || invoiceData.invoice_number || `INV-${shipment.id}`,
+              invoice_number: invoiceData.invoice_number || invoiceData.id || `INV-${shipment.id}`,
+              shipment_id: shipment.id,
+              customer_id: shipment.customerId || shipment.customer_id,
+              status: invoiceData.status || 'Pending',
+              issue_date: invoiceData.issue_date || invoiceData.createdAt || invoiceData.created_at || new Date().toISOString(),
+              due_date: invoiceData.due_date || invoiceData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              subtotal: invoiceData.subtotal || invoiceData.amount || 0,
+              tax: invoiceData.tax || 0,
+              total_amount: invoiceData.total_amount || invoiceData.totalAmount || invoiceData.amount || 0,
+              paid_amount: invoiceData.paid_amount || invoiceData.paidAmount || 0,
+              payment_date: invoiceData.payment_date || invoiceData.paymentDate || invoiceData.paidDate,
+              payment_method: invoiceData.payment_method || invoiceData.paymentMethod || 'Pending',
+              notes: invoiceData.notes || '',
+              createdAt: invoiceData.createdAt || invoiceData.created_at || new Date().toISOString(),
+              ...invoiceData // Include any other fields that might exist
+            };
+
             console.log('   ✅ Adding invoice document for shipment', shipment.id);
             allDocuments.push({
               id: `invoice-${shipment.id}`,
-              name: `Invoice - ${shipment.id}.pdf`,
+              name: `Invoice ${completeInvoice.invoice_number}.pdf`,
               type: 'invoice',
               shipmentId: shipment.id,
               size: 'PDF',
-              uploadedAt: shipment.invoice.createdAt || shipment.createdAt || new Date().toISOString().split('T')[0],
+              uploadedAt: new Date(completeInvoice.issue_date).toISOString().split('T')[0],
               uploadedBy: 'System',
-              url: shipment.invoice.url || '#',
+              url: '#', // We'll generate the PDF on download
               shipmentData: shipment,
-              invoiceData: shipment.invoice
+              invoiceData: completeInvoice
             });
-          } else {
-            console.log('   ❌ No invoice found for shipment', shipment.id);
           }
 
           // Add any other documents uploaded by staff
           if (shipment.documents && Array.isArray(shipment.documents)) {
             console.log('   ✅ Adding', shipment.documents.length, 'additional documents for shipment', shipment.id);
-            shipment.documents.forEach(doc => {
-              console.log('     Adding document:', doc.name || 'Untitled');
+            shipment.documents.forEach((doc: any) => {
               allDocuments.push({
                 id: doc.id || `doc-${Date.now()}-${Math.random()}`,
                 name: doc.name || 'Untitled Document',
                 type: doc.type || 'document',
                 shipmentId: shipment.id,
                 size: doc.size || 'Unknown',
-                uploadedAt: doc.uploadedAt || new Date().toISOString().split('T')[0],
-                uploadedBy: doc.uploadedBy || 'Staff',
+                uploadedAt: doc.uploadedAt || doc.uploaded_at || new Date().toISOString().split('T')[0],
+                uploadedBy: doc.uploadedBy || doc.uploaded_by || 'Staff',
                 url: doc.url
               });
             });
-          } else {
-            console.log('   ❌ No additional documents for shipment', shipment.id);
           }
         });
-      } else {
-        console.log('❌ No shipments found');
       }
 
       console.log('📁 Total documents collected:', allDocuments.length);
-      console.log('📁 Documents:', allDocuments);
       setDocuments(allDocuments);
     } catch (error) {
       console.error('Error loading documents:', error);
