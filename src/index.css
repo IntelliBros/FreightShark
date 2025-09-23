@@ -4,6 +4,9 @@
 @import 'tailwindcss/utilities';
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
 
+/* Mobile responsive utilities */
+@import './styles/mobile-responsive.css';
+
 /* Custom animations */
 @keyframes fadeIn {
   from {

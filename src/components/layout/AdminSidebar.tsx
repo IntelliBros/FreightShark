@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboardIcon, UsersIcon, SettingsIcon, ChevronDownIcon, ChevronRightIcon, LogOutIcon, ChevronLeftIcon, ShieldIcon, BarChart2Icon, ActivityIcon, UserCogIcon, GlobeIcon, AlertOctagonIcon, DatabaseIcon, ServerIcon, KeyIcon, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-export const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onMobileClose?: () => void;
+}
+
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onMobileClose }) => {
   const location = useLocation();
   const {
     logout

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboardIcon, FileTextIcon, TruckIcon, BarChartIcon, SettingsIcon, ChevronDownIcon, ChevronRightIcon, LogOutIcon, ChevronLeftIcon, ClipboardCheckIcon, DollarSignIcon, ReceiptIcon, MessageCircleIcon, InboxIcon, BellIcon, Package } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-export const StaffSidebar = () => {
+interface StaffSidebarProps {
+  onMobileClose?: () => void;
+}
+
+export const StaffSidebar: React.FC<StaffSidebarProps> = ({ onMobileClose }) => {
   const location = useLocation();
   const {
     logout

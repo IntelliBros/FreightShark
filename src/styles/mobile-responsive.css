@@ -1,0 +1,206 @@
+/* Mobile-First Responsive Utilities */
+
+/* Responsive Container */
+.responsive-container {
+  @apply w-full px-4 sm:px-6 lg:px-8 mx-auto;
+  max-width: 100%;
+}
+
+/* Responsive Grid */
+.responsive-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+}
+
+/* Mobile-Optimized Forms */
+.mobile-form {
+  @apply space-y-4 sm:space-y-6;
+}
+
+.mobile-form-group {
+  @apply w-full;
+}
+
+.mobile-input {
+  @apply w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent;
+  min-height: 44px; /* Touch-friendly minimum height */
+}
+
+.mobile-select {
+  @apply w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent bg-white;
+  min-height: 44px;
+}
+
+.mobile-button {
+  @apply px-4 py-2.5 sm:py-2 text-base sm:text-sm font-medium rounded-lg transition-colors;
+  min-height: 44px;
+}
+
+.mobile-button-primary {
+  @apply mobile-button bg-[#00b4d8] text-white hover:bg-[#0096c7] active:bg-[#007a9f];
+}
+
+.mobile-button-secondary {
+  @apply mobile-button bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400;
+}
+
+/* Responsive Tables */
+@media (max-width: 768px) {
+  .responsive-table {
+    @apply block;
+  }
+
+  .responsive-table thead {
+    @apply hidden;
+  }
+
+  .responsive-table tbody {
+    @apply block;
+  }
+
+  .responsive-table tr {
+    @apply block mb-4 bg-white rounded-lg shadow p-4;
+  }
+
+  .responsive-table td {
+    @apply block text-right;
+    padding-left: 50%;
+    position: relative;
+  }
+
+  .responsive-table td::before {
+    @apply absolute left-0 w-1/2 px-4 font-semibold text-left;
+    content: attr(data-label);
+  }
+}
+
+/* Touch-Friendly Cards */
+.mobile-card {
+  @apply bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4;
+  -webkit-tap-highlight-color: rgba(0, 180, 216, 0.1);
+}
+
+.mobile-card-clickable {
+  @apply mobile-card cursor-pointer transition-shadow hover:shadow-md active:shadow-sm;
+}
+
+/* Responsive Navigation */
+.mobile-nav-item {
+  @apply block px-4 py-3 text-base sm:text-sm hover:bg-gray-50 active:bg-gray-100;
+  min-height: 48px;
+}
+
+/* Responsive Modals */
+.mobile-modal {
+  @apply fixed inset-x-4 sm:inset-x-auto sm:relative sm:mx-auto;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .mobile-modal {
+    max-width: 90%;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-modal {
+    max-width: 600px;
+  }
+}
+
+/* Touch Target Optimization */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  @apply flex items-center justify-center;
+}
+
+/* Responsive Text */
+.responsive-heading-1 {
+  @apply text-2xl sm:text-3xl lg:text-4xl font-bold;
+}
+
+.responsive-heading-2 {
+  @apply text-xl sm:text-2xl lg:text-3xl font-semibold;
+}
+
+.responsive-heading-3 {
+  @apply text-lg sm:text-xl lg:text-2xl font-medium;
+}
+
+.responsive-text {
+  @apply text-base sm:text-sm;
+}
+
+/* Mobile-First Spacing */
+.mobile-spacing-x {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+.mobile-spacing-y {
+  @apply py-4 sm:py-6 lg:py-8;
+}
+
+/* Responsive Flex Utilities */
+.flex-mobile-column {
+  @apply flex flex-col sm:flex-row;
+}
+
+.flex-mobile-wrap {
+  @apply flex flex-wrap;
+}
+
+/* Hide/Show Elements */
+.mobile-only {
+  @apply block sm:hidden;
+}
+
+.desktop-only {
+  @apply hidden sm:block;
+}
+
+/* Swipeable Lists */
+.swipeable-list {
+  @apply overflow-x-auto pb-2;
+  -webkit-overflow-scrolling: touch;
+}
+
+.swipeable-list::-webkit-scrollbar {
+  height: 4px;
+}
+
+.swipeable-list::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+.swipeable-list::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
+
+/* Bottom Navigation for Mobile */
+.bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  @apply flex-1 flex flex-col items-center justify-center py-2 text-xs;
+  min-height: 56px;
+}
+
+/* Safe Area Padding for iOS */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
