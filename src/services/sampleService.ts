@@ -56,6 +56,36 @@ class SampleService {
         if (error.code === '42P01') {
           console.error('Table does not exist. Please run the migration first.');
         }
+
+        // If duplicate key error (409 conflict), try with a new ID
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          console.log('Duplicate ID detected, generating new ID with timestamp...');
+          const timestamp = Date.now().toString().slice(-8);
+          const newId = `${request.id}-${timestamp}`;
+
+          // Retry with new ID
+          const { data: retryData, error: retryError } = await supabase
+            .from('sample_requests')
+            .insert({
+              id: newId,
+              user_id: request.user_id,
+              product_name: request.product_name,
+              expected_samples: request.expected_samples,
+              received_samples: 0,
+              status: 'pending'
+            })
+            .select()
+            .single();
+
+          if (retryError) {
+            console.error('Retry also failed:', retryError);
+            return null;
+          }
+
+          console.log('✅ Sample request created with new ID:', newId);
+          return retryData;
+        }
+
         return null;
       }
 

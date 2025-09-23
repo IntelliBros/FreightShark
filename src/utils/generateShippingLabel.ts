@@ -198,7 +198,8 @@ const getNextSampleSequence = (): number => {
   return nextSeq;
 };
 
-// Generate a unique sample ID with format: SMPL[xxxx]-USER[display_id]
+// Generate a unique sample ID with format: SMPL[xxxx]-USER[display_id]-[timestamp]
+// Added timestamp to ensure uniqueness even if sequence gets out of sync
 export const generateSampleId = (userId: string, displayId: number): string => {
   // Get the sequence number and pad to 4 digits
   const sequence = getNextSampleSequence();
@@ -207,5 +208,8 @@ export const generateSampleId = (userId: string, displayId: number): string => {
   // Always use display_id
   const userIdentifier = displayId.toString();
 
-  return `SMPL${paddedSequence}-USER${userIdentifier}`;
+  // Add last 6 digits of timestamp for additional uniqueness
+  const timestamp = Date.now().toString().slice(-6);
+
+  return `SMPL${paddedSequence}-USER${userIdentifier}-${timestamp}`;
 };
