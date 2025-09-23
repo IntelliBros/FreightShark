@@ -10,6 +10,7 @@ import { QuoteDetails } from './pages/quotes/QuoteDetails';
 import { ShipmentTracking } from './pages/shipments/ShipmentTracking';
 import { ShipmentsList } from './pages/shipments/ShipmentsList';
 import { SampleConsolidation } from './pages/samples/SampleConsolidation';
+import { SampleShipments } from './pages/samples/SampleShipments';
 import { DocumentsHub } from './pages/documents/DocumentsHub';
 import { Analytics } from './pages/analytics/Analytics';
 import { Announcements } from './pages/Announcements';
@@ -68,6 +69,7 @@ export function App() {
                 <Route path="shipments/:id" element={<ShipmentTracking />} />
                 <Route path="shipment-estimator" element={<ShipmentEstimator />} />
                 <Route path="samples" element={<SampleConsolidation />} />
+                <Route path="samples/shipments" element={<SampleShipments />} />
                 <Route path="documents" element={<DocumentsHub />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="announcements" element={<Announcements />} />

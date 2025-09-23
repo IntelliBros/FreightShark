@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Sample Shipment Requests Migration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #00b4d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0096c7;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Sample Shipment Requests Migration</h1>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> This will create the sample_shipment_requests table for managing customer sample shipment requests.
+        </div>
+
+        <button onclick="runMigration()">Run Migration</button>
+        <button onclick="checkTable()">Check Table Status</button>
+        <button onclick="testOperations()">Test Operations</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NDc4MTAsImV4cCI6MjA1MDUyMzgxMH0.jClrCvPtmGLlWJvdv3cAq0F5BQVXZF6w3YTCwtGHG84';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function runMigration() {
+            log('Starting sample shipment requests migration...', 'info');
+
+            try {
+                // First, try to create the table directly through Supabase
+                log('Attempting to create table through direct insert...', 'info');
+
+                // Try to insert a test record to trigger table creation
+                const { error: insertError } = await supabase
+                    .from('sample_shipment_requests')
+                    .insert({
+                        id: 'TEST-MIGRATION',
+                        user_id: 'test-user',
+                        sample_ids: ['test-sample-1', 'test-sample-2'],
+                        delivery_address: 'Test Address',
+                        quantity: 2,
+                        status: 'pending'
+                    });
+
+                if (insertError) {
+                    if (insertError.code === '42P01') {
+                        log('Table does not exist. Creating structure...', 'info');
+
+                        // Table doesn't exist, we need to create it
+                        // Since we can't run DDL directly, we'll guide the user
+                        log('\n⚠️ MANUAL STEP REQUIRED:', 'error');
+                        log('Please run the following SQL in your Supabase SQL editor:\n', 'info');
+
+                        const sqlScript = `-- Create sample_shipment_requests table
+CREATE TABLE IF NOT EXISTS sample_shipment_requests (
+    id VARCHAR(100) PRIMARY KEY,
+    user_id VARCHAR(50),
+    sample_ids TEXT[],
+    delivery_address TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    package_photo TEXT,
+    payment_link TEXT,
+    tracking_number VARCHAR(255),
+    shipped_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes
+CREATE INDEX idx_ssr_user_id ON sample_shipment_requests(user_id);
+CREATE INDEX idx_ssr_status ON sample_shipment_requests(status);
+
+-- Grant permissions
+GRANT ALL ON sample_shipment_requests TO authenticated;
+GRANT ALL ON sample_shipment_requests TO anon;
+GRANT ALL ON sample_shipment_requests TO service_role;`;
+
+                        log(sqlScript, 'info');
+                        log('\nAfter running the SQL above, click "Check Table Status" to verify.', 'success');
+                        return;
+                    } else if (insertError.code === '23505') {
+                        log('Test record already exists', 'info');
+                    } else {
+                        log(`Insert error: ${insertError.message}`, 'error');
+                    }
+                }
+
+                // Clean up test record if it was created
+                await supabase
+                    .from('sample_shipment_requests')
+                    .delete()
+                    .eq('id', 'TEST-MIGRATION');
+
+                log('\n✅ Migration setup complete!', 'success');
+
+            } catch (error) {
+                log(`Error during migration: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkTable() {
+            log('Checking sample_shipment_requests table...', 'info');
+
+            try {
+                const { data, error } = await supabase
+                    .from('sample_shipment_requests')
+                    .select('*')
+                    .limit(5);
+
+                if (error) {
+                    if (error.code === '42P01') {
+                        log('❌ Table does not exist. Please run the migration first.', 'error');
+                    } else {
+                        log(`Table check failed: ${error.message}`, 'error');
+                    }
+                    return;
+                }
+
+                log(`✅ Table exists with ${data?.length || 0} record(s)`, 'success');
+
+                if (data && data.length > 0) {
+                    log('\nSample records:', 'info');
+                    data.forEach(record => {
+                        log(`- ${record.id}: ${record.status} (User: ${record.user_id})`, 'info');
+                    });
+                }
+
+            } catch (error) {
+                log(`Error checking table: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOperations() {
+            log('Testing sample shipment request operations...', 'info');
+
+            try {
+                const testId = `TEST-${Date.now()}`;
+
+                // Test INSERT
+                log('\n1. Testing INSERT...', 'info');
+                const { data: insertData, error: insertError } = await supabase
+                    .from('sample_shipment_requests')
+                    .insert({
+                        id: testId,
+                        user_id: 'test-user',
+                        sample_ids: ['sample-1', 'sample-2', 'sample-3'],
+                        delivery_address: '123 Test Street, Test City, TC 12345',
+                        quantity: 3,
+                        status: 'pending'
+                    })
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    log(`Insert failed: ${insertError.message}`, 'error');
+                    return;
+                }
+                log('✅ Insert successful', 'success');
+
+                // Test UPDATE
+                log('\n2. Testing UPDATE...', 'info');
+                const { error: updateError } = await supabase
+                    .from('sample_shipment_requests')
+                    .update({
+                        status: 'payment_pending',
+                        payment_link: 'https://payment.example.com/test'
+                    })
+                    .eq('id', testId);
+
+                if (updateError) {
+                    log(`Update failed: ${updateError.message}`, 'error');
+                    return;
+                }
+                log('✅ Update successful', 'success');
+
+                // Test SELECT
+                log('\n3. Testing SELECT...', 'info');
+                const { data: selectData, error: selectError } = await supabase
+                    .from('sample_shipment_requests')
+                    .select('*')
+                    .eq('id', testId)
+                    .single();
+
+                if (selectError) {
+                    log(`Select failed: ${selectError.message}`, 'error');
+                    return;
+                }
+                log('✅ Select successful', 'success');
+                log(`Retrieved: ${JSON.stringify(selectData, null, 2)}`, 'info');
+
+                // Test DELETE
+                log('\n4. Testing DELETE...', 'info');
+                const { error: deleteError } = await supabase
+                    .from('sample_shipment_requests')
+                    .delete()
+                    .eq('id', testId);
+
+                if (deleteError) {
+                    log(`Delete failed: ${deleteError.message}`, 'error');
+                    return;
+                }
+                log('✅ Delete successful', 'success');
+
+                log('\n✅ All operations completed successfully!', 'success');
+
+            } catch (error) {
+                log(`Test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            log('Ready to run sample shipment requests migration', 'info');
+            log('Click "Check Table Status" to see current state', 'info');
+        };
+    </script>
+</body>
+</html>

@@ -69,6 +69,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onMobileClose }) => {
             </Link>
           </li>
           <li>
+            <Link to="/samples/shipments" onClick={handleLinkClick} className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/samples/shipments') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
+              <TruckIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
+              {!isCollapsed && <span className="ml-3 text-sm">Sample Shipments</span>}
+            </Link>
+          </li>
+          <li>
             <Link to="/documents" onClick={handleLinkClick} className={`flex items-center ${isCollapsed ? 'justify-center' : ''} px-3 py-2 rounded-lg ${isActive('/documents') ? 'bg-[#00b4d8]/10 text-[#00b4d8]' : 'text-gray-700 hover:bg-gray-50'}`}>
               <FileIcon className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} min-w-4`} />
               {!isCollapsed && <span className="ml-3 text-sm">Documents</span>}
