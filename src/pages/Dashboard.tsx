@@ -126,7 +126,8 @@ export const Dashboard = () => {
     // Count actual sample shipment requests
     sampleShipments: sampleShipmentRequests.length
   }), [activeShipments, userShipments, sampleShipmentRequests]);
-  return <div className="max-w-7xl mx-auto">
+  return (
+    <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">
           Welcome back, {user?.name}
@@ -210,8 +211,10 @@ export const Dashboard = () => {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card title="Active Shipments" subtitle="Your current shipments in progress" color="blue">
-          {activeShipments.length > 0 ? <div className="space-y-4">
-              {activeShipments.slice(0, 3).map(shipment => <div key={shipment.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
+          {activeShipments.length > 0 ? (
+            <div className="space-y-4">
+              {activeShipments.slice(0, 3).map(shipment => (
+                <div key={shipment.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <Link to={`/shipments/${shipment.id}`} className="text-gray-900 hover:underline font-medium text-sm">
@@ -234,8 +237,8 @@ export const Dashboard = () => {
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
                       <div className="bg-[#00b4d8] h-1.5 rounded-full" style={{
-                  width: `${shipment.progress}%`
-                }}></div>
+                        width: `${shipment.progress}%`
+                      }}></div>
                     </div>
                   </div>
                   <div className="flex justify-end items-center text-xs">
@@ -244,7 +247,8 @@ export const Dashboard = () => {
                       <ArrowRightIcon className="w-3 h-3" />
                     </Link>
                   </div>
-                </div>)}
+                </div>
+              ))}
               {activeShipments.length > 3 && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <Link to="/shipments" className="flex items-center justify-center text-sm text-[#00b4d8] hover:text-[#0096b8] font-medium">
@@ -253,7 +257,9 @@ export const Dashboard = () => {
                   </Link>
                 </div>
               )}
-            </div> : <div className="text-center py-8">
+            </div>
+          ) : (
+            <div className="text-center py-8">
               <PackageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <h3 className="text-sm font-medium text-gray-700 mb-1">
                 No active shipments
@@ -266,7 +272,8 @@ export const Dashboard = () => {
                   Create Quote
                 </Button>
               </Link>
-            </div>}
+            </div>
+          )}
         </Card>
         <Card title="Announcements" subtitle="Latest updates and notifications">
           {announcements.length === 0 ? (
@@ -328,5 +335,6 @@ export const Dashboard = () => {
           )}
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
