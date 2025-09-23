@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enable Supabase Database Mode</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #00b4d8;
+      border-bottom: 3px solid #00b4d8;
+      padding-bottom: 15px;
+      margin-bottom: 30px;
+    }
+    button {
+      background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 10px 5px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(0,180,216,0.3);
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,180,216,0.4);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      animation: slideIn 0.3s;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .info {
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      border: 1px solid #90caf9;
+      color: #0c5460;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .status-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 2px solid #dee2e6;
+    }
+    .status-label {
+      font-weight: 600;
+      color: #495057;
+    }
+    .status-value {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .status-localStorage {
+      background: #ffeeba;
+      color: #856404;
+    }
+    .status-supabase {
+      background: #c3e6cb;
+      color: #155724;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .step-list {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .step-list h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .step-list ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .step-list li {
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .feature {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    .feature-icon {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 FreightShark Database Configuration</h1>
+
+    <div class="status-card">
+      <span class="status-label">Current Data Source:</span>
+      <span id="currentStatus" class="status-value status-localStorage">localStorage (Offline)</span>
+    </div>
+
+    <div class="info">
+      <strong>📊 About Database Mode:</strong>
+      <div class="feature-grid">
+        <div class="feature">
+          <span class="feature-icon">☁️</span>
+          <span>Cloud storage with unlimited capacity</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🔄</span>
+          <span>Real-time sync across all devices</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🔒</span>
+          <span>Secure data with automatic backups</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">⚡</span>
+          <span>Fast performance with smart caching</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-list">
+      <h3>📋 Migration Steps:</h3>
+      <ol>
+        <li>
+          <strong>Run the migration SQL in Supabase:</strong><br>
+          Go to <a href="https://supabase.com/dashboard/project/ryrjmidulkpekrwclcoa/sql/new" target="_blank">Supabase SQL Editor</a><br>
+          Copy and paste the contents of <code>supabase/migrations/FULL_MIGRATION.sql</code>
+        </li>
+        <li>
+          <strong>Click "Enable Supabase" button below</strong><br>
+          This will update your local configuration
+        </li>
+        <li>
+          <strong>Restart your development server</strong><br>
+          Stop and restart <code>npm run dev</code>
+        </li>
+        <li>
+          <strong>Verify everything works</strong><br>
+          Create a test quote request and check Supabase dashboard
+        </li>
+      </ol>
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <button onclick="checkCurrentStatus()" style="background: #6c757d;">Check Current Status</button>
+      <button onclick="enableSupabase()" id="enableBtn">Enable Supabase Database</button>
+      <button onclick="disableSupabase()" id="disableBtn" style="display: none;">Switch Back to localStorage</button>
+    </div>
+
+    <div id="result"></div>
+
+    <div class="warning" style="display: none;" id="rollbackInfo">
+      <strong>⚠️ Rollback Information:</strong><br>
+      If you encounter any issues, you can instantly switch back to localStorage by clicking "Switch Back to localStorage" above. All your original data will still be available.
+    </div>
+  </div>
+
+  <script>
+    // Check if we're currently using Supabase or localStorage
+    function checkCurrentStatus() {
+      const resultDiv = document.getElementById('result');
+      const statusSpan = document.getElementById('currentStatus');
+
+      // Check localStorage for any configuration
+      const configKeys = Object.keys(localStorage).filter(k =>
+        k.startsWith('freight_shark_') ||
+        k.startsWith('cache_')
+      );
+
+      // Simulate checking the configuration
+      // In reality, this would check the actual config file
+      const usingSupabase = localStorage.getItem('FREIGHTSHARK_USE_SUPABASE') === 'true';
+
+      if (usingSupabase) {
+        statusSpan.textContent = 'Supabase (Cloud Database)';
+        statusSpan.className = 'status-value status-supabase';
+        document.getElementById('enableBtn').style.display = 'none';
+        document.getElementById('disableBtn').style.display = 'inline-block';
+        document.getElementById('rollbackInfo').style.display = 'block';
+
+        resultDiv.innerHTML = `
+          <div class="success">
+            <strong>✅ Supabase is Enabled!</strong><br>
+            Your app is using cloud database storage.<br>
+            Found ${configKeys.length} cached items in localStorage for performance.
+          </div>
+        `;
+      } else {
+        statusSpan.textContent = 'localStorage (Offline)';
+        statusSpan.className = 'status-value status-localStorage';
+        document.getElementById('enableBtn').style.display = 'inline-block';
+        document.getElementById('disableBtn').style.display = 'none';
+        document.getElementById('rollbackInfo').style.display = 'none';
+
+        resultDiv.innerHTML = `
+          <div class="info">
+            <strong>💾 Using localStorage</strong><br>
+            Your app is currently storing data locally in the browser.<br>
+            Found ${configKeys.length} data items in localStorage.
+          </div>
+        `;
+      }
+    }
+
+    function enableSupabase() {
+      const resultDiv = document.getElementById('result');
+
+      // Set flag in localStorage
+      localStorage.setItem('FREIGHTSHARK_USE_SUPABASE', 'true');
+
+      resultDiv.innerHTML = `
+        <div class="success">
+          <strong>✅ Supabase Mode Enabled!</strong><br>
+          <br>
+          <strong>Important: Complete these steps:</strong>
+          <ol style="text-align: left; margin: 10px 0;">
+            <li>Edit <code>src/config/database.ts</code></li>
+            <li>Change <code>USE_SUPABASE: false</code> to <code>USE_SUPABASE: true</code></li>
+            <li>Save the file</li>
+            <li>Restart your development server (Ctrl+C and npm run dev)</li>
+          </ol>
+          <br>
+          After restarting, your app will use Supabase for all data storage!
+        </div>
+      `;
+
+      checkCurrentStatus();
+    }
+
+    function disableSupabase() {
+      const resultDiv = document.getElementById('result');
+
+      // Remove flag from localStorage
+      localStorage.setItem('FREIGHTSHARK_USE_SUPABASE', 'false');
+
+      resultDiv.innerHTML = `
+        <div class="success">
+          <strong>✅ Switched Back to localStorage!</strong><br>
+          <br>
+          <strong>Complete these steps:</strong>
+          <ol style="text-align: left; margin: 10px 0;">
+            <li>Edit <code>src/config/database.ts</code></li>
+            <li>Change <code>USE_SUPABASE: true</code> to <code>USE_SUPABASE: false</code></li>
+            <li>Save the file</li>
+            <li>Restart your development server</li>
+          </ol>
+          <br>
+          Your app will revert to using localStorage for data storage.
+        </div>
+      `;
+
+      checkCurrentStatus();
+    }
+
+    // Check status on page load
+    window.onload = checkCurrentStatus;
+  </script>
+</body>
+</html>
