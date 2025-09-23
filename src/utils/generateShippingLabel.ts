@@ -58,63 +58,86 @@ export const generateShippingLabel = async (data: LabelData) => {
   ctx.fillText(`User ID: ${data.userId}`, 30, 160);
   ctx.fillText(`User Name: ${data.userName}`, 30, 185);
 
-  try {
-    // Generate QR code
-    const qrCodeDataUrl = await QRCode.toDataURL(data.sampleId, {
-      width: 120,
-      height: 120,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
+  // Generate label with or without QR code
+  const generateLabel = async (includeQR: boolean = true) => {
+    if (includeQR) {
+      try {
+        // Create a temporary canvas for QR code
+        const qrCanvas = document.createElement('canvas');
+        qrCanvas.style.display = 'none';
+        document.body.appendChild(qrCanvas);
+
+        // Generate QR code directly to canvas
+        await QRCode.toCanvas(qrCanvas, data.sampleId, {
+          width: 120,
+          height: 120,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+
+        // Draw QR code on main canvas
+        const qrX = (canvas.width - 120) / 2;
+        ctx.drawImage(qrCanvas, qrX, 210, 120, 120);
+
+        // Remove temporary QR canvas
+        document.body.removeChild(qrCanvas);
+
+        // Add QR code label
+        ctx.font = '12px Arial';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('Scan QR Code', 200, 345);
+      } catch (qrError) {
+        console.error('QR generation failed, generating without QR:', qrError);
+        // Continue without QR code
       }
-    });
+    }
 
-    // Load QR code as image
-    const qrImage = new Image();
-    qrImage.onload = () => {
-      // Center the QR code horizontally
-      const qrX = (canvas.width - 120) / 2;
-      ctx.drawImage(qrImage, qrX, 210, 120, 120);
+    // Footer (always add)
+    ctx.font = '10px Arial';
+    ctx.fillStyle = 'gray';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, includeQR ? 325 : 230);
 
-      // Add QR code label
-      ctx.font = '12px Arial';
+    // Add manual sample ID text if no QR
+    if (!includeQR) {
+      ctx.font = 'bold 16px monospace';
       ctx.fillStyle = 'black';
       ctx.textAlign = 'center';
-      ctx.fillText('Scan QR Code', 200, 345);
-
-      // Footer
-      ctx.font = '10px Arial';
-      ctx.fillStyle = 'gray';
-      ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, 325);
-
-      // Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `shipping-label-${data.sampleId}.png`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-        // Remove canvas from DOM
-        if (canvas.parentNode) {
-          document.body.removeChild(canvas);
-        }
-      });
-    };
-    qrImage.src = qrCodeDataUrl;
-  } catch (error) {
-    console.error('Error generating QR code:', error);
-    // Remove canvas from DOM on error
-    if (canvas.parentNode) {
-      document.body.removeChild(canvas);
+      ctx.fillText(data.sampleId, 200, 250);
+      ctx.font = '12px Arial';
+      ctx.fillText('(Manual Entry Code)', 200, 270);
     }
-    // Try to generate without QR code as fallback
-    generateFallbackLabel(data);
+
+    // Convert canvas to blob and download
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `shipping-label-${data.sampleId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      // Remove canvas from DOM
+      if (canvas.parentNode) {
+        document.body.removeChild(canvas);
+      }
+    });
+  };
+
+  // Try with QR first, fall back to without
+  try {
+    await generateLabel(true);
+  } catch (error) {
+    console.error('Error generating label with QR:', error);
+    // Try without QR code
+    await generateLabel(false);
   }
 };
 
