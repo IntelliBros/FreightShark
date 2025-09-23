@@ -7,6 +7,7 @@ import { DataService } from '../../services/DataService';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
+import { generateInvoicePDF } from '../../utils/generateInvoicePDF';
 
 // Document type interface
 interface Document {
@@ -18,6 +19,8 @@ interface Document {
   uploadedAt: string;
   uploadedBy: string;
   url?: string;
+  shipmentData?: any; // Store reference to shipment for invoice generation
+  invoiceData?: any; // Store invoice data for PDF generation
 }
 
 // Document type mapping for icons and colors
@@ -76,7 +79,9 @@ export const DocumentsHub = () => {
               size: 'PDF',
               uploadedAt: shipment.invoice.createdAt || shipment.createdAt || new Date().toISOString().split('T')[0],
               uploadedBy: 'System',
-              url: shipment.invoice.url || '#'
+              url: shipment.invoice.url || '#',
+              shipmentData: shipment,
+              invoiceData: shipment.invoice
             });
           }
 
@@ -128,17 +133,46 @@ export const DocumentsHub = () => {
     }
   };
 
+  const handleDownloadDocument = (doc: Document) => {
+    try {
+      if (doc.type === 'invoice' && doc.shipmentData && doc.invoiceData) {
+        // Generate and download invoice PDF
+        generateInvoicePDF(doc.shipmentData, doc.invoiceData);
+        addToast('Invoice downloaded successfully', 'success');
+      } else if (doc.url && doc.url !== '#') {
+        // For other documents, open the URL
+        window.open(doc.url, '_blank');
+        addToast('Document download started', 'success');
+      } else {
+        addToast('Document not available for download', 'error');
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      addToast('Failed to download document', 'error');
+    }
+  };
+
   const handleDownloadSelected = () => {
     // Download selected documents
+    let downloadCount = 0;
     selectedDocuments.forEach(docId => {
       const doc = documents.find(d => d.id === docId);
-      if (doc && doc.url) {
-        // Open document URL in new tab for download
-        window.open(doc.url, '_blank');
+      if (doc) {
+        if (doc.type === 'invoice' && doc.shipmentData && doc.invoiceData) {
+          // Generate and download invoice PDF
+          generateInvoicePDF(doc.shipmentData, doc.invoiceData);
+          downloadCount++;
+        } else if (doc.url && doc.url !== '#') {
+          // Open document URL in new tab for download
+          window.open(doc.url, '_blank');
+          downloadCount++;
+        }
       }
     });
-    if (selectedDocuments.length > 0) {
-      addToast(`Downloading ${selectedDocuments.length} document(s)`, 'success');
+    if (downloadCount > 0) {
+      addToast(`Downloading ${downloadCount} document(s)`, 'success');
+    } else {
+      addToast('No documents available for download', 'warning');
     }
   };
 
@@ -249,7 +283,12 @@ export const DocumentsHub = () => {
                 {document.size}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button type="button" className="text-blue-600 hover:text-blue-800 mr-3" title="Download">
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 mr-3"
+                  title="Download"
+                  onClick={() => handleDownloadDocument(document)}
+                >
                   <DownloadIcon className="h-4 w-4" />
                 </button>
                 <button type="button" className="text-gray-400 hover:text-gray-600" title="More options">
@@ -305,7 +344,12 @@ export const DocumentsHub = () => {
               Uploaded: {document.uploadedAt}
             </span>
             <div>
-              <button type="button" className="text-blue-600 hover:text-blue-800 p-1" title="Download">
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-800 p-1"
+                title="Download"
+                onClick={() => handleDownloadDocument(document)}
+              >
                 <DownloadIcon className="h-4 w-4" />
               </button>
               <button type="button" className="text-gray-400 hover:text-gray-600 p-1 ml-1" title="More options">
