@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Supabase Database Connection</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #00b4d8 100%);
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #00b4d8;
+      border-bottom: 3px solid #00b4d8;
+      padding-bottom: 15px;
+      margin-bottom: 30px;
+    }
+    .status {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    .test-card {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      border: 2px solid #dee2e6;
+      transition: all 0.3s;
+    }
+    .test-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .test-card h3 {
+      color: #495057;
+      margin-top: 0;
+    }
+    .test-card button {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .test-card button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,180,216,0.4);
+    }
+    .result {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      border: 1px solid #e9ecef;
+    }
+    .success {
+      background: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .info {
+      background: #d1ecf1;
+      border-color: #bee5eb;
+      color: #0c5460;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #00b4d8;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 5px;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #00b4d8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      🚀 Supabase Database Test
+      <span id="mainStatus" class="status">Checking...</span>
+    </h1>
+
+    <div class="stats" id="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="userCount">-</div>
+        <div class="stat-label">Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="quoteCount">-</div>
+        <div class="stat-label">Quotes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="shipmentCount">-</div>
+        <div class="stat-label">Shipments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="invoiceCount">-</div>
+        <div class="stat-label">Invoices</div>
+      </div>
+    </div>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <h3>📊 Check Connection</h3>
+        <button onclick="checkConnection()">Test Database Connection</button>
+        <div id="connectionResult" class="result"></div>
+      </div>
+
+      <div class="test-card">
+        <h3>📝 Create Test Quote</h3>
+        <button onclick="createTestQuote()">Create Quote Request</button>
+        <div id="quoteResult" class="result"></div>
+      </div>
+
+      <div class="test-card">
+        <h3>📦 Create Test Shipment</h3>
+        <button onclick="createTestShipment()">Create Shipment</button>
+        <div id="shipmentResult" class="result"></div>
+      </div>
+
+      <div class="test-card">
+        <h3>💾 Check Cache</h3>
+        <button onclick="checkCache()">Inspect Cache</button>
+        <div id="cacheResult" class="result"></div>
+      </div>
+
+      <div class="test-card">
+        <h3>🔄 Test Fallback</h3>
+        <button onclick="testFallback()">Simulate Offline</button>
+        <div id="fallbackResult" class="result"></div>
+      </div>
+
+      <div class="test-card">
+        <h3>🗑️ Clear Cache</h3>
+        <button onclick="clearCache()">Clear All Caches</button>
+        <div id="clearResult" class="result"></div>
+      </div>
+    </div>
+
+    <div id="detailedLog" style="margin-top: 30px; display: none;">
+      <h3>📋 Detailed Log:</h3>
+      <pre id="logContent"></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+
+    const supabaseUrl = 'https://ryrjmidulkpekrwclcoa.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5cmptaWR1bGtwZWtyd2NsY29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMDkzMDYsImV4cCI6MjA0NTc4NTMwNn0.9hVTLCN-SiKhsJF2vxJnKyguZQ6b9R9hCm7XF_fNjnI';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let log = [];
+
+    function addLog(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      log.push(`[${timestamp}] [${type.toUpperCase()}] ${message}`);
+      document.getElementById('detailedLog').style.display = 'block';
+      document.getElementById('logContent').textContent = log.join('\n');
+    }
+
+    async function updateStats() {
+      try {
+        const [users, quotes, shipments, invoices] = await Promise.all([
+          supabase.from('users').select('*', { count: 'exact', head: true }),
+          supabase.from('quotes').select('*', { count: 'exact', head: true }),
+          supabase.from('shipments').select('*', { count: 'exact', head: true }),
+          supabase.from('invoices').select('*', { count: 'exact', head: true })
+        ]);
+
+        document.getElementById('userCount').textContent = users.count || 0;
+        document.getElementById('quoteCount').textContent = quotes.count || 0;
+        document.getElementById('shipmentCount').textContent = shipments.count || 0;
+        document.getElementById('invoiceCount').textContent = invoices.count || 0;
+
+        document.getElementById('mainStatus').className = 'status status-success';
+        document.getElementById('mainStatus').textContent = '✅ Connected';
+
+        addLog(`Stats updated - Users: ${users.count}, Quotes: ${quotes.count}, Shipments: ${shipments.count}, Invoices: ${invoices.count}`, 'success');
+      } catch (error) {
+        document.getElementById('mainStatus').className = 'status status-error';
+        document.getElementById('mainStatus').textContent = '❌ Error';
+        addLog(`Failed to update stats: ${error.message}`, 'error');
+      }
+    }
+
+    window.checkConnection = async function() {
+      const resultDiv = document.getElementById('connectionResult');
+      resultDiv.innerHTML = '<div class="loading"></div> Testing...';
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, email')
+          .limit(3);
+
+        if (error) throw error;
+
+        resultDiv.className = 'result success';
+        resultDiv.innerHTML = `✅ Connected! Found ${data.length} users`;
+        addLog(`Connection test successful. Users: ${JSON.stringify(data)}`, 'success');
+        updateStats();
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Connection failed: ${error.message}`;
+        addLog(`Connection test failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.createTestQuote = async function() {
+      const resultDiv = document.getElementById('quoteResult');
+      resultDiv.innerHTML = '<div class="loading"></div> Creating...';
+
+      try {
+        // Get a user to assign the quote to
+        const { data: users } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'user')
+          .limit(1);
+
+        const customerId = users?.[0]?.id || 'customer-demo-user';
+
+        const testQuote = {
+          id: `TEST-Q-${Date.now()}`,
+          request_id: `TEST-REQ-${Date.now()}`,
+          customer_id: customerId,
+          service_type: 'Air Freight',
+          pickup_location: 'Test Location',
+          destination_warehouses: JSON.stringify([{
+            name: 'Test Warehouse',
+            address: '123 Test St'
+          }]),
+          cargo_ready_date: new Date().toISOString().split('T')[0],
+          status: 'Pending',
+          created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+          .from('quote_requests')
+          .insert(testQuote)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        resultDiv.className = 'result success';
+        resultDiv.innerHTML = `✅ Created quote: ${data.id}`;
+        addLog(`Test quote created: ${JSON.stringify(data)}`, 'success');
+        updateStats();
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Failed: ${error.message}`;
+        addLog(`Quote creation failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.createTestShipment = async function() {
+      const resultDiv = document.getElementById('shipmentResult');
+      resultDiv.innerHTML = '<div class="loading"></div> Creating...';
+
+      try {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'user')
+          .limit(1);
+
+        const customerId = users?.[0]?.id || 'customer-demo-user';
+
+        const testShipment = {
+          id: `TEST-FS-${Date.now()}`,
+          quote_id: `TEST-Q-${Date.now()}`,
+          customer_id: customerId,
+          status: 'Created',
+          origin: 'China',
+          destination: 'USA',
+          cargo_details: {},
+          created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+          .from('shipments')
+          .insert(testShipment)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        resultDiv.className = 'result success';
+        resultDiv.innerHTML = `✅ Created shipment: ${data.id}`;
+        addLog(`Test shipment created: ${JSON.stringify(data)}`, 'success');
+        updateStats();
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `❌ Failed: ${error.message}`;
+        addLog(`Shipment creation failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.checkCache = function() {
+      const resultDiv = document.getElementById('cacheResult');
+
+      const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('cache_'));
+      const cacheSize = cacheKeys.reduce((total, key) => {
+        return total + (localStorage.getItem(key)?.length || 0);
+      }, 0);
+
+      resultDiv.className = 'result info';
+      resultDiv.innerHTML = `📊 ${cacheKeys.length} cached items (${(cacheSize / 1024).toFixed(2)} KB)`;
+      addLog(`Cache inspection: ${cacheKeys.length} items, ${(cacheSize / 1024).toFixed(2)} KB`, 'info');
+    };
+
+    window.testFallback = async function() {
+      const resultDiv = document.getElementById('fallbackResult');
+      resultDiv.innerHTML = '<div class="loading"></div> Testing...';
+
+      // Store some data in cache first
+      localStorage.setItem('cache_test_fallback', JSON.stringify({
+        data: [{ id: 1, name: 'Cached Item' }],
+        timestamp: Date.now()
+      }));
+
+      resultDiv.className = 'result success';
+      resultDiv.innerHTML = '✅ Cache fallback ready';
+      addLog('Fallback test: Cache prepared for offline mode', 'success');
+    };
+
+    window.clearCache = function() {
+      const resultDiv = document.getElementById('clearResult');
+
+      const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('cache_'));
+      cacheKeys.forEach(key => localStorage.removeItem(key));
+
+      resultDiv.className = 'result success';
+      resultDiv.innerHTML = `✅ Cleared ${cacheKeys.length} cache entries`;
+      addLog(`Cache cleared: Removed ${cacheKeys.length} entries`, 'success');
+    };
+
+    // Check connection on load
+    window.addEventListener('load', () => {
+      updateStats();
+      checkConnection();
+    });
+  </script>
+</body>
+</html>

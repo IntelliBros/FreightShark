@@ -42,7 +42,7 @@ import { SystemSettings } from './pages/admin/SystemSettings';
 import { EmailSettings } from './pages/admin/EmailSettings';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import { DataProvider } from './context/DataContext';
+import { DataProvider } from './context/DataContextV2'; // Using Supabase-backed version
 import { NotificationsProvider } from './context/NotificationsContext';
 import { LandingPage } from './pages/LandingPage';
 export function App() {

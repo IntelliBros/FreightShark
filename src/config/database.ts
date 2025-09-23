@@ -20,7 +20,7 @@ export const DATABASE_CONFIG = {
    * - Works offline
    * - No synchronization between devices
    */
-  USE_SUPABASE: true,
+  USE_SUPABASE: true, // ✅ Now using Supabase cloud database!
 
   /**
    * Cache configuration

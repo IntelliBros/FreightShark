@@ -2,9 +2,10 @@ import React, { useEffect, useState, createContext, useContext } from 'react';
 import { DataService } from '../services/DataService';
 import { supabaseDataService } from '../services/SupabaseDataService';
 import type { QuoteRequest, Quote, Shipment, Invoice } from '../services/SupabaseDataService';
+import { DATABASE_CONFIG } from '../config/database';
 
-// Feature flag to switch between localStorage and Supabase
-const USE_SUPABASE = true; // Set to true to use Supabase, false for localStorage
+// Use configuration from database.ts
+const USE_SUPABASE = DATABASE_CONFIG.USE_SUPABASE;
 
 type DataContextType = {
   initialized: boolean;
