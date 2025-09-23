@@ -116,6 +116,11 @@ export const SampleConsolidation = () => {
     const userRequests = await sampleService.getUserSampleRequests(user.id);
     console.log('📦 User requests:', userRequests);
 
+    // Get all shipment requests to filter out samples already in shipments
+    const shipmentRequests = await sampleShipmentService.getUserShipmentRequests(user.id);
+    const samplesInShipments = new Set(shipmentRequests.flatMap(r => r.sample_ids));
+    console.log('📦 Samples already in shipments:', Array.from(samplesInShipments));
+
     // For each request, get the received samples
     const allIncomingSamples: IncomingSample[] = [];
 
@@ -123,8 +128,14 @@ export const SampleConsolidation = () => {
       const receivedSamples = await sampleService.getReceivedSamples(request.id);
       console.log(`📦 Received samples for request ${request.id}:`, receivedSamples);
 
-      // Format received samples for UI
+      // Format received samples for UI, excluding those already in shipments
       receivedSamples.forEach(sample => {
+        // Skip samples that are already in a shipment request
+        if (samplesInShipments.has(sample.id)) {
+          console.log(`📦 Skipping sample ${sample.id} - already in shipment request`);
+          return;
+        }
+
         const incomingSample: IncomingSample = {
           id: sample.id,
           requestId: request.id,
@@ -139,7 +150,7 @@ export const SampleConsolidation = () => {
       });
     }
 
-    console.log('📦 All incoming samples:', allIncomingSamples);
+    console.log('📦 All incoming samples (excluding shipped):', allIncomingSamples);
     setIncomingSamples(allIncomingSamples);
   };
 
@@ -369,6 +380,10 @@ Sample ID: ${currentRequest?.id || 'N/A'}
       setShipmentDeliveryAddress('');
       // Reload samples to reflect changes
       loadIncomingSamples();
+      // Also reload shipment requests if on that tab
+      if (activeTab === 'shipments') {
+        loadShipmentRequests();
+      }
     } else {
       addToast('Failed to create shipment request', 'error');
     }
