@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix User ID Sync - Freight Shark</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2E3B55;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #00b4d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0096b8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #00b4d8;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+            color: #dc3545;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+            color: #28a745;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+            color: #856404;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix User ID Sync Issue</h1>
+        <p class="subtitle">This tool will fix the mismatch between your localStorage user ID and database user ID</p>
+
+        <div class="info-box">
+            <h3>📋 Current Status:</h3>
+            <div id="currentStatus">Checking...</div>
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Clear Incorrect User Data</h3>
+            <p>This will clear the incorrect user with ID starting with "user-17..."</p>
+            <button id="clearBtn" onclick="clearIncorrectUser()">Clear Incorrect User</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Logout and Login Again</h3>
+            <p>After clearing, you need to logout and login again to sync with the correct database ID.</p>
+            <button id="logoutBtn" onclick="logoutUser()">Logout Now</button>
+        </div>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `output ${type}`;
+            div.textContent = message;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+
+        function checkCurrentStatus() {
+            const statusDiv = document.getElementById('currentStatus');
+
+            // Check localStorage
+            const currentUser = JSON.parse(localStorage.getItem('freight_shark_current_user') || 'null');
+            const users = JSON.parse(localStorage.getItem('freight_shark_users') || '[]');
+            const authToken = localStorage.getItem('freight_shark_auth_token');
+
+            let statusHTML = '';
+
+            if (currentUser) {
+                statusHTML += `Current User ID: ${currentUser.id}\n`;
+                statusHTML += `Email: ${currentUser.email}\n`;
+                statusHTML += `Name: ${currentUser.name}\n`;
+
+                if (currentUser.id.startsWith('user-17')) {
+                    statusHTML += '\n⚠️ This is a temporary ID that needs to be fixed!';
+                    statusHTML += '\nCorrect database ID should be: user-9237df03-ebea-4bbd-95c4-95041fc5ec35';
+                }
+            } else {
+                statusHTML += 'No user currently logged in';
+            }
+
+            statusHTML += `\n\nTotal users in localStorage: ${users.length}`;
+
+            // Check for the problematic user
+            const problematicUser = users.find(u => u.email === 'daniel.vadacchino+1@hotmail.com');
+            if (problematicUser) {
+                statusHTML += `\n\n⚠️ Found user with email daniel.vadacchino+1@hotmail.com`;
+                statusHTML += `\n   Current ID: ${problematicUser.id}`;
+                statusHTML += `\n   Should be: user-9237df03-ebea-4bbd-95c4-95041fc5ec35`;
+            }
+
+            statusDiv.textContent = statusHTML;
+        }
+
+        function clearIncorrectUser() {
+            clearOutput();
+            const btn = document.getElementById('clearBtn');
+            btn.disabled = true;
+
+            try {
+                log('🔍 Looking for incorrect user data...', 'info');
+
+                // Get all users
+                let users = JSON.parse(localStorage.getItem('freight_shark_users') || '[]');
+                const originalCount = users.length;
+
+                // Remove users with temporary IDs and the specific email
+                users = users.filter(u => {
+                    if (u.email === 'daniel.vadacchino+1@hotmail.com' && u.id.startsWith('user-17')) {
+                        log(`❌ Removing incorrect user: ${u.id}`, 'warning');
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Also remove any user with the problematic temporary ID pattern
+                users = users.filter(u => {
+                    if (u.id === 'user-1757383342555') {
+                        log(`❌ Removing user with ID: ${u.id}`, 'warning');
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Save cleaned users
+                localStorage.setItem('freight_shark_users', JSON.stringify(users));
+
+                const removedCount = originalCount - users.length;
+                if (removedCount > 0) {
+                    log(`✅ Removed ${removedCount} incorrect user(s)`, 'success');
+                } else {
+                    log('ℹ️ No incorrect users found to remove', 'info');
+                }
+
+                // Clear current user if it's the problematic one
+                const currentUser = JSON.parse(localStorage.getItem('freight_shark_current_user') || 'null');
+                if (currentUser && (currentUser.id.startsWith('user-17') || currentUser.id === 'user-1757383342555')) {
+                    localStorage.removeItem('freight_shark_current_user');
+                    localStorage.removeItem('freight_shark_auth_token');
+                    log('✅ Cleared current user session', 'success');
+                }
+
+                // Clear any sample sequences to start fresh
+                localStorage.removeItem('sampleSequence');
+                log('✅ Cleared sample sequence counter', 'success');
+
+                log('\n✅ Cleanup complete! Now please logout and login again.', 'success');
+
+                // Update status
+                checkCurrentStatus();
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function logoutUser() {
+            clearOutput();
+
+            try {
+                // Clear all auth-related localStorage items
+                localStorage.removeItem('freight_shark_current_user');
+                localStorage.removeItem('freight_shark_auth_token');
+                localStorage.removeItem('authToken');
+
+                log('✅ Logged out successfully!', 'success');
+                log('\nRedirecting to login page in 2 seconds...', 'info');
+
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Check status on load
+        window.onload = () => {
+            checkCurrentStatus();
+        };
+    </script>
+</body>
+</html>
