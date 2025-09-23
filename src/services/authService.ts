@@ -277,6 +277,7 @@ export const authService = {
           .from('users')
           .upsert({
             id: newUser.id,
+            display_id: newUser.display_id,
             name: newUser.name,
             email: newUser.email,
             password_hash: passwordHash || 'mock_hash',

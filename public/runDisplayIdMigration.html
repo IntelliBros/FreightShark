@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Display ID Migration</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #00b4d8 0%, #0077be 100%);
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #2E3B55;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .info-box {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .info-box h3 {
+      color: #2E3B55;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .info-box ul {
+      list-style: none;
+      color: #4b5563;
+      font-size: 14px;
+    }
+
+    .info-box li {
+      padding: 5px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .info-box li:before {
+      content: "•";
+      position: absolute;
+      left: 5px;
+      color: #00b4d8;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #374151;
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #00b4d8;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #00b4d8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: #0096c7;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .success {
+      background: #d1fae5;
+      color: #047857;
+      border: 1px solid #10b981;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #ef4444;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    pre {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Add Display ID Column</h1>
+    <p class="subtitle">This migration adds a simple numerical display ID to all users</p>
+
+    <div class="info-box">
+      <h3>What this migration does:</h3>
+      <ul>
+        <li>Adds a display_id column to the users table</li>
+        <li>Assigns sequential IDs starting from 1</li>
+        <li>Users with numerical IDs get priority (0→1, 1→2, 2→3, etc.)</li>
+        <li>UUID users get assigned next available numbers</li>
+        <li>Auto-assigns display_id to new users</li>
+      </ul>
+    </div>
+
+    <form id="migrationForm">
+      <div class="input-group">
+        <label for="supabaseUrl">Supabase URL</label>
+        <input
+          type="text"
+          id="supabaseUrl"
+          placeholder="https://your-project.supabase.co"
+          required
+        />
+      </div>
+
+      <div class="input-group">
+        <label for="supabaseKey">Supabase Service Role Key</label>
+        <input
+          type="password"
+          id="supabaseKey"
+          placeholder="Your service role key (with admin privileges)"
+          required
+        />
+      </div>
+
+      <button type="submit" id="submitBtn">
+        Run Migration
+      </button>
+    </form>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script type="module">
+    const form = document.getElementById('migrationForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const result = document.getElementById('result');
+
+    // Migration SQL
+    const migrationSQL = `
+-- Add display_id column to users table
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS display_id INTEGER UNIQUE;
+
+-- Create a sequence for generating display IDs
+CREATE SEQUENCE IF NOT EXISTS users_display_id_seq START WITH 1;
+
+-- Add index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_users_display_id ON users(display_id);
+
+-- Update existing users with display IDs
+DO $$
+DECLARE
+    user_record RECORD;
+    current_display_id INTEGER := 1;
+BEGIN
+    -- First, assign display_id to users with numerical IDs in order
+    FOR user_record IN
+        SELECT id FROM users
+        WHERE id ~ '^\\d+$'  -- Only numerical IDs
+        ORDER BY CAST(id AS INTEGER)
+    LOOP
+        UPDATE users
+        SET display_id = current_display_id
+        WHERE id = user_record.id
+        AND display_id IS NULL;
+
+        current_display_id := current_display_id + 1;
+    END LOOP;
+
+    -- Then, assign display_id to users with non-numerical IDs
+    FOR user_record IN
+        SELECT id FROM users
+        WHERE NOT (id ~ '^\\d+$')  -- Non-numerical IDs (UUIDs)
+        ORDER BY created_at, id
+    LOOP
+        UPDATE users
+        SET display_id = current_display_id
+        WHERE id = user_record.id
+        AND display_id IS NULL;
+
+        current_display_id := current_display_id + 1;
+    END LOOP;
+
+    -- Update the sequence to continue from the last assigned ID
+    PERFORM setval('users_display_id_seq', current_display_id);
+END $$;
+
+-- Make display_id NOT NULL after populating existing rows
+ALTER TABLE users
+ALTER COLUMN display_id SET NOT NULL;
+
+-- Add a trigger to automatically assign display_id to new users
+CREATE OR REPLACE FUNCTION assign_display_id()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.display_id IS NULL THEN
+        NEW.display_id := nextval('users_display_id_seq');
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for new user inserts
+DROP TRIGGER IF EXISTS set_display_id_on_insert ON users;
+CREATE TRIGGER set_display_id_on_insert
+    BEFORE INSERT ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION assign_display_id();
+
+-- Add comment for documentation
+COMMENT ON COLUMN users.display_id IS 'Simple numerical ID for display purposes, auto-incremented starting from 1';
+    `.trim();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const supabaseUrl = document.getElementById('supabaseUrl').value.trim();
+      const supabaseKey = document.getElementById('supabaseKey').value.trim();
+
+      submitBtn.innerHTML = '<span class="loading"></span>Running migration...';
+      submitBtn.disabled = true;
+      result.style.display = 'none';
+
+      try {
+        // Execute the migration using Supabase REST API
+        const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({ query: migrationSQL })
+        });
+
+        // If the RPC doesn't exist, try direct SQL execution
+        if (response.status === 404) {
+          // Try alternative approach using the query endpoint
+          const altResponse = await fetch(`${supabaseUrl}/rest/v1/`, {
+            method: 'POST',
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              query: migrationSQL
+            })
+          });
+
+          if (!altResponse.ok) {
+            throw new Error(`Alternative approach failed: ${altResponse.status}`);
+          }
+        }
+
+        // Check if users were updated successfully
+        const verifyResponse = await fetch(`${supabaseUrl}/rest/v1/users?select=id,email,display_id&order=display_id`, {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`
+          }
+        });
+
+        if (!verifyResponse.ok) {
+          throw new Error('Failed to verify migration');
+        }
+
+        const users = await verifyResponse.json();
+
+        result.className = 'result success';
+        result.innerHTML = `
+          <strong>✅ Migration completed successfully!</strong>
+          <p style="margin-top: 10px;">Display IDs assigned to ${users.length} users:</p>
+          <pre>${JSON.stringify(users.map(u => ({
+            id: u.id,
+            email: u.email,
+            display_id: u.display_id
+          })), null, 2)}</pre>
+        `;
+        result.style.display = 'block';
+
+      } catch (error) {
+        console.error('Migration error:', error);
+        result.className = 'result error';
+        result.innerHTML = `
+          <strong>❌ Migration failed</strong>
+          <p style="margin-top: 10px;">${error.message}</p>
+          <p style="margin-top: 10px;">
+            <strong>Alternative approach:</strong> Run the migration directly in your Supabase SQL Editor:
+          </p>
+          <pre>${migrationSQL}</pre>
+        `;
+        result.style.display = 'block';
+      } finally {
+        submitBtn.innerHTML = 'Run Migration';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
