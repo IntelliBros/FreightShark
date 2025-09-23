@@ -6,7 +6,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { FileTextIcon, PlusIcon, MinusIcon, InfoIcon, ArrowLeftIcon, BuildingIcon, TruckIcon, DollarSignIcon } from 'lucide-react';
 import { DataService, QuoteRequest, User } from '../../../services/DataService';
 import { useToast } from '../../../context/ToastContext';
-import { useData } from '../../../context/DataContext';
+import { useData } from '../../../context/DataContextV2';
 export const ProvideQuote = () => {
   const {
     requestId

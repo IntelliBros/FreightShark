@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { ChatPanel } from '../../components/chat/ChatPanel';
 import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, MessageCircleIcon, ChevronRightIcon, ChevronDownIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, ImageIcon, RefreshCwIcon, BoxIcon, ReceiptIcon, DollarSignIcon, CalendarIcon, CreditCardIcon } from 'lucide-react';
 import { DataService, QuoteRequest } from '../../services/DataService';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { amazonWarehouseService } from '../../services/amazonWarehouseService';

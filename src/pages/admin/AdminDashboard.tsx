@@ -4,7 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { UsersIcon, ShieldIcon, TruckIcon, FileTextIcon, ServerIcon, AlertOctagonIcon, BarChart2Icon, ActivityIcon, DollarSignIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 export const AdminDashboard = () => {
   const {
     user

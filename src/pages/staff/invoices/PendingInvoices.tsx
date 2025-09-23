@@ -4,7 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { ReceiptIcon, SearchIcon, FilterIcon, ChevronDownIcon, MailIcon, ClockIcon, AlertCircleIcon, DownloadIcon } from 'lucide-react';
-import { useData } from '../../../context/DataContext';
+import { useData } from '../../../context/DataContextV2';
 import { useToast } from '../../../context/ToastContext';
 
 export const PendingInvoices = () => {

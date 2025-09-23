@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Calculator, AlertTriangle, Package, DollarSign, Calendar, Info, Box, Weight, Ruler } from 'lucide-react';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 
 interface WarehouseRate {
   warehouseCode: string;

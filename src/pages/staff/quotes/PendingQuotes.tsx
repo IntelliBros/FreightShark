@@ -4,7 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { FileTextIcon, SearchIcon, FilterIcon, ChevronDownIcon, ClockIcon } from 'lucide-react';
-import { useData } from '../../../context/DataContext';
+import { useData } from '../../../context/DataContextV2';
 import { DataService, Quote, QuoteRequest, User } from '../../../services/DataService';
 
 interface PendingQuoteDetails {

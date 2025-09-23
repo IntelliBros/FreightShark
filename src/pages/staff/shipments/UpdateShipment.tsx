@@ -5,7 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { SearchIcon, UploadIcon, SaveIcon, PackageIcon, MapPinIcon, FileTextIcon, TrashIcon } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
-import { useData } from '../../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 import { DataService } from '../../../services/DataService';
 
 // Shipment statuses

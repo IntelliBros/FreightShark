@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { FileTextIcon, TruckIcon, ClockIcon, ReceiptIcon, MessageCircleIcon, DollarSignIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 import { QuoteRequest } from '../../services/DataService';
 
 export const StaffDashboard = () => {

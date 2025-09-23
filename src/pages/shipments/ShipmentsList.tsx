@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { TruckIcon, SearchIcon, FilterIcon, ChevronDownIcon, ClockIcon, MapPinIcon, PackageIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 
 export const ShipmentsList = () => {
   const [filterOpen, setFilterOpen] = useState(false);

@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/Badge';
 import { FileTextIcon, FileIcon, DownloadIcon, UploadIcon, FolderIcon, SearchIcon, FilterIcon, MoreHorizontalIcon, PlusIcon, FileArchiveIcon } from 'lucide-react';
 import { DataService } from '../../services/DataService';
 import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 import { useToast } from '../../context/ToastContext';
 import { generateInvoicePDF } from '../../utils/generateInvoicePDF';
 

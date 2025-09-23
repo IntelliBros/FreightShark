@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { FileTextIcon, ArrowRightIcon, ClockIcon, DollarSignIcon, SearchIcon, FilterIcon, CheckIcon, XIcon } from 'lucide-react';
 import { DataService, QuoteRequest, Quote } from '../../services/DataService';
 import { useToast } from '../../context/ToastContext';
-import { useData } from '../../context/DataContext';
+import { useData } from '../../context/DataContextV2';
 import { useAuth } from '../../context/AuthContext';
 type QuoteWithRequest = {
   request: QuoteRequest;

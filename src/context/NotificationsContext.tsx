@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { useData } from './DataContext';
+import { useData } from './DataContextV2';
 import { FileText, AlertCircle, MessageSquare, Package } from 'lucide-react';
 import notificationService from '../services/NotificationService';
 
