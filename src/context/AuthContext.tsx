@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 import { DataService } from '../services/DataService';
 type User = {
   id: string;
+  display_id?: number;
   name: string;
   email: string;
   company: string;

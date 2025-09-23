@@ -100,9 +100,23 @@ export const generateShippingLabel = async (data: LabelData) => {
   }
 };
 
-// Generate a unique sample ID
-export const generateSampleId = (userId: string): string => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `SMPL-${userId.substring(0, 6).toUpperCase()}-${timestamp}-${random}`;
+// Helper to get next sample sequence number
+const getNextSampleSequence = (): number => {
+  // Get current sequence from localStorage
+  const currentSeq = parseInt(localStorage.getItem('sampleSequence') || '0', 10);
+  const nextSeq = currentSeq + 1;
+  localStorage.setItem('sampleSequence', nextSeq.toString());
+  return nextSeq;
+};
+
+// Generate a unique sample ID with format: SMPL[xxxx]-USER[display_id]
+export const generateSampleId = (userId: string, displayId?: number): string => {
+  // Get the sequence number and pad to 4 digits
+  const sequence = getNextSampleSequence();
+  const paddedSequence = sequence.toString().padStart(4, '0');
+
+  // Use display_id if provided, otherwise fallback to userId
+  const userIdentifier = displayId ? displayId.toString() : userId.substring(0, 6).toUpperCase();
+
+  return `SMPL${paddedSequence}-USER${userIdentifier}`;
 };

@@ -173,7 +173,7 @@ export const SampleConsolidation = () => {
       return;
     }
 
-    const sampleId = generateSampleId(user.id);
+    const sampleId = generateSampleId(user.id, user.display_id);
     console.log('📋 Generated Sample ID:', sampleId);
 
     // Prepare data for database
