@@ -272,8 +272,9 @@ export function ShipmentEstimator() {
 
       {/* Check if there's any historical data at all */}
       {availableWarehouses.length === 0 ? (
-        /* Full page empty state when no historical data */
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-4">
+        <>
+          {/* Full page empty state when no historical data */}
+          <div className="bg-white rounded-lg shadow-sm p-8 mb-4">
           <div className="text-center max-w-md mx-auto">
             <div className="mb-4">
               <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
@@ -310,6 +311,187 @@ export function ShipmentEstimator() {
             </button>
           </div>
         </div>
+
+        {/* Chargeable Weight Calculator - Always Show When No Historical Data */}
+        <div className="max-w-md mx-auto mt-6">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Ruler className="w-4 h-4" />
+              Chargeable Weight Calculator
+            </h2>
+            <p className="text-xs text-gray-600 mb-3">
+              Calculate your shipment's chargeable weight to prepare for your quote request
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <Box className="w-3 h-3 inline-block mr-1" />
+                  Carton Count
+                </label>
+                <input
+                  type="number"
+                  value={calcCartonCount}
+                  onChange={(e) => {
+                    setCalcCartonCount(e.target.value);
+                    setShowCalcResults(false);
+                  }}
+                  placeholder="Number of cartons"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="1"
+                  step="1"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Carton Dimensions Unit
+                </label>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setCalcDimensionUnit('cm')}
+                    className={`flex-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
+                      calcDimensionUnit === 'cm'
+                        ? 'bg-blue-100 border-blue-300 text-blue-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    CM
+                  </button>
+                  <button
+                    onClick={() => setCalcDimensionUnit('in')}
+                    className={`flex-1 px-2 py-1 text-xs rounded-lg border transition-colors ${
+                      calcDimensionUnit === 'in'
+                        ? 'bg-blue-100 border-blue-300 text-blue-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    IN
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Dimensions Per Carton
+                </label>
+                <div className="grid grid-cols-3 gap-1">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">
+                      Length
+                    </label>
+                    <input
+                      type="number"
+                      value={calcLength}
+                      onChange={(e) => {
+                        setCalcLength(e.target.value);
+                        setShowCalcResults(false);
+                      }}
+                      placeholder="L"
+                      className="w-full px-1 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">
+                      Width
+                    </label>
+                    <input
+                      type="number"
+                      value={calcWidth}
+                      onChange={(e) => {
+                        setCalcWidth(e.target.value);
+                        setShowCalcResults(false);
+                      }}
+                      placeholder="W"
+                      className="w-full px-1 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-0.5">
+                      Height
+                    </label>
+                    <input
+                      type="number"
+                      value={calcHeight}
+                      onChange={(e) => {
+                        setCalcHeight(e.target.value);
+                        setShowCalcResults(false);
+                      }}
+                      placeholder="H"
+                      className="w-full px-1 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <Weight className="w-3 h-3 inline-block mr-1" />
+                  Weight Per Carton (kg)
+                </label>
+                <input
+                  type="number"
+                  value={calcWeight}
+                  onChange={(e) => {
+                    setCalcWeight(e.target.value);
+                    setShowCalcResults(false);
+                  }}
+                  placeholder="Weight per carton in kilograms"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                />
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Weight × carton count = total weight
+                </p>
+              </div>
+
+              <button
+                onClick={handleCalculateChargeable}
+                disabled={!calcCartonCount || !calcLength || !calcWidth || !calcHeight || !calcWeight}
+                className="w-full px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                Calculate Chargeable Weight
+              </button>
+
+              {/* Calculator Results */}
+              {showCalcResults && calculatedChargeable > 0 && (
+                <div className="mt-2 p-2 bg-gray-50 rounded-lg space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600">Total Gross Weight:</span>
+                    <span className="font-medium">{grossWeight.toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600">
+                      Volumetric (÷{calcDimensionUnit === 'in' ? '366' : '6000'}):
+                    </span>
+                    <span className="font-medium">{volumetricWeight.toFixed(2)} kg</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-gray-900">Chargeable Weight:</span>
+                      <span className={`text-sm font-bold ${
+                        grossWeight > volumetricWeight ? 'text-blue-600' : 'text-green-600'
+                      }`}>
+                        {calculatedChargeable.toFixed(2)} kg
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {grossWeight > volumetricWeight ? 'Using gross weight' : 'Using volumetric weight'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        </>
       ) : (
         /* Main Grid Layout - Dynamic width based on whether estimate is shown */
         <div className={`grid gap-4 mb-4 items-start ${showEstimate ? 'lg:grid-cols-[2fr_1fr]' : 'lg:grid-cols-2'}`}>
