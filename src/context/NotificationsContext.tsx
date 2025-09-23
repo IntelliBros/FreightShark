@@ -151,6 +151,44 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     }
   }, [user]);
 
+  // Refresh notifications from database
+  const refreshNotifications = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      // Fetch notifications from database
+      const dbNotifications = await notificationService.getUserNotifications(user.id);
+
+      // Convert database notifications to UI format
+      const formattedNotifications = dbNotifications.map(notif => ({
+        id: notif.id,
+        type: notif.type as Notification['type'],
+        icon: notif.icon === 'Package' ? Package :
+              notif.icon === 'FileText' ? FileText :
+              notif.icon === 'MessageSquare' ? MessageSquare : AlertCircle,
+        title: notif.title,
+        message: notif.message,
+        timestamp: notif.created_at,
+        date: formatDate(new Date(notif.created_at)),
+        read: notif.read,
+        link: notif.link || '#'
+      }));
+
+      setNotifications(formattedNotifications);
+
+      // Cache in localStorage for faster initial load
+      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
+    } catch (error) {
+      console.error('Failed to refresh notifications:', error);
+
+      // Fallback to localStorage cache
+      const cachedNotifications = localStorage.getItem(`notifications_${user.id}`);
+      if (cachedNotifications) {
+        setNotifications(JSON.parse(cachedNotifications));
+      }
+    }
+  }, [user]);
+
   // Load notifications from localStorage on mount
   useEffect(() => {
     if (user?.id) {
@@ -203,44 +241,6 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
     setNotifications(initialNotifications);
   };
-
-  // Refresh notifications from database
-  const refreshNotifications = useCallback(async () => {
-    if (!user?.id) return;
-
-    try {
-      // Fetch notifications from database
-      const dbNotifications = await notificationService.getUserNotifications(user.id);
-
-      // Convert database notifications to UI format
-      const formattedNotifications = dbNotifications.map(notif => ({
-        id: notif.id,
-        type: notif.type as Notification['type'],
-        icon: notif.icon === 'Package' ? Package :
-              notif.icon === 'FileText' ? FileText :
-              notif.icon === 'MessageSquare' ? MessageSquare : AlertCircle,
-        title: notif.title,
-        message: notif.message,
-        timestamp: notif.created_at,
-        date: formatDate(new Date(notif.created_at)),
-        read: notif.read,
-        link: notif.link || '#'
-      }));
-
-      setNotifications(formattedNotifications);
-
-      // Cache in localStorage for faster initial load
-      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
-    } catch (error) {
-      console.error('Failed to refresh notifications:', error);
-
-      // Fallback to localStorage cache
-      const cachedNotifications = localStorage.getItem(`notifications_${user.id}`);
-      if (cachedNotifications) {
-        setNotifications(JSON.parse(cachedNotifications));
-      }
-    }
-  }, [user]);
 
   // Monitor for new messages from database
   useEffect(() => {

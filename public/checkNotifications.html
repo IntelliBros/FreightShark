@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Notifications</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .email { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .notification { background: #e0f0ff; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h2>Simulated Emails</h2>
+    <div id="emails"></div>
+
+    <h2>User Notifications</h2>
+    <div id="notifications"></div>
+
+    <script>
+        // Check simulated emails
+        const emails = JSON.parse(localStorage.getItem('freight_shark_simulated_emails') || '[]');
+        const emailsDiv = document.getElementById('emails');
+
+        if (emails.length === 0) {
+            emailsDiv.innerHTML = '<p>No simulated emails found</p>';
+        } else {
+            // Show last 5 emails
+            emails.slice(-5).reverse().forEach(email => {
+                const div = document.createElement('div');
+                div.className = 'email';
+                div.innerHTML = `
+                    <strong>To:</strong> ${email.to}<br>
+                    <strong>Subject:</strong> ${email.subject}<br>
+                    <strong>Template:</strong> ${email.template}<br>
+                    <strong>Time:</strong> ${new Date(email.timestamp).toLocaleString()}<br>
+                    <strong>Body:</strong><br><pre>${email.body}</pre>
+                `;
+                emailsDiv.appendChild(div);
+            });
+        }
+
+        // Check notifications for all users
+        const notificationsDiv = document.getElementById('notifications');
+        const allKeys = Object.keys(localStorage);
+        const notificationKeys = allKeys.filter(key => key.startsWith('notifications_'));
+
+        if (notificationKeys.length === 0) {
+            notificationsDiv.innerHTML = '<p>No user notifications found</p>';
+        } else {
+            notificationKeys.forEach(key => {
+                const userId = key.replace('notifications_', '');
+                const notifications = JSON.parse(localStorage.getItem(key) || '[]');
+
+                if (notifications.length > 0) {
+                    const div = document.createElement('div');
+                    div.innerHTML = `<h3>User ${userId}:</h3>`;
+
+                    notifications.slice(0, 3).forEach(notif => {
+                        const notifDiv = document.createElement('div');
+                        notifDiv.className = 'notification';
+                        notifDiv.innerHTML = `
+                            <strong>Type:</strong> ${notif.type}<br>
+                            <strong>Title:</strong> ${notif.title}<br>
+                            <strong>Message:</strong> ${notif.message}<br>
+                            <strong>Read:</strong> ${notif.read ? 'Yes' : 'No'}<br>
+                            <strong>Link:</strong> ${notif.link || 'None'}
+                        `;
+                        div.appendChild(notifDiv);
+                    });
+
+                    notificationsDiv.appendChild(div);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
