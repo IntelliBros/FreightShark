@@ -673,7 +673,7 @@ export function ShipmentEstimator() {
                   <Weight className="w-3 h-3 inline-block mr-1" />
                   Chargeable Weight (kg)
                 </label>
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   <input
                     type="number"
                     value={chargeableWeight}
@@ -682,14 +682,14 @@ export function ShipmentEstimator() {
                       setShowEstimate(false);
                     }}
                     placeholder="Enter weight in kilograms"
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     step="0.01"
                   />
                   {showCalcResults && calculatedChargeable > 0 && (
                     <button
                       onClick={handleUseCalculatedWeight}
-                      className="px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors whitespace-nowrap"
+                      className="w-full px-2 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
                       title="Use calculated chargeable weight"
                     >
                       Use {calculatedChargeable.toFixed(2)} kg
