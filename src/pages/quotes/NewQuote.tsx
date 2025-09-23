@@ -1840,9 +1840,8 @@ export const NewQuote = () => {
                     <div className="mt-2 text-sm text-blue-700">
                       <p>
                         Your quote request is ready to be submitted. Our team
-                        will review your request and provide you with exact
-                        pricing within 1 business day. You will be notified when
-                        your quote is ready for review.
+                        will review your request and provide you with a quote
+                        as soon as possible.
                       </p>
                     </div>
                   </div>
