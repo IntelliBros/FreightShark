@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { PackageIcon, TruckIcon, ClockIcon, CheckCircleIcon, DollarSignIcon, MapPinIcon, CalendarIcon, CopyIcon, ExternalLinkIcon } from 'lucide-react';
+import { PackageIcon, TruckIcon, ClockIcon, CheckCircleIcon, DollarSignIcon, MapPinIcon, CalendarIcon, CopyIcon, ExternalLinkIcon, ImageIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { sampleShipmentService, type SampleShipmentRequest } from '../../services/sampleShipmentService';
@@ -153,6 +153,30 @@ export const SampleShipments = () => {
                     <p className="text-sm text-gray-600">{request.quantity} sample(s)</p>
                   </div>
                 </div>
+
+                {request.package_photo && (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Package Photo</p>
+                    <img
+                      src={request.package_photo}
+                      alt="Package"
+                      className="w-full max-w-md rounded-lg shadow-md cursor-pointer hover:opacity-95 transition-opacity"
+                      onClick={() => {
+                        const modal = document.createElement('div');
+                        modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                        modal.onclick = () => modal.remove();
+                        modal.innerHTML = `
+                          <img src="${request.package_photo}" class="max-w-[90%] max-h-[90%] rounded-lg" />
+                        `;
+                        document.body.appendChild(modal);
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      <ImageIcon className="inline w-3 h-3 mr-1" />
+                      Click image to enlarge
+                    </p>
+                  </div>
+                )}
 
                 {request.payment_link && (
                   <div className="mb-4 p-3 bg-blue-50 rounded-lg">
