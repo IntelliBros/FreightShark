@@ -43,7 +43,8 @@ export const SampleManagement = () => {
   const [samplePhoto, setSamplePhoto] = useState<string>('');
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>('');
-  const [showRequestSelection, setShowRequestSelection] = useState(false);
+  const [currentCameraFacing, setCurrentCameraFacing] = useState<'environment' | 'user'>('environment');
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
@@ -139,33 +140,67 @@ export const SampleManagement = () => {
       codeReaderRef.current = codeReader;
 
       console.log('📹 Requesting camera permissions...');
-      // First check if we have camera permission
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment', // Prefer back camera for better QR scanning
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 }
-          }
-        });
-        console.log('✅ Camera permission granted');
-        // Stop the test stream
-        stream.getTracks().forEach(track => track.stop());
-      } catch (permError) {
-        console.error('❌ Camera permission denied:', permError);
-        throw new Error('Camera permission is required for QR code scanning. Use manual entry instead.');
-      }
 
+      // Get available cameras first
       console.log('📹 Listing video input devices...');
       const devices = await codeReader.listVideoInputDevices();
       console.log('📹 Available devices:', devices);
+      setAvailableCameras(devices);
 
       if (devices.length === 0) {
         throw new Error('No camera devices found');
       }
 
-      const selectedDeviceId = devices[0].deviceId;
-      console.log('📹 Selected device:', selectedDeviceId);
+      // Try to find the best camera based on facing mode
+      let selectedDeviceId = null;
+
+      // Look for a camera with the desired facing mode (back camera preferred)
+      const preferredFacing = currentCameraFacing;
+      console.log(`📹 Looking for camera with facing mode: ${preferredFacing}`);
+
+      // First try with facingMode constraint
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: preferredFacing },
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 }
+          }
+        });
+        console.log(`✅ Camera permission granted with ${preferredFacing} camera`);
+
+        // Get the actual device ID from the stream
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        selectedDeviceId = settings.deviceId;
+        console.log('📹 Auto-selected device:', selectedDeviceId, 'facing:', settings.facingMode);
+
+        // Stop the test stream
+        stream.getTracks().forEach(track => track.stop());
+      } catch (facingModeError) {
+        console.log('📹 Facing mode constraint failed, trying first available camera...');
+
+        // Fallback to first available camera
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: devices[0].deviceId,
+              width: { ideal: 1280, min: 640 },
+              height: { ideal: 720, min: 480 }
+            }
+          });
+          console.log('✅ Camera permission granted with fallback camera');
+          selectedDeviceId = devices[0].deviceId;
+          stream.getTracks().forEach(track => track.stop());
+        } catch (fallbackError) {
+          console.error('❌ Camera permission denied:', fallbackError);
+          throw new Error('Camera permission is required for QR code scanning. Use manual entry instead.');
+        }
+      }
+
+      if (!selectedDeviceId) {
+        selectedDeviceId = devices[0].deviceId;
+      }
 
       console.log('📹 Starting video decode...');
       await codeReader.decodeFromVideoDevice(
@@ -218,6 +253,25 @@ export const SampleManagement = () => {
     }
   };
 
+  const switchCamera = async () => {
+    if (!isScanning) return;
+
+    console.log('🔄 Switching camera...');
+    const newFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
+    console.log(`📹 Switching from ${currentCameraFacing} to ${newFacing}`);
+
+    // Stop current scanning
+    stopScanning();
+
+    // Update facing mode
+    setCurrentCameraFacing(newFacing);
+
+    // Small delay to ensure camera is released
+    setTimeout(() => {
+      startScanning();
+    }, 500);
+  };
+
   const processScanResult = async (sampleId: string) => {
     console.log('🔍 Processing scanned sample:', sampleId);
 
@@ -229,20 +283,35 @@ export const SampleManagement = () => {
 
     const trimmedSampleId = sampleId.trim();
 
-    // Allow unlimited scanning of the same sample ID
-    // Staff can process the same sample ID multiple times for different consolidation requests
-    // or if they need to re-process samples
+    // The scanned QR code content IS the consolidation request ID
+    // Find the matching consolidation request automatically
+    const matchingRequest = sampleRequests.find(request => request.id === trimmedSampleId);
 
-    // Store the scanned sample ID and show consolidation request selection
+    if (!matchingRequest) {
+      setScanError(`No consolidation request found for ID: ${trimmedSampleId}`);
+      console.error('❌ No matching consolidation request found for:', trimmedSampleId);
+      return;
+    }
+
+    console.log('✅ Found matching consolidation request:', matchingRequest);
+
+    // Automatically set the found request and sample ID
     setScannedSampleId(trimmedSampleId);
-    setShowRequestSelection(true);
-    setScanResult(`Sample ID: ${trimmedSampleId} - Please select consolidation request`);
+    setSelectedRequestId(matchingRequest.id);
+
+    // Skip manual selection and directly open photo capture
+    setShowRequestSelection(false);
+    setShowPhotoCapture(true);
+
+    setScanResult(`Sample for: ${matchingRequest.productName} - Take a photo`);
     setScanError('');
+
+    console.log('📸 Opening photo capture for automatic consolidation request selection');
   };
 
   const completeReceivedSample = async () => {
     if (!scannedSampleId || !samplePhoto || !selectedRequestId) {
-      setScanError('Please scan a sample, select a consolidation request, and take a photo');
+      setScanError('Please scan a sample and take a photo');
       return;
     }
 
@@ -312,14 +381,6 @@ export const SampleManagement = () => {
     }
   };
 
-  const handleRequestSelection = (requestId: string) => {
-    setSelectedRequestId(requestId);
-    setShowRequestSelection(false);
-    setShowPhotoCapture(true);
-
-    const request = sampleRequests.find(r => r.id === requestId);
-    setScanResult(`Sample ${scannedSampleId} assigned to ${request?.productName}. Please take a photo.`);
-  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -417,12 +478,24 @@ export const SampleManagement = () => {
                     <div className="bg-black rounded-lg overflow-hidden">
                       <video ref={videoRef} className="w-full h-64 object-cover" />
                     </div>
-                    <button
-                      onClick={stopScanning}
-                      className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 w-full"
-                    >
-                      Stop Scanning
-                    </button>
+                    <div className="flex gap-3">
+                      {availableCameras.length > 1 && (
+                        <button
+                          onClick={switchCamera}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
+                          title="Switch Camera"
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          Switch Camera
+                        </button>
+                      )}
+                      <button
+                        onClick={stopScanning}
+                        className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 flex-1"
+                      >
+                        Stop Scanning
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -441,54 +514,6 @@ export const SampleManagement = () => {
                 )}
               </div>
 
-              {showRequestSelection && (
-                <div className="bg-green-50 rounded-lg p-6 border-2 border-green-300">
-                  <h3 className="text-lg font-semibold mb-4 text-green-900">
-                    <Package className="h-5 w-5 inline mr-2" />
-                    Select Consolidation Request
-                  </h3>
-                  <div className="space-y-4">
-                    {scannedSampleId && (
-                      <p className="text-sm text-green-800">
-                        Sample ID: <span className="font-mono font-bold">{scannedSampleId}</span>
-                      </p>
-                    )}
-                    <p className="text-sm text-green-700 mb-4">
-                      Choose which consolidation request this sample belongs to:
-                    </p>
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {sampleRequests.map((request) => (
-                        <div
-                          key={request.id}
-                          onClick={() => handleRequestSelection(request.id)}
-                          className="p-4 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-green-900">{request.productName}</h4>
-                              <p className="text-sm text-green-700">Request ID: {request.id}</p>
-                              <p className="text-sm text-green-600">
-                                {request.receivedSamples} samples received (unlimited allowed)
-                              </p>
-                            </div>
-                            <div className="text-sm text-green-600">
-                              {request.userName || 'Unknown Customer'}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {sampleRequests.length === 0 && (
-                      <div className="text-center py-8">
-                        <p className="text-green-700">No consolidation requests found.</p>
-                        <p className="text-sm text-green-600 mt-1">
-                          Ask customers to create a consolidation request first.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {showPhotoCapture && (
                 <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-300">
