@@ -30,6 +30,42 @@ class SampleService {
     try {
       console.log('Creating sample request:', request);
 
+      // First, ensure user exists in database
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', request.user_id)
+        .single();
+
+      if (userCheckError && userCheckError.code === 'PGRST116') {
+        // User doesn't exist, create them
+        console.log('User not found in database, creating user:', request.user_id);
+
+        // Get user details from localStorage
+        const storedUsers = localStorage.getItem('freight_shark_users');
+        const users = storedUsers ? JSON.parse(storedUsers) : [];
+        const localUser = users.find((u: any) => u.id === request.user_id);
+
+        if (localUser) {
+          const { error: createUserError } = await supabase
+            .from('users')
+            .insert({
+              id: request.user_id,
+              email: localUser.email || 'unknown@example.com',
+              name: localUser.name || 'Unknown User',
+              role: localUser.role || 'user',
+              display_id: localUser.display_id || Math.floor(Math.random() * 10000)
+            });
+
+          if (createUserError) {
+            console.error('Failed to create user:', createUserError);
+            // Continue anyway - the user might exist with different data
+          } else {
+            console.log('✅ User created successfully');
+          }
+        }
+      }
+
       const { data, error } = await supabase
         .from('sample_requests')
         .insert({
@@ -55,6 +91,53 @@ class SampleService {
         // If table doesn't exist, provide helpful message
         if (error.code === '42P01') {
           console.error('Table does not exist. Please run the migration first.');
+        }
+
+        // If foreign key constraint error, user doesn't exist
+        if (error.code === '23503') {
+          console.error('Foreign key constraint error - user may not exist in database');
+          console.error('Attempting to create user and retry...');
+
+          // Get user details from localStorage
+          const storedUsers = localStorage.getItem('freight_shark_users');
+          const users = storedUsers ? JSON.parse(storedUsers) : [];
+          const localUser = users.find((u: any) => u.id === request.user_id);
+
+          if (localUser) {
+            // Try to create/upsert the user
+            const { error: upsertError } = await supabase
+              .from('users')
+              .upsert({
+                id: request.user_id,
+                email: localUser.email || 'unknown@example.com',
+                name: localUser.name || 'Unknown User',
+                role: localUser.role || 'user',
+                display_id: localUser.display_id || Math.floor(Math.random() * 10000)
+              });
+
+            if (!upsertError) {
+              console.log('✅ User created/updated, retrying sample request...');
+
+              // Retry the sample request
+              const { data: retryData, error: retryError } = await supabase
+                .from('sample_requests')
+                .insert({
+                  id: request.id,
+                  user_id: request.user_id,
+                  product_name: request.product_name,
+                  expected_samples: request.expected_samples,
+                  received_samples: 0,
+                  status: 'pending'
+                })
+                .select()
+                .single();
+
+              if (!retryError) {
+                console.log('✅ Sample request created after user creation');
+                return retryData;
+              }
+            }
+          }
         }
 
         // If duplicate key error (409 conflict), try with a new ID
