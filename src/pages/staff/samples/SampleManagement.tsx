@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, Scan, CheckCircle, XCircle, Search, Filter, Download, AlertCircle, Camera, Upload } from 'lucide-react';
+import { Package, Scan, CheckCircle, XCircle, Search, Filter, Download, AlertCircle, Camera, Upload, TruckIcon, Link, CreditCard } from 'lucide-react';
 import { BrowserQRCodeReader, BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -58,6 +58,7 @@ export const SampleManagement = () => {
 
   useEffect(() => {
     loadSampleData();
+    loadShipmentRequests();
     return () => {
       if (codeReaderRef.current) {
         codeReaderRef.current.reset();
@@ -120,6 +121,16 @@ export const SampleManagement = () => {
           setReceivedSamples(prev => [...prev, localRec]);
         }
       });
+    }
+  };
+
+  const loadShipmentRequests = async () => {
+    try {
+      const requests = await sampleShipmentService.getAllShipmentRequests();
+      setShipmentRequests(requests);
+      console.log('Loaded shipment requests:', requests);
+    } catch (error) {
+      console.error('Error loading shipment requests:', error);
     }
   };
 
@@ -456,6 +467,17 @@ export const SampleManagement = () => {
               <CheckCircle className="h-4 w-4 inline mr-2" />
               Received Samples
             </button>
+            <button
+              onClick={() => setActiveTab('shipments')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+                activeTab === 'shipments'
+                  ? 'border-[#00b4d8] text-[#00b4d8]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <TruckIcon className="h-4 w-4 inline mr-2" />
+              Shipment Requests
+            </button>
           </nav>
         </div>
 
@@ -739,6 +761,226 @@ export const SampleManagement = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'shipments' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Sample Shipment Requests</h2>
+                <button
+                  onClick={loadShipmentRequests}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {shipmentRequests.length === 0 ? (
+                <div className="bg-gray-50 rounded-lg p-8 text-center">
+                  <TruckIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">No shipment requests at this time</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {shipmentRequests.map((request) => (
+                    <div key={request.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            Request #{request.id}
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            User ID: {request.user_id}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Samples: {request.quantity} item(s)
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Created: {new Date(request.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          request.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                          request.status === 'paid' ? 'bg-green-100 text-green-800' :
+                          request.status === 'payment_pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {request.status.replace('_', ' ')}
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 rounded p-3 mb-3">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Delivery Address:</p>
+                        <p className="text-sm text-gray-600">{request.delivery_address}</p>
+                      </div>
+
+                      {selectedShipmentRequest?.id === request.id ? (
+                        <div className="space-y-3 border-t pt-3">
+                          {/* Package Photo Upload */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Package Photo
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setPackagePhoto(reader.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="flex-1 text-sm"
+                              />
+                              {packagePhoto && (
+                                <button
+                                  onClick={async () => {
+                                    const success = await sampleShipmentService.updatePackagePhoto(request.id, packagePhoto);
+                                    if (success) {
+                                      alert('Package photo uploaded');
+                                      setPackagePhoto('');
+                                      loadShipmentRequests();
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+                                >
+                                  Upload
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Payment Link */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Payment Link
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={paymentLink}
+                                onChange={(e) => setPaymentLink(e.target.value)}
+                                placeholder="https://payment-provider.com/..."
+                                className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                              />
+                              <button
+                                onClick={async () => {
+                                  if (paymentLink) {
+                                    const success = await sampleShipmentService.updatePaymentLink(request.id, paymentLink);
+                                    if (success) {
+                                      alert('Payment link added');
+                                      setPaymentLink('');
+                                      loadShipmentRequests();
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                              >
+                                Add Link
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Mark as Paid */}
+                          {request.status === 'payment_pending' && (
+                            <button
+                              onClick={async () => {
+                                const success = await sampleShipmentService.markAsPaid(request.id);
+                                if (success) {
+                                  alert('Marked as paid');
+                                  loadShipmentRequests();
+                                }
+                              }}
+                              className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                            >
+                              <CreditCard className="h-4 w-4 inline mr-2" />
+                              Mark as Paid
+                            </button>
+                          )}
+
+                          {/* Tracking Number and Ship */}
+                          {request.status === 'paid' && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tracking Number
+                              </label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={trackingNumber}
+                                  onChange={(e) => setTrackingNumber(e.target.value)}
+                                  placeholder="Enter tracking number"
+                                  className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                                />
+                                <button
+                                  onClick={async () => {
+                                    if (trackingNumber) {
+                                      const success = await sampleShipmentService.markAsShipped(request.id, trackingNumber);
+                                      if (success) {
+                                        alert('Marked as shipped');
+                                        setTrackingNumber('');
+                                        loadShipmentRequests();
+                                      }
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600"
+                                >
+                                  Mark as Shipped
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setSelectedShipmentRequest(null);
+                              setPackagePhoto('');
+                              setPaymentLink('');
+                              setTrackingNumber('');
+                            }}
+                            className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          {request.payment_link && (
+                            <a
+                              href={request.payment_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 text-sm rounded hover:bg-blue-200 text-center"
+                            >
+                              <Link className="h-4 w-4 inline mr-1" />
+                              Payment Link
+                            </a>
+                          )}
+                          {request.tracking_number && (
+                            <div className="flex-1 px-3 py-2 bg-purple-100 text-purple-700 text-sm rounded text-center">
+                              Track: {request.tracking_number}
+                            </div>
+                          )}
+                          {request.status !== 'shipped' && (
+                            <button
+                              onClick={() => setSelectedShipmentRequest(request)}
+                              className="px-4 py-2 bg-[#00b4d8] text-white text-sm rounded hover:bg-[#0096c7]"
+                            >
+                              Manage
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
