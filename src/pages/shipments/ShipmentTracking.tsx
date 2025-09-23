@@ -351,7 +351,16 @@ export const ShipmentTracking = () => {
 
     setIsUploadingDocument(true);
     try {
-      // Create document object
+      // Convert file to base64 for storage
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const base64Data = await base64Promise;
+
+      // Create document object with base64 data
       const newDocument = {
         id: `doc-${Date.now()}`,
         name: file.name,
@@ -360,7 +369,8 @@ export const ShipmentTracking = () => {
         size: `${(file.size / 1024).toFixed(2)} KB`,
         uploadedAt: new Date().toISOString().split('T')[0],
         uploadedBy: user?.name || 'Customer',
-        url: URL.createObjectURL(file) // Create temporary URL for preview
+        url: base64Data, // Store base64 data URL
+        mimeType: file.type || 'application/octet-stream'
       };
 
       // Add document to shipment

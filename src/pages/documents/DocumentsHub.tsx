@@ -141,19 +141,27 @@ export const DocumentsHub = () => {
         addToast('Invoice downloaded successfully', 'success');
       } else if (doc.url && doc.url !== '#') {
         // For other documents with URLs
-        if (doc.url.startsWith('blob:')) {
-          // Handle blob URLs - try to download directly
-          const link = document.createElement('a');
-          link.href = doc.url;
-          link.download = doc.name || 'document';
+        const link = document.createElement('a');
+        link.href = doc.url;
+        link.download = doc.name || 'document';
+
+        if (doc.url.startsWith('data:') || doc.url.startsWith('blob:')) {
+          // Handle data URLs (base64) and blob URLs - download directly
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-        } else {
+          addToast('Document downloaded successfully', 'success');
+        } else if (doc.url.startsWith('http://') || doc.url.startsWith('https://')) {
           // Open regular URLs in new tab
           window.open(doc.url, '_blank');
+          addToast('Opening document in new tab', 'success');
+        } else {
+          // Try to download as-is for other URL types
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          addToast('Document download started', 'success');
         }
-        addToast('Document download started', 'success');
       } else {
         // Create a placeholder download for documents without URLs
         // This creates a text file with document information
