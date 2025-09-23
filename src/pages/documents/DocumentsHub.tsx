@@ -66,6 +66,7 @@ export const DocumentsHub = () => {
     try {
       console.log('📁 Loading documents from shipments...');
       console.log('📦 Total shipments:', shipments?.length || 0);
+      console.log('👤 Current user:', user?.id, user?.role);
 
       // Collect all documents from all user's shipments
       const allDocuments: Document[] = [];
@@ -73,11 +74,18 @@ export const DocumentsHub = () => {
       if (shipments && shipments.length > 0) {
         // Filter shipments for current user if not staff/admin
         const userShipments = user?.role === 'customer'
-          ? shipments.filter(s => s.customerId === user.id || s.customer_id === user.id)
+          ? shipments.filter(s => {
+              const isMatch = s.customerId === user.id || s.customer_id === user.id;
+              console.log(`Checking shipment ${s.id}: customerId=${s.customerId || s.customer_id}, userId=${user.id}, match=${isMatch}`);
+              return isMatch;
+            })
           : shipments;
+
+        console.log(`📊 Filtered to ${userShipments.length} shipments for user`);
 
         userShipments.forEach((shipment, index) => {
           console.log(`📦 Processing shipment ${index + 1}/${userShipments.length}: ${shipment.id}`);
+          console.log('   Full shipment data:', shipment);
 
           // Add invoice if it exists - handle both embedded invoice data and status-only invoices
           if (shipment.invoice) {

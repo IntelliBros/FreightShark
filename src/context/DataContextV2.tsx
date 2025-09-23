@@ -106,7 +106,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           actualDelivery: shipment.actualDelivery,
           trackingNumber: shipment.trackingNumber,
           createdAt: shipment.createdAt,
-          updatedAt: shipment.updatedAt
+          updatedAt: shipment.updatedAt,
+          // Include documents and invoice fields
+          documents: shipment.documents || [],
+          invoice: shipment.invoice || null,
+          destinations: shipment.destinations || [],
+          photos: shipment.photos || []
         }));
 
         setQuoteRequests(convertedRequests);
@@ -176,7 +181,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             actualDelivery: shipment.actualDelivery,
             trackingNumber: shipment.trackingNumber,
             createdAt: shipment.createdAt,
-            updatedAt: shipment.updatedAt
+            updatedAt: shipment.updatedAt,
+            // Include documents and invoice fields
+            documents: shipment.documents || [],
+            invoice: shipment.invoice || null,
+            destinations: shipment.destinations || [],
+            photos: shipment.photos || []
           })));
 
           setInvoices([]);
