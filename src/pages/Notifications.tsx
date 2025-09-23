@@ -36,6 +36,7 @@ export const Notifications = () => {
       case 'invoice': return 'green';
       case 'shipment': return 'blue';
       case 'quote': return 'indigo';
+      case 'sample': return 'teal';
       default: return 'gray';
     }
   };
@@ -47,6 +48,7 @@ export const Notifications = () => {
       case 'invoice': return 'Invoice';
       case 'shipment': return 'Shipment';
       case 'quote': return 'Quote';
+      case 'sample': return 'Sample';
       default: return type;
     }
   };
@@ -119,6 +121,7 @@ export const Notifications = () => {
               <option value="quote">Quotes</option>
               <option value="invoice">Invoices</option>
               <option value="shipment">Shipments</option>
+              <option value="sample">Samples</option>
               <option value="alert">Alerts</option>
               <option value="message">Messages</option>
             </select>
@@ -135,6 +138,7 @@ export const Notifications = () => {
               'message': MessageSquare,
               'quote': FileText,
               'invoice': FileText,
+              'sample': Package,
               'alert': AlertCircle,
               'shipment': Package
             };

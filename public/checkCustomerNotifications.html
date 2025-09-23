@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Customer Notifications</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        .output {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .warning { color: orange; }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
+        }
+        .notification-item {
+            background: #fff;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .unread {
+            background: #fffbf0;
+            border-left: 4px solid #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>Customer Notification Debugger</h1>
+
+    <div class="container">
+        <h2>Check Notifications for Customer</h2>
+        <label>Customer User ID:</label>
+        <input type="text" id="userId" placeholder="e.g., user-9237df03-ebea-4bbd-95c4-95041fc5ec35" style="width: 400px; padding: 5px;">
+        <br><br>
+        <button onclick="checkAllNotifications()">Check ALL Notifications</button>
+        <button onclick="checkCustomerNotifications()">Check Customer's Notifications</button>
+        <button onclick="checkRecentNotifications()">Check Recent (Last 24h)</button>
+        <button onclick="createTestNotification()" class="secondary">Create Test Notification</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <div class="container">
+        <h2>Check Local Storage</h2>
+        <button onclick="checkLocalStorage()">Check Local Notifications</button>
+        <button onclick="checkLocalUsers()">Check Local Users</button>
+        <div id="localOutput" class="output"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        function log(message, type = 'info', elementId = 'output') {
+            const output = document.getElementById(elementId);
+            const timestamp = new Date().toISOString();
+            output.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+
+        window.checkAllNotifications = async function() {
+            log('Checking ALL notifications in database...', 'info');
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`Error: ${error.message}`, 'error');
+                    log(`Error details: ${JSON.stringify(error)}`, 'error');
+                } else {
+                    log(`Found ${data?.length || 0} total notifications`, 'success');
+
+                    if (data && data.length > 0) {
+                        // Group by user_id
+                        const byUser = {};
+                        data.forEach(n => {
+                            if (!byUser[n.user_id]) byUser[n.user_id] = [];
+                            byUser[n.user_id].push(n);
+                        });
+
+                        log(`Notifications grouped by user:`, 'info');
+                        Object.keys(byUser).forEach(userId => {
+                            log(`User ${userId}: ${byUser[userId].length} notifications`, 'info');
+                        });
+
+                        log('\nRecent notifications:', 'info');
+                        data.slice(0, 5).forEach(n => {
+                            log(`<div class="notification-item ${!n.read ? 'unread' : ''}">
+                                <strong>${n.title}</strong> (${n.type})<br>
+                                User: ${n.user_id}<br>
+                                Message: ${n.message}<br>
+                                Created: ${n.created_at}<br>
+                                Read: ${n.read}
+                            </div>`, 'info');
+                        });
+                    }
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+                console.error(error);
+            }
+        };
+
+        window.checkCustomerNotifications = async function() {
+            const userId = document.getElementById('userId').value || 'user-9237df03-ebea-4bbd-95c4-95041fc5ec35';
+            log(`Checking notifications for user: ${userId}`, 'info');
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`Error: ${error.message}`, 'error');
+                } else {
+                    log(`Found ${data?.length || 0} notifications for this user`, data?.length > 0 ? 'success' : 'warning');
+
+                    if (data && data.length > 0) {
+                        data.forEach(n => {
+                            log(`<div class="notification-item ${!n.read ? 'unread' : ''}">
+                                <strong>${n.title}</strong> (${n.type})<br>
+                                ID: ${n.id}<br>
+                                Message: ${n.message}<br>
+                                Created: ${n.created_at}<br>
+                                Read: ${n.read}<br>
+                                Link: ${n.link}
+                            </div>`, 'info');
+                        });
+                    } else {
+                        log('No notifications found for this user', 'warning');
+                        log('This user might not have any notifications yet, or the user_id might be incorrect', 'info');
+                    }
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+            }
+        };
+
+        window.checkRecentNotifications = async function() {
+            const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            log(`Checking notifications created since: ${since}`, 'info');
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .gte('created_at', since)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`Error: ${error.message}`, 'error');
+                } else {
+                    log(`Found ${data?.length || 0} notifications in last 24 hours`, 'success');
+
+                    if (data && data.length > 0) {
+                        const sampleNotifs = data.filter(n => n.type === 'sample');
+                        log(`Sample notifications: ${sampleNotifs.length}`, 'info');
+
+                        sampleNotifs.forEach(n => {
+                            log(`<div class="notification-item">
+                                <strong>SAMPLE: ${n.title}</strong><br>
+                                User: ${n.user_id}<br>
+                                Message: ${n.message}<br>
+                                Created: ${n.created_at}
+                            </div>`, 'success');
+                        });
+                    }
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+            }
+        };
+
+        window.createTestNotification = async function() {
+            const userId = document.getElementById('userId').value || 'user-9237df03-ebea-4bbd-95c4-95041fc5ec35';
+
+            const testNotification = {
+                id: `test-${Date.now()}`,
+                user_id: userId,
+                type: 'sample',
+                title: 'Test Sample Received',
+                message: 'This is a test notification for sample reception',
+                icon: 'Package',
+                link: '/samples',
+                read: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            log(`Creating test notification for user: ${userId}`, 'info');
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .insert(testNotification)
+                    .select()
+                    .single();
+
+                if (error) {
+                    log(`Error: ${error.message}`, 'error');
+                } else {
+                    log('Test notification created successfully!', 'success');
+                    log(JSON.stringify(data, null, 2), 'success');
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+            }
+        };
+
+        window.checkLocalStorage = function() {
+            log('Checking localStorage for notifications...', 'info', 'localOutput');
+
+            // Check various notification-related keys
+            const keys = [
+                'freight_shark_notifications',
+                'notifications_user-9237df03-ebea-4bbd-95c4-95041fc5ec35',
+                'freight_shark_simulated_emails'
+            ];
+
+            keys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        log(`<strong>${key}:</strong> ${parsed.length || Object.keys(parsed).length} items`, 'success', 'localOutput');
+                        log(`<pre>${JSON.stringify(parsed, null, 2)}</pre>`, 'info', 'localOutput');
+                    } catch {
+                        log(`${key}: ${data}`, 'info', 'localOutput');
+                    }
+                } else {
+                    log(`${key}: Not found`, 'warning', 'localOutput');
+                }
+            });
+
+            // Check all localStorage keys
+            log('\nAll localStorage keys:', 'info', 'localOutput');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('notif')) {
+                    log(`- ${key}`, 'info', 'localOutput');
+                }
+            }
+        };
+
+        window.checkLocalUsers = function() {
+            log('Checking users in localStorage...', 'info', 'localOutput');
+
+            const users = localStorage.getItem('users');
+            if (users) {
+                const parsed = JSON.parse(users);
+                log(`Found ${parsed.length} users:`, 'success', 'localOutput');
+
+                parsed.forEach(user => {
+                    if (user.email && user.email.includes('daniel')) {
+                        log(`<div style="background: #e8f5e9; padding: 5px; margin: 5px 0;">
+                            <strong>${user.name}</strong><br>
+                            ID: ${user.id}<br>
+                            Email: ${user.email}<br>
+                            Role: ${user.role}
+                        </div>`, 'success', 'localOutput');
+                    }
+                });
+            }
+        };
+
+        // Auto-check on load
+        window.onload = () => {
+            checkRecentNotifications();
+        };
+    </script>
+</body>
+</html>
