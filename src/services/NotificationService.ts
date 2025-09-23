@@ -183,7 +183,7 @@ class NotificationService {
     reference?: string;
   }) {
     if (!customer.email) return;
-    
+
     try {
       await emailService.sendNotification(
         customer.email,
@@ -199,6 +199,71 @@ class NotificationService {
       console.log(`Payment received notification sent to ${customer.email}`);
     } catch (error) {
       console.error('Failed to send payment notification:', error);
+    }
+  }
+
+  // Send notification when sample is received at warehouse
+  async notifySampleReceived(sample: any, customer: User) {
+    if (!customer.email) return;
+
+    try {
+      await emailService.sendNotification(
+        customer.email,
+        'sample-received',
+        {
+          sampleId: sample.id,
+          customerName: customer.name || 'Valued Customer',
+          productName: sample.product_name || 'Sample',
+          consolidationId: sample.consolidation_id || '',
+          receivedDate: new Date(sample.received_date).toLocaleDateString()
+        }
+      );
+      console.log(`Sample received notification sent to ${customer.email}`);
+    } catch (error) {
+      console.error('Failed to send sample received notification:', error);
+    }
+  }
+
+  // Send notification when payment link is added to sample shipment
+  async notifySamplePaymentLink(request: any, customer: User) {
+    if (!customer.email) return;
+
+    try {
+      await emailService.sendNotification(
+        customer.email,
+        'sample-payment-link',
+        {
+          requestId: request.id,
+          customerName: customer.name || 'Valued Customer',
+          sampleCount: request.sample_ids?.length.toString() || '0',
+          deliveryAddress: request.delivery_address || '',
+          paymentLink: request.payment_link || ''
+        }
+      );
+      console.log(`Sample payment link notification sent to ${customer.email}`);
+    } catch (error) {
+      console.error('Failed to send sample payment notification:', error);
+    }
+  }
+
+  // Send notification when sample shipment is shipped with tracking
+  async notifySampleShipped(request: any, customer: User) {
+    if (!customer.email) return;
+
+    try {
+      await emailService.sendNotification(
+        customer.email,
+        'sample-shipped',
+        {
+          requestId: request.id,
+          customerName: customer.name || 'Valued Customer',
+          trackingNumber: request.tracking_number || '',
+          carrier: 'Express Shipping'
+        }
+      );
+      console.log(`Sample shipped notification sent to ${customer.email}`);
+    } catch (error) {
+      console.error('Failed to send sample shipped notification:', error);
     }
   }
 }

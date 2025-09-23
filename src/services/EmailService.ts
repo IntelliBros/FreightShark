@@ -175,6 +175,27 @@ class EmailService {
         subject: 'Invoice for Shipment {shipmentId}',
         body: 'Dear {customerName},\n\nAn invoice has been generated for your shipment {shipmentId}.\n\nAmount Due: {amount}\nDue Date: {dueDate}\n\nPlease log in to your account to view and pay the invoice.\n\nBest regards,\nFreight Shark Team',
         variables: ['shipmentId', 'customerName', 'amount', 'dueDate']
+      },
+      {
+        id: 'sample-received',
+        name: 'Sample Received',
+        subject: 'Sample {sampleId} has been received at warehouse',
+        body: 'Dear {customerName},\n\nGreat news! Your sample {sampleId} has been received at our warehouse.\n\nSample Details:\nProduct: {productName}\nConsolidation ID: {consolidationId}\nReceived Date: {receivedDate}\n\nYou can now request shipment of this sample through your dashboard.\n\nBest regards,\nFreight Shark Team',
+        variables: ['sampleId', 'customerName', 'productName', 'consolidationId', 'receivedDate']
+      },
+      {
+        id: 'sample-payment-link',
+        name: 'Sample Payment Link Available',
+        subject: 'Payment required for Sample Shipment {requestId}',
+        body: 'Dear {customerName},\n\nYour sample shipment request {requestId} is ready for payment.\n\nShipment Details:\nSamples: {sampleCount}\nDelivery Address: {deliveryAddress}\n\nPlease click the link below to complete your payment:\n{paymentLink}\n\nBest regards,\nFreight Shark Team',
+        variables: ['requestId', 'customerName', 'sampleCount', 'deliveryAddress', 'paymentLink']
+      },
+      {
+        id: 'sample-shipped',
+        name: 'Sample Shipped',
+        subject: 'Your samples have been shipped - Tracking #{trackingNumber}',
+        body: 'Dear {customerName},\n\nYour sample shipment request {requestId} has been shipped!\n\nTracking Information:\nTracking Number: {trackingNumber}\nCarrier: {carrier}\n\nYou can track your package at: https://t.17track.net/en#nums={trackingNumber}\n\nEstimated delivery: 3-5 business days\n\nBest regards,\nFreight Shark Team',
+        variables: ['requestId', 'customerName', 'trackingNumber', 'carrier']
       }
     ];
 

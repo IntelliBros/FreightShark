@@ -163,47 +163,45 @@ export const Dashboard = () => {
       </div>
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 pr-4">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 New Shipment
               </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Ready to get started with a new shipment? Click the button below
-                to request a quote.
+              <p className="text-sm text-gray-500 mb-5 leading-relaxed">
+                Ready to get started with a new shipment? Click the button below to request a quote.
               </p>
+              <Link to="/quotes/new" className="inline-block">
+                <button className="flex items-center justify-center px-5 py-2 rounded-md bg-[#2E3B55] text-white hover:bg-[#1e2940] transition-colors">
+                  <span className="text-sm font-medium">New Quote</span>
+                </button>
+              </Link>
             </div>
-            <div className="w-24 h-24 flex items-center justify-center">
-              <img src="/new-shipment-icon.svg" alt="New Shipment" className="w-full h-full" />
+            <div className="w-32 h-32 flex-shrink-0">
+              <img src="/new-shipment-icon.svg" alt="New Shipment" className="w-full h-full object-contain" />
             </div>
           </div>
-          <Link to="/quotes/new">
-            <button className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
-              <span className="mr-1">+</span> New shipment
-            </button>
-          </Link>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 pr-4">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Sample Shipment
               </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Ready to get started with a new sample shipment? Click the
-                button below to begin.
+              <p className="text-sm text-gray-500 mb-5 leading-relaxed">
+                Ready to get started with a new sample shipment? Click the button below to begin.
               </p>
+              <Link to="/samples" className="inline-block">
+                <button className="flex items-center justify-center px-5 py-2 rounded-md bg-[#2E3B55] text-white hover:bg-[#1e2940] transition-colors">
+                  <span className="text-sm font-medium">Sample Shipment</span>
+                </button>
+              </Link>
             </div>
-            <div className="w-24 h-24 flex items-center justify-center">
-              <img src="/sample-shipment-icon.svg" alt="Sample Shipment" className="w-full h-full" />
+            <div className="w-32 h-32 flex-shrink-0">
+              <img src="/sample-shipment-icon.svg" alt="Sample Shipment" className="w-full h-full object-contain" />
             </div>
           </div>
-          <Link to="/samples">
-            <button className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
-              <span className="mr-1">+</span> Sample shipment
-            </button>
-          </Link>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

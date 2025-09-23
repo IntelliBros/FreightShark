@@ -5,6 +5,9 @@ import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { sampleService } from '../../../services/sampleService';
 import { sampleShipmentService, type SampleShipmentRequest } from '../../../services/sampleShipmentService';
+import { notificationService } from '../../../services/NotificationService';
+import { DataService } from '../../../services/DataService';
+import { useNotifications } from '../../../context/NotificationsContext';
 
 interface SampleRequest {
   id: string;
@@ -396,6 +399,55 @@ export const SampleManagement = () => {
 
       // Reload data to get updated counts from database
       await loadSampleData();
+
+      // Send email notification to customer
+      try {
+        // Get the customer data
+        const customer = await DataService.getUsers().then(users =>
+          users.find(u => u.id === request.userId)
+        );
+
+        if (customer) {
+          // Send email notification
+          await notificationService.notifySampleReceived(
+            {
+              id: dbSample.id,
+              product_name: request.productName,
+              consolidation_id: scannedSampleId,
+              received_date: dbSample.received_at
+            },
+            customer
+          );
+
+          // Add in-app notification for the customer
+          // This will be handled through the NotificationsContext when customer logs in
+          const inAppNotification = {
+            userId: customer.id,
+            type: 'sample' as const,
+            icon: Package,
+            title: 'Sample Received',
+            message: `Your sample ${request.productName} (${scannedSampleId}) has been received at our warehouse.`,
+            read: false,
+            link: '/samples'
+          };
+
+          // Store notification in localStorage for the customer
+          const existingNotifications = localStorage.getItem(`notifications_${customer.id}`);
+          const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
+          notifications.unshift({
+            ...inAppNotification,
+            id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: 'Just now',
+            date: new Date().toISOString()
+          });
+          localStorage.setItem(`notifications_${customer.id}`, JSON.stringify(notifications.slice(0, 50)));
+
+          console.log('✅ Notifications sent to customer:', customer.email);
+        }
+      } catch (error) {
+        console.error('Failed to send notifications:', error);
+        // Don't fail the whole operation if notifications fail
+      }
 
       // Reset states
       setScannedSampleId('');
@@ -974,7 +1026,42 @@ export const SampleManagement = () => {
                                   if (paymentLink) {
                                     const success = await sampleShipmentService.updatePaymentLink(request.id, paymentLink);
                                     if (success) {
-                                      alert('Payment link added');
+                                      // Send notifications to customer
+                                      try {
+                                        const customer = await DataService.getUsers().then(users =>
+                                          users.find(u => u.id === request.user_id)
+                                        );
+
+                                        if (customer) {
+                                          // Send email notification
+                                          await notificationService.notifySamplePaymentLink(request, customer);
+
+                                          // Add in-app notification
+                                          const inAppNotification = {
+                                            userId: customer.id,
+                                            type: 'invoice' as const,
+                                            icon: CreditCard,
+                                            title: 'Payment Required',
+                                            message: `Payment link available for your sample shipment request ${request.id}`,
+                                            read: false,
+                                            link: '/samples'
+                                          };
+
+                                          const existingNotifications = localStorage.getItem(`notifications_${customer.id}`);
+                                          const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
+                                          notifications.unshift({
+                                            ...inAppNotification,
+                                            id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                            timestamp: 'Just now',
+                                            date: new Date().toISOString()
+                                          });
+                                          localStorage.setItem(`notifications_${customer.id}`, JSON.stringify(notifications.slice(0, 50)));
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to send payment link notifications:', error);
+                                      }
+
+                                      alert('Payment link added and customer notified');
                                       setPaymentLink('');
                                       loadShipmentRequests();
                                     }
@@ -1023,7 +1110,45 @@ export const SampleManagement = () => {
                                     if (trackingNumber) {
                                       const success = await sampleShipmentService.markAsShipped(request.id, trackingNumber);
                                       if (success) {
-                                        alert('Marked as shipped');
+                                        // Send notifications to customer
+                                        try {
+                                          const customer = await DataService.getUsers().then(users =>
+                                            users.find(u => u.id === request.user_id)
+                                          );
+
+                                          if (customer) {
+                                            // Send email notification
+                                            await notificationService.notifySampleShipped(
+                                              { ...request, tracking_number: trackingNumber },
+                                              customer
+                                            );
+
+                                            // Add in-app notification
+                                            const inAppNotification = {
+                                              userId: customer.id,
+                                              type: 'shipment' as const,
+                                              icon: TruckIcon,
+                                              title: 'Sample Shipped',
+                                              message: `Your samples have been shipped! Tracking: ${trackingNumber}`,
+                                              read: false,
+                                              link: '/samples'
+                                            };
+
+                                            const existingNotifications = localStorage.getItem(`notifications_${customer.id}`);
+                                            const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
+                                            notifications.unshift({
+                                              ...inAppNotification,
+                                              id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                              timestamp: 'Just now',
+                                              date: new Date().toISOString()
+                                            });
+                                            localStorage.setItem(`notifications_${customer.id}`, JSON.stringify(notifications.slice(0, 50)));
+                                          }
+                                        } catch (error) {
+                                          console.error('Failed to send shipping notifications:', error);
+                                        }
+
+                                        alert('Marked as shipped and customer notified');
                                         setTrackingNumber('');
                                         loadShipmentRequests();
                                       }
