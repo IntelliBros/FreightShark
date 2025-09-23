@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Package, Scan, CheckCircle, XCircle, Search, Filter, Download, AlertCircle, Camera, Upload } from 'lucide-react';
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
+import { BrowserQRCodeReader, BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { sampleService } from '../../../services/sampleService';
@@ -44,7 +44,7 @@ export const SampleManagement = () => {
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -116,49 +116,104 @@ export const SampleManagement = () => {
 
   const startScanning = async () => {
     try {
+      console.log('🎥 Starting QR code scanner...');
       setIsScanning(true);
       setScanError('');
       setScanResult('');
 
-      const codeReader = new BrowserMultiFormatReader();
+      // Check if running on HTTPS or localhost
+      const isSecureContext = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+      if (!isSecureContext) {
+        throw new Error('Camera access requires HTTPS or localhost. Use manual entry instead.');
+      }
+
+      // Check if browser supports required APIs
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera API not supported in this browser. Use manual entry instead.');
+      }
+
+      console.log('📹 Creating BrowserQRCodeReader (optimized for QR codes)...');
+      const codeReader = new BrowserQRCodeReader();
       codeReaderRef.current = codeReader;
 
+      console.log('📹 Requesting camera permissions...');
+      // First check if we have camera permission
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment', // Prefer back camera for better QR scanning
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 }
+          }
+        });
+        console.log('✅ Camera permission granted');
+        // Stop the test stream
+        stream.getTracks().forEach(track => track.stop());
+      } catch (permError) {
+        console.error('❌ Camera permission denied:', permError);
+        throw new Error('Camera permission is required for QR code scanning. Use manual entry instead.');
+      }
+
+      console.log('📹 Listing video input devices...');
       const devices = await codeReader.listVideoInputDevices();
+      console.log('📹 Available devices:', devices);
+
       if (devices.length === 0) {
         throw new Error('No camera devices found');
       }
 
       const selectedDeviceId = devices[0].deviceId;
+      console.log('📹 Selected device:', selectedDeviceId);
 
+      console.log('📹 Starting video decode...');
       await codeReader.decodeFromVideoDevice(
         selectedDeviceId,
         videoRef.current,
         (result, err) => {
           if (result) {
             const text = result.getText();
+            console.log('✅ QR code scanned successfully:', text);
             setScanResult(text);
             processScanResult(text);
             stopScanning();
           }
           if (err && !(err instanceof NotFoundException)) {
-            console.error(err);
-            setScanError('Error scanning barcode. Please try again.');
+            console.error('📹 Scanner error:', err);
+            // Don't show error for NotFoundException as it's normal when no barcode is detected
+            if (err.name !== 'NotFoundException') {
+              setScanError('Error scanning QR code. Please try again.');
+            }
           }
         }
       );
+      console.log('✅ Scanner started successfully');
     } catch (error: any) {
-      console.error('Error starting scanner:', error);
+      console.error('❌ Error starting scanner:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       setScanError(error.message || 'Failed to start camera');
       setIsScanning(false);
     }
   };
 
   const stopScanning = () => {
-    if (codeReaderRef.current) {
-      codeReaderRef.current.reset();
-      codeReaderRef.current = null;
+    console.log('🛑 Stopping QR code scanner...');
+    try {
+      if (codeReaderRef.current) {
+        console.log('📹 Resetting code reader...');
+        codeReaderRef.current.reset();
+        codeReaderRef.current = null;
+        console.log('✅ Code reader reset successfully');
+      }
+      setIsScanning(false);
+      console.log('✅ Scanner stopped');
+    } catch (error) {
+      console.error('❌ Error stopping scanner:', error);
+      setIsScanning(false);
     }
-    setIsScanning(false);
   };
 
   const processScanResult = async (sampleId: string) => {
@@ -341,7 +396,7 @@ export const SampleManagement = () => {
           {activeTab === 'scan' && (
             <div className="space-y-6">
               <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Barcode Scanner</h2>
+                <h2 className="text-lg font-semibold mb-4">QR Code Scanner</h2>
 
                 {!isScanning ? (
                   <div className="text-center space-y-4">
@@ -352,7 +407,7 @@ export const SampleManagement = () => {
                       className="bg-[#00b4d8] text-white px-6 py-2 rounded-lg hover:bg-[#0096c7]"
                     >
                       <Scan className="h-4 w-4 inline mr-2" />
-                      Start Scanner
+                      Start QR Scanner
                     </button>
                   </div>
                 ) : (
@@ -449,6 +504,12 @@ export const SampleManagement = () => {
 
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Manual Entry</h3>
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    💡 <strong>Tip:</strong> If camera scanning doesn't work, you can manually enter the sample ID from the barcode label.
+                    The sample ID format is: <span className="font-mono">SMPL-USER-TIMESTAMP-RANDOM</span>
+                  </p>
+                </div>
                 <form onSubmit={handleManualSubmit} className="flex gap-3">
                   <input
                     type="text"

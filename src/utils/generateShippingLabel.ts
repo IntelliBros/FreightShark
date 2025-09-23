@@ -1,4 +1,4 @@
-import JsBarcode from 'jsbarcode';
+import QRCode from 'qrcode';
 
 interface LabelData {
   userId: string;
@@ -15,7 +15,7 @@ interface LabelData {
   };
 }
 
-export const generateShippingLabel = (data: LabelData) => {
+export const generateShippingLabel = async (data: LabelData) => {
   // Create a canvas element for the label
   const canvas = document.createElement('canvas');
   canvas.width = 400;
@@ -50,41 +50,54 @@ export const generateShippingLabel = (data: LabelData) => {
   ctx.fillText(`User ID: ${data.userId}`, 30, 160);
   ctx.fillText(`User Name: ${data.userName}`, 30, 185);
 
-  // Create barcode canvas with better sizing
-  const barcodeCanvas = document.createElement('canvas');
-  JsBarcode(barcodeCanvas, data.sampleId, {
-    format: 'CODE128',
-    width: 2,
-    height: 100,
-    displayValue: true,
-    fontSize: 14,
-    margin: 10,
-    textMargin: 5
-  });
+  try {
+    // Generate QR code
+    const qrCodeDataUrl = await QRCode.toDataURL(data.sampleId, {
+      width: 120,
+      height: 120,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
 
-  // Center the barcode horizontally
-  const barcodeX = (canvas.width - barcodeCanvas.width) / 2;
-  ctx.drawImage(barcodeCanvas, barcodeX, 210);
+    // Load QR code as image
+    const qrImage = new Image();
+    qrImage.onload = () => {
+      // Center the QR code horizontally
+      const qrX = (canvas.width - 120) / 2;
+      ctx.drawImage(qrImage, qrX, 210, 120, 120);
 
-  // Footer
-  ctx.font = '10px Arial';
-  ctx.fillStyle = 'gray';
-  ctx.textAlign = 'center';
-  ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, 325);
+      // Add QR code label
+      ctx.font = '12px Arial';
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'center';
+      ctx.fillText('Scan QR Code', 200, 345);
 
-  // Convert canvas to blob and download
-  canvas.toBlob((blob) => {
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `shipping-label-${data.sampleId}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  });
+      // Footer
+      ctx.font = '10px Arial';
+      ctx.fillStyle = 'gray';
+      ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, 325);
+
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `shipping-label-${data.sampleId}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+    qrImage.src = qrCodeDataUrl;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+  }
 };
 
 // Generate a unique sample ID

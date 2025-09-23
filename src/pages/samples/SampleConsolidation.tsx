@@ -213,7 +213,7 @@ export const SampleConsolidation = () => {
     addToast('Sample consolidation request created successfully!', 'success');
   };
 
-  const handleDownloadLabel = (request?: SampleRequest) => {
+  const handleDownloadLabel = async (request?: SampleRequest) => {
     const requestToUse = request || currentRequest;
     if (!requestToUse || !user) return;
 
@@ -225,8 +225,13 @@ export const SampleConsolidation = () => {
       warehouseAddress: WAREHOUSE_ADDRESS
     };
 
-    generateShippingLabel(labelData);
-    addToast('Shipping label downloaded successfully!', 'success');
+    try {
+      await generateShippingLabel(labelData);
+      addToast('QR code shipping label downloaded successfully!', 'success');
+    } catch (error) {
+      console.error('Error generating shipping label:', error);
+      addToast('Error generating shipping label', 'error');
+    }
   };
 
   const handleCopyAddress = () => {

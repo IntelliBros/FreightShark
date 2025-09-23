@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Barcode Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-4">🔍 Simple Barcode Scanner Test</h1>
+
+            <div class="space-y-4">
+                <div class="bg-blue-50 p-4 rounded">
+                    <h3 class="font-semibold text-blue-900">Diagnostics:</h3>
+                    <div id="diagnostics" class="text-sm text-blue-800 mt-2"></div>
+                </div>
+
+                <button id="test-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full">
+                    🎥 Test Camera Access
+                </button>
+
+                <video id="video" width="100%" height="300" class="border rounded hidden bg-black"></video>
+
+                <div id="log" class="bg-gray-100 p-4 rounded text-sm font-mono h-40 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function updateDiagnostics() {
+            const diagnostics = document.getElementById('diagnostics');
+            const info = [];
+
+            info.push(`🌐 Protocol: ${window.location.protocol}`);
+            info.push(`🏠 Hostname: ${window.location.hostname}`);
+            info.push(`📹 MediaDevices: ${navigator.mediaDevices ? '✅' : '❌'}`);
+            info.push(`📱 getUserMedia: ${navigator.mediaDevices?.getUserMedia ? '✅' : '❌'}`);
+            info.push(`📚 ZXing Library: ${typeof ZXing !== 'undefined' ? '✅' : '❌'}`);
+
+            if (typeof ZXing !== 'undefined') {
+                info.push(`🔧 BrowserMultiFormatReader: ${typeof ZXing.BrowserMultiFormatReader !== 'undefined' ? '✅' : '❌'}`);
+            }
+
+            diagnostics.innerHTML = info.join('<br>');
+        }
+
+        async function testCamera() {
+            const video = document.getElementById('video');
+            const button = document.getElementById('test-btn');
+
+            try {
+                log('🚀 Starting camera test...');
+                button.disabled = true;
+                button.textContent = '⏳ Testing...';
+
+                // Step 1: Check ZXing
+                if (typeof ZXing === 'undefined') {
+                    throw new Error('ZXing library not loaded');
+                }
+                log('✅ ZXing library loaded');
+
+                // Step 2: Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera API not supported');
+                }
+                log('✅ Camera API supported');
+
+                // Step 3: Request camera permission
+                log('📹 Requesting camera permission...');
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
+                log('✅ Camera permission granted');
+
+                // Step 4: Display video
+                video.srcObject = stream;
+                video.style.display = 'block';
+                await video.play();
+                log('✅ Video stream started');
+
+                // Step 5: Initialize ZXing
+                log('🔍 Initializing barcode reader...');
+                const codeReader = new ZXing.BrowserMultiFormatReader();
+                log('✅ Barcode reader created');
+
+                // Step 6: Start scanning
+                log('🎯 Starting barcode detection...');
+                codeReader.decodeFromVideoDevice(undefined, video, (result, err) => {
+                    if (result) {
+                        log('🎉 BARCODE DETECTED: ' + result.getText());
+                        alert('Barcode detected: ' + result.getText());
+                    }
+                    if (err && err.name !== 'NotFoundException') {
+                        log('⚠️ Scan error: ' + err.message);
+                    }
+                });
+                log('✅ Scanner is running! Point camera at a barcode...');
+
+                button.textContent = '✅ Scanner Running';
+                button.className = 'bg-green-600 text-white px-6 py-3 rounded-lg w-full';
+
+            } catch (error) {
+                log('❌ ERROR: ' + error.message);
+                log('📊 Error details: ' + JSON.stringify({
+                    name: error.name,
+                    message: error.message
+                }));
+
+                button.disabled = false;
+                button.textContent = '🔄 Try Again';
+                button.className = 'bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 w-full';
+            }
+        }
+
+        // Initialize
+        updateDiagnostics();
+        log('📱 Simple barcode test page loaded');
+
+        document.getElementById('test-btn').addEventListener('click', testCamera);
+    </script>
+</body>
+</html>

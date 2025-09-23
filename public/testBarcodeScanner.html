@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Barcode Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-4">Barcode Scanner Test</h1>
+
+            <div class="mb-6 p-4 bg-yellow-50 rounded-lg">
+                <h2 class="font-semibold text-yellow-900 mb-2">📱 Test Instructions:</h2>
+                <ol class="list-decimal list-inside text-yellow-800 space-y-1">
+                    <li>Click "Start Scanner" to test camera access</li>
+                    <li>Allow camera permissions when prompted</li>
+                    <li>Point camera at any barcode or QR code</li>
+                    <li>Check console (F12) for detailed logs</li>
+                    <li>Try manual entry if scanner fails</li>
+                </ol>
+            </div>
+
+            <div class="space-y-4">
+                <div id="scanner-section" class="border rounded-lg p-4">
+                    <h3 class="font-semibold mb-3">Camera Scanner</h3>
+
+                    <div id="scanner-controls" class="space-y-4">
+                        <button id="start-btn"
+                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            Start Scanner
+                        </button>
+
+                        <button id="stop-btn"
+                                class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 hidden">
+                            Stop Scanner
+                        </button>
+                    </div>
+
+                    <video id="video" width="400" height="300" class="border rounded mt-4 hidden"></video>
+                </div>
+
+                <div class="border rounded-lg p-4">
+                    <h3 class="font-semibold mb-3">Manual Entry (Fallback)</h3>
+                    <div class="flex gap-3">
+                        <input type="text" id="manual-input"
+                               placeholder="Enter barcode manually (e.g., SMPL-USER-1234567890-123)"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
+                        <button id="manual-submit"
+                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            Test Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results" class="mt-6">
+                <h3 class="font-semibold mb-2">Results:</h3>
+                <div id="result-content" class="bg-gray-100 p-4 rounded text-sm font-mono min-h-20"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { BrowserMultiFormatReader, NotFoundException } = ZXing;
+
+        let codeReader = null;
+        let isScanning = false;
+
+        const video = document.getElementById('video');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const manualInput = document.getElementById('manual-input');
+        const manualSubmit = document.getElementById('manual-submit');
+        const resultContent = document.getElementById('result-content');
+
+        function log(message, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            console.log(logMessage);
+
+            resultContent.innerHTML += logMessage + '\\n';
+            resultContent.scrollTop = resultContent.scrollHeight;
+
+            if (isError) {
+                resultContent.className = 'bg-red-100 p-4 rounded text-sm font-mono min-h-20';
+            }
+        }
+
+        async function startScanner() {
+            try {
+                log('🎥 Starting barcode scanner...');
+
+                // Check if browser supports required APIs
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera API not supported in this browser');
+                }
+
+                log('📹 Creating BrowserMultiFormatReader...');
+                codeReader = new BrowserMultiFormatReader();
+
+                log('📹 Requesting camera permissions...');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'environment' // Prefer back camera
+                        }
+                    });
+                    log('✅ Camera permission granted');
+                    stream.getTracks().forEach(track => track.stop()); // Stop test stream
+                } catch (permError) {
+                    log('❌ Camera permission denied: ' + permError.message, true);
+                    throw new Error('Camera permission is required for barcode scanning');
+                }
+
+                log('📹 Listing video input devices...');
+                const devices = await codeReader.listVideoInputDevices();
+                log('📹 Available devices: ' + devices.length);
+                devices.forEach((device, index) => {
+                    log(`  Device ${index}: ${device.label || 'Unknown'} (${device.deviceId})`);
+                });
+
+                if (devices.length === 0) {
+                    throw new Error('No camera devices found');
+                }
+
+                const selectedDeviceId = devices[0].deviceId;
+                log('📹 Selected device: ' + selectedDeviceId);
+
+                log('📹 Starting video decode...');
+                video.style.display = 'block';
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                isScanning = true;
+
+                await codeReader.decodeFromVideoDevice(
+                    selectedDeviceId,
+                    video,
+                    (result, err) => {
+                        if (result) {
+                            const text = result.getText();
+                            log('✅ Barcode scanned successfully: ' + text);
+                            processBarcode(text);
+                        }
+                        if (err && !(err instanceof NotFoundException)) {
+                            if (err.name !== 'NotFoundException') {
+                                log('📹 Scanner error: ' + err.message);
+                            }
+                        }
+                    }
+                );
+                log('✅ Scanner started successfully');
+
+            } catch (error) {
+                log('❌ Error starting scanner: ' + error.message, true);
+                log('Error details: ' + JSON.stringify({
+                    name: error.name,
+                    message: error.message
+                }));
+                resetUI();
+            }
+        }
+
+        function stopScanner() {
+            log('🛑 Stopping barcode scanner...');
+            try {
+                if (codeReader) {
+                    log('📹 Resetting code reader...');
+                    codeReader.reset();
+                    codeReader = null;
+                    log('✅ Code reader reset successfully');
+                }
+                resetUI();
+                log('✅ Scanner stopped');
+            } catch (error) {
+                log('❌ Error stopping scanner: ' + error.message, true);
+                resetUI();
+            }
+        }
+
+        function resetUI() {
+            isScanning = false;
+            video.style.display = 'none';
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+        }
+
+        function processBarcode(text) {
+            log('🔍 Processing barcode: ' + text);
+
+            // Test sample ID format
+            const parts = text.split('-');
+            if (parts.length >= 4 && parts[0] === 'SMPL') {
+                log('✅ Valid sample ID format detected');
+                log('  User ID: ' + parts[1]);
+                log('  Timestamp: ' + parts[2]);
+                log('  Random: ' + parts[3]);
+            } else {
+                log('⚠️ Not a sample ID format, but barcode detected successfully');
+            }
+
+            stopScanner();
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startScanner);
+        stopBtn.addEventListener('click', stopScanner);
+
+        manualSubmit.addEventListener('click', () => {
+            const text = manualInput.value.trim();
+            if (text) {
+                log('📝 Manual entry: ' + text);
+                processBarcode(text);
+                manualInput.value = '';
+            }
+        });
+
+        manualInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                manualSubmit.click();
+            }
+        });
+
+        // Initial log
+        log('📱 Barcode scanner test page loaded');
+        log('💡 ZXing library available: ' + (typeof ZXing !== 'undefined'));
+    </script>
+</body>
+</html>

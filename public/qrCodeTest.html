@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-4">📱 QR Code Scanner Test</h1>
+
+            <div class="bg-green-50 p-4 rounded mb-4">
+                <h3 class="font-semibold text-green-900">📋 QR Code Benefits:</h3>
+                <ul class="text-sm text-green-800 mt-2 list-disc list-inside">
+                    <li>Much easier for cameras to detect than barcodes</li>
+                    <li>Works better with mobile devices and web browsers</li>
+                    <li>Faster detection and higher success rate</li>
+                    <li>More forgiving of camera angles and lighting</li>
+                </ul>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-blue-50 p-4 rounded">
+                    <h3 class="font-semibold text-blue-900">Diagnostics:</h3>
+                    <div id="diagnostics" class="text-sm text-blue-800 mt-2"></div>
+                </div>
+
+                <button id="test-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full">
+                    📱 Start QR Code Scanner
+                </button>
+
+                <video id="video" width="100%" height="300" class="border rounded hidden bg-black"></video>
+
+                <div class="bg-yellow-50 p-4 rounded">
+                    <h3 class="font-semibold text-yellow-900">💡 Test QR Code:</h3>
+                    <p class="text-sm text-yellow-800 mb-2">Scan this test QR code to verify the scanner works:</p>
+                    <div id="test-qr" class="flex justify-center"></div>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded">
+                    <h3 class="font-semibold text-gray-900">Manual Test:</h3>
+                    <div class="flex gap-3 mt-2">
+                        <input type="text" id="manual-input"
+                               placeholder="Enter sample ID (e.g., SMPL-USER-1234567890-123)"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
+                        <button id="manual-submit"
+                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            Test Process
+                        </button>
+                    </div>
+                </div>
+
+                <div id="log" class="bg-gray-100 p-4 rounded text-sm font-mono h-40 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        const { BrowserMultiFormatReader, BrowserQRCodeReader, NotFoundException } = ZXing;
+
+        function log(message, isSuccess = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            const prefix = isSuccess ? '✅' : '📝';
+            logElement.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function updateDiagnostics() {
+            const diagnostics = document.getElementById('diagnostics');
+            const info = [];
+
+            info.push(`🌐 Protocol: ${window.location.protocol}`);
+            info.push(`🏠 Hostname: ${window.location.hostname}`);
+            info.push(`📹 MediaDevices: ${navigator.mediaDevices ? '✅' : '❌'}`);
+            info.push(`📱 getUserMedia: ${navigator.mediaDevices?.getUserMedia ? '✅' : '❌'}`);
+            info.push(`📚 ZXing Library: ${typeof ZXing !== 'undefined' ? '✅' : '❌'}`);
+            info.push(`🔲 QR Code Reader: ${typeof BrowserQRCodeReader !== 'undefined' ? '✅' : '❌'}`);
+
+            diagnostics.innerHTML = info.join('<br>');
+        }
+
+        function createTestQR() {
+            const testSampleId = 'SMPL-USER-1726896000000-123';
+            QRCode.toCanvas(document.getElementById('test-qr'), testSampleId, {
+                width: 150,
+                height: 150,
+                margin: 2
+            }, function (error) {
+                if (error) {
+                    console.error('Error creating test QR code:', error);
+                    document.getElementById('test-qr').innerHTML = '<p class="text-red-600">Error creating test QR code</p>';
+                } else {
+                    log('Test QR code created successfully');
+                }
+            });
+        }
+
+        async function testQRScanner() {
+            const video = document.getElementById('video');
+            const button = document.getElementById('test-btn');
+
+            try {
+                log('🚀 Starting QR code scanner...');
+                button.disabled = true;
+                button.textContent = '⏳ Starting Scanner...';
+
+                // Step 1: Check ZXing
+                if (typeof ZXing === 'undefined') {
+                    throw new Error('ZXing library not loaded');
+                }
+                log('ZXing library loaded', true);
+
+                // Step 2: Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera API not supported');
+                }
+                log('Camera API supported', true);
+
+                // Step 3: Request camera permission with optimized settings for QR codes
+                log('📹 Requesting camera permission with QR-optimized settings...');
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment', // Back camera preferred for QR scanning
+                        width: { ideal: 1280, min: 640 },
+                        height: { ideal: 720, min: 480 }
+                    }
+                });
+                log('Camera permission granted', true);
+
+                // Step 4: Display video
+                video.srcObject = stream;
+                video.style.display = 'block';
+                await video.play();
+                log('Video stream started', true);
+
+                // Step 5: Initialize QR Code Reader (optimized for QR codes)
+                log('🔍 Initializing QR code reader...');
+                const codeReader = new BrowserQRCodeReader();
+                log('QR code reader created', true);
+
+                // Step 6: Start scanning with continuous decode
+                log('🎯 Starting QR code detection...');
+                const result = await codeReader.decodeFromVideoDevice(undefined, video, (result, err) => {
+                    if (result) {
+                        const text = result.getText();
+                        log(`🎉 QR CODE DETECTED: ${text}`, true);
+
+                        // Stop scanning after successful read
+                        codeReader.reset();
+                        button.textContent = '✅ QR Code Scanned!';
+                        button.className = 'bg-green-600 text-white px-6 py-3 rounded-lg w-full';
+
+                        // Process the scanned code
+                        processScannedCode(text);
+
+                        return;
+                    }
+                    if (err && err.name !== 'NotFoundException') {
+                        log(`⚠️ Scan error: ${err.message}`);
+                    }
+                });
+
+                log('QR scanner is running! Point camera at a QR code...', true);
+                button.textContent = '📱 Scanning... (Point at QR code)';
+                button.className = 'bg-green-600 text-white px-6 py-3 rounded-lg w-full';
+
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`);
+                log(`📊 Error details: ${JSON.stringify({
+                    name: error.name,
+                    message: error.message
+                })}`);
+
+                button.disabled = false;
+                button.textContent = '🔄 Try Again';
+                button.className = 'bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 w-full';
+            }
+        }
+
+        function processScannedCode(code) {
+            log(`🔍 Processing scanned code: ${code}`, true);
+
+            // Test sample ID format
+            const parts = code.split('-');
+            if (parts.length >= 4 && parts[0] === 'SMPL') {
+                log(`✅ Valid sample ID format detected!`, true);
+                log(`  📋 User ID: ${parts[1]}`);
+                log(`  ⏰ Timestamp: ${parts[2]}`);
+                log(`  🔢 Random: ${parts[3]}`);
+                alert(`✅ Valid Sample ID Scanned!\n\nSample ID: ${code}\nUser: ${parts[1]}\nTimestamp: ${parts[2]}`);
+            } else {
+                log(`⚠️ Not a sample ID format, but QR code scanned successfully`);
+                alert(`QR Code Scanned: ${code}`);
+            }
+        }
+
+        function handleManualSubmit() {
+            const input = document.getElementById('manual-input');
+            const code = input.value.trim();
+            if (code) {
+                log(`📝 Manual entry: ${code}`);
+                processScannedCode(code);
+                input.value = '';
+            }
+        }
+
+        // Initialize
+        updateDiagnostics();
+        createTestQR();
+        log('📱 QR code scanner test page loaded');
+
+        // Event listeners
+        document.getElementById('test-btn').addEventListener('click', testQRScanner);
+        document.getElementById('manual-submit').addEventListener('click', handleManualSubmit);
+        document.getElementById('manual-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleManualSubmit();
+            }
+        });
+    </script>
+</body>
+</html>
