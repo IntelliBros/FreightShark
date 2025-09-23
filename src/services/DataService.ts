@@ -855,10 +855,10 @@ export const DataService = {
     return await supabaseService.userCartonTemplates.delete(id);
   },
 
-  // Supplier methods
-  async getSuppliers() {
+  // Supplier methods - USER SPECIFIC
+  async getUserSuppliers(userId: string) {
     await simulateDelay(200);
-    return await supabaseService.suppliers.getAll();
+    return await supabaseService.suppliers.getByUserId(userId);
   },
 
   async getSupplierById(id: string) {
@@ -866,7 +866,7 @@ export const DataService = {
     return await supabaseService.suppliers.getById(id);
   },
 
-  async createSupplier(supplier: {
+  async createSupplier(userId: string, supplier: {
     name: string;
     address: string;
     contact?: string;
@@ -875,6 +875,7 @@ export const DataService = {
   }) {
     await simulateDelay(300);
     return await supabaseService.suppliers.create({
+      user_id: userId,
       name: supplier.name,
       address: supplier.address,
       contact_name: supplier.contact,

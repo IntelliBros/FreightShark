@@ -1207,12 +1207,13 @@ export const supabaseService = {
     }
   },
 
-  // Suppliers management
+  // Suppliers management - USER SPECIFIC
   suppliers: {
-    async getAll() {
+    async getByUserId(userId: string) {
       const { data, error } = await supabase
         .from('suppliers')
         .select('*')
+        .eq('user_id', userId)
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -1233,6 +1234,7 @@ export const supabaseService = {
     },
 
     async create(supplier: {
+      user_id: string;
       name: string;
       address: string;
       city?: string;

@@ -132,11 +132,12 @@ export const initializeDatabase = async () => {
       `
     }).catch(() => {});
 
-    // Create suppliers table
+    // Create suppliers table - USER SPECIFIC
     await supabase.rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS suppliers (
           id VARCHAR(50) PRIMARY KEY,
+          user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
           name VARCHAR(255) NOT NULL,
           address TEXT NOT NULL,
           city VARCHAR(100),

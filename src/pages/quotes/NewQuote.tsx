@@ -147,7 +147,11 @@ export const NewQuote = () => {
   const loadSuppliers = async () => {
     try {
       setIsLoadingSuppliers(true);
-      const suppliers = await DataService.getSuppliers();
+      if (!user?.id) {
+        console.error('No user ID available');
+        return;
+      }
+      const suppliers = await DataService.getUserSuppliers(user.id);
       // Transform the data to match the component's Supplier type
       const transformedSuppliers = suppliers.map((s: any) => ({
         id: s.id,
@@ -207,8 +211,13 @@ export const NewQuote = () => {
   };
   const handleAddNewSupplier = async () => {
     try {
-      // Save to database
-      const savedSupplier = await DataService.createSupplier({
+      if (!user?.id) {
+        addToast('Please log in to add suppliers', 'error');
+        return;
+      }
+
+      // Save to database with user_id
+      const savedSupplier = await DataService.createSupplier(user.id, {
         name: newSupplier.name,
         address: newSupplier.address,
         contact: newSupplier.contact
