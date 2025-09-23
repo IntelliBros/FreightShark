@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { generateShippingLabel, generateSampleId } from '../../utils/generateShippingLabel';
 import { sampleService, type SampleRequest as DBSampleRequest } from '../../services/sampleService';
 import { settingsService } from '../../services/settingsService';
+import { sampleShipmentService } from '../../services/sampleShipmentService';
 
 // Default warehouse address for sample consolidation (fallback)
 const DEFAULT_WAREHOUSE_ADDRESS = 'DDP Freight Consolidation Center, 123 Logistics Avenue, Building 7, Guangzhou, Guangdong 510000, China';
@@ -47,6 +48,8 @@ export const SampleConsolidation = () => {
   const [consolidationHistory, setConsolidationHistory] = useState<SampleRequest[]>([]);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<SampleRequest | null>(null);
   const [sampleDeliveryAddress, setSampleDeliveryAddress] = useState<string>('');
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [shipmentDeliveryAddress, setShipmentDeliveryAddress] = useState('');
 
   // Load consolidation history and incoming samples on component mount
   React.useEffect(() => {
@@ -319,13 +322,47 @@ Sample ID: ${currentRequest?.id || 'N/A'}
     }
   };
 
-  const handleCreateQuote = () => {
+  const handleCreateShipmentRequest = () => {
     if (selectedSamples.length === 0) {
-      addToast('Please select at least one sample to consolidate', 'warning');
+      addToast('Please select at least one sample to ship', 'warning');
       return;
     }
-    addToast('Quote created successfully!', 'success');
-    // In a real app, this would navigate to a new quote page
+    setShowShipmentModal(true);
+  };
+
+  const submitShipmentRequest = async () => {
+    if (!shipmentDeliveryAddress.trim()) {
+      addToast('Please enter a delivery address', 'warning');
+      return;
+    }
+
+    if (!user) {
+      addToast('User not authenticated', 'error');
+      return;
+    }
+
+    const requestId = `SSR-${Date.now()}`;
+    const shipmentRequest = {
+      id: requestId,
+      user_id: user.id,
+      sample_ids: selectedSamples,
+      delivery_address: shipmentDeliveryAddress,
+      quantity: selectedSamples.length,
+      status: 'pending' as const
+    };
+
+    const result = await sampleShipmentService.createShipmentRequest(shipmentRequest);
+
+    if (result) {
+      addToast('Shipment request created successfully!', 'success');
+      setSelectedSamples([]);
+      setShowShipmentModal(false);
+      setShipmentDeliveryAddress('');
+      // Reload samples to reflect changes
+      loadIncomingSamples();
+    } else {
+      addToast('Failed to create shipment request', 'error');
+    }
   };
 
   const totalWeight = incomingSamples
@@ -367,7 +404,7 @@ Sample ID: ${currentRequest?.id || 'N/A'}
             }`}
             onClick={() => setActiveTab('incoming')}
           >
-            Incoming Samples
+            Samples in Warehouse
           </button>
           <button
             className={`mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
@@ -640,7 +677,7 @@ Sample ID: ${currentRequest?.id || 'N/A'}
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-medium text-gray-900">
-                  Incoming Samples
+                  Samples in Warehouse
                 </h2>
                 <button
                   onClick={() => loadIncomingSamples()}
@@ -657,8 +694,8 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                   <div className="text-sm text-gray-600">
                     <span className="font-medium">{selectedSamples.length}</span> selected
                   </div>
-                  <Button variant="primary" size="sm" onClick={handleCreateQuote}>
-                    Create Consolidation Quote
+                  <Button variant="primary" size="sm" onClick={handleCreateShipmentRequest}>
+                    Create Shipment Request
                   </Button>
                 </div>
               )}
@@ -924,6 +961,57 @@ Sample ID: ${currentRequest?.id || 'N/A'}
               </div>
             )}
           </Card>
+        </div>
+      )}
+
+      {/* Shipment Request Modal */}
+      {showShipmentModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-lg font-bold mb-4">Create Shipment Request</h2>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                You have selected <span className="font-bold">{selectedSamples.length}</span> sample(s) for shipment.
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Delivery Address <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={shipmentDeliveryAddress}
+                onChange={(e) => setShipmentDeliveryAddress(e.target.value)}
+                placeholder="Enter complete delivery address including street, city, state, zip code, and country"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={4}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Please provide the full address where you want the samples to be shipped
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowShipmentModal(false);
+                  setShipmentDeliveryAddress('');
+                }}
+                fullWidth
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={submitShipmentRequest}
+                fullWidth
+              >
+                Submit Request
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

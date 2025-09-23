@@ -4,6 +4,7 @@ import { BrowserQRCodeReader, BrowserMultiFormatReader, NotFoundException } from
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { sampleService } from '../../../services/sampleService';
+import { sampleShipmentService, type SampleShipmentRequest } from '../../../services/sampleShipmentService';
 
 interface SampleRequest {
   id: string;
@@ -30,7 +31,7 @@ interface ReceivedSample {
 export const SampleManagement = () => {
   const { user } = useAuth();
   const { refreshData } = useData();
-  const [activeTab, setActiveTab] = useState<'scan' | 'requests' | 'received'>('scan');
+  const [activeTab, setActiveTab] = useState<'scan' | 'requests' | 'received' | 'shipments'>('scan');
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[]>([]);
   const [receivedSamples, setReceivedSamples] = useState<ReceivedSample[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -45,6 +46,11 @@ export const SampleManagement = () => {
   const [selectedRequestId, setSelectedRequestId] = useState<string>('');
   const [currentCameraFacing, setCurrentCameraFacing] = useState<'environment' | 'user'>('environment');
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [shipmentRequests, setShipmentRequests] = useState<SampleShipmentRequest[]>([]);
+  const [selectedShipmentRequest, setSelectedShipmentRequest] = useState<SampleShipmentRequest | null>(null);
+  const [paymentLink, setPaymentLink] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [packagePhoto, setPackagePhoto] = useState<string>('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
