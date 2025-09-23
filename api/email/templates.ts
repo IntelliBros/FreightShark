@@ -1,3 +1,32 @@
+import { VercelRequest, VercelResponse } from '@vercel/node';
+
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    // Return list of available templates
+    const templateList = [
+      'welcome',
+      'quote-requested',
+      'quote-ready',
+      'shipment-update',
+      'shipment-delivered',
+      'invoice-generated',
+      'warehouse-ids-required',
+      'new-message',
+      'payment-received',
+      'sample-received',
+      'sample-payment-link',
+      'sample-shipped'
+    ];
+
+    return res.status(200).json({
+      templates: templateList,
+      message: 'Available email templates'
+    });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
 export function getEmailTemplate(templateId: string, variables: Record<string, string>) {
   const logoSvg = `
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
