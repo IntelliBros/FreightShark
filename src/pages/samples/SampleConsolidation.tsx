@@ -458,16 +458,6 @@ Sample ID: ${currentRequest?.id || 'N/A'}
     ).join(' ');
   };
 
-  const totalWeight = incomingSamples
-    .filter(sample => selectedSamples.includes(sample.id))
-    .reduce((sum, sample) => sum + sample.weight, 0);
-
-  const totalVolumetricWeight = incomingSamples
-    .filter(sample => selectedSamples.includes(sample.id))
-    .reduce((sum, sample) => sum + sample.volumetricWeight, 0);
-
-  const chargeableWeight = Math.max(totalWeight, totalVolumetricWeight);
-
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
@@ -891,32 +881,6 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {selectedSamples.length > 0 && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-medium text-gray-900 mb-3">
-                  Consolidation Summary
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Total Weight</p>
-                    <p className="text-lg font-medium">{totalWeight.toFixed(2)} kg</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Volumetric Weight</p>
-                    <p className="text-lg font-medium">
-                      {totalVolumetricWeight.toFixed(2)} kg
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Chargeable Weight</p>
-                    <p className="text-lg font-medium text-blue-600">
-                      {chargeableWeight.toFixed(2)} kg
-                    </p>
-                  </div>
-                </div>
               </div>
             )}
           </Card>
