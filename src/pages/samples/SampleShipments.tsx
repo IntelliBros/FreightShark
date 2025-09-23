@@ -154,30 +154,6 @@ export const SampleShipments = () => {
                   </div>
                 </div>
 
-                {request.package_photo && (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Package Photo</p>
-                    <img
-                      src={request.package_photo}
-                      alt="Package"
-                      className="w-full max-w-md rounded-lg shadow-md cursor-pointer hover:opacity-95 transition-opacity"
-                      onClick={() => {
-                        const modal = document.createElement('div');
-                        modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-                        modal.onclick = () => modal.remove();
-                        modal.innerHTML = `
-                          <img src="${request.package_photo}" class="max-w-[90%] max-h-[90%] rounded-lg" />
-                        `;
-                        document.body.appendChild(modal);
-                      }}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      <ImageIcon className="inline w-3 h-3 mr-1" />
-                      Click image to enlarge
-                    </p>
-                  </div>
-                )}
-
                 {request.payment_link && request.status === 'payment_pending' && (
                   <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm font-medium text-blue-900 mb-2">Payment Required</p>
@@ -194,31 +170,52 @@ export const SampleShipments = () => {
                 )}
 
                 {request.tracking_number && (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Tracking Number</p>
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`https://t.17track.net/en#nums=${request.tracking_number}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
-                      >
-                        <TruckIcon className="w-3 h-3" />
-                        <span className="font-mono">{request.tracking_number}</span>
-                        <ExternalLinkIcon className="w-3 h-3" />
-                      </a>
-                      <button
-                        onClick={() => copyToClipboard(request.tracking_number!, 'Tracking number')}
-                        className="text-gray-500 hover:text-gray-700"
-                        title="Copy tracking number"
-                      >
-                        <CopyIcon className="w-4 h-4" />
-                      </button>
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Tracking Number</p>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`https://t.17track.net/en#nums=${request.tracking_number}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          <TruckIcon className="w-3 h-3" />
+                          <span className="font-mono">{request.tracking_number}</span>
+                          <ExternalLinkIcon className="w-3 h-3" />
+                        </a>
+                        <button
+                          onClick={() => copyToClipboard(request.tracking_number!, 'Tracking number')}
+                          className="text-gray-500 hover:text-gray-700"
+                          title="Copy tracking number"
+                        >
+                          <CopyIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {request.shipped_at && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Shipped on {new Date(request.shipped_at).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
-                    {request.shipped_at && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Shipped on {new Date(request.shipped_at).toLocaleDateString()}
-                      </p>
+                    {request.package_photo && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={request.package_photo}
+                          alt="Package"
+                          className="w-20 h-20 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            const modal = document.createElement('div');
+                            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                            modal.onclick = () => modal.remove();
+                            modal.innerHTML = `
+                              <img src="${request.package_photo}" class="max-w-[90%] max-h-[90%] rounded-lg" />
+                            `;
+                            document.body.appendChild(modal);
+                          }}
+                          title="Click to enlarge"
+                        />
+                      </div>
                     )}
                   </div>
                 )}
