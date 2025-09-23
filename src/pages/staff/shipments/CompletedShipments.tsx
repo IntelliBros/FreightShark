@@ -4,7 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { TruckIcon, SearchIcon, FilterIcon, ChevronDownIcon, CheckCircleIcon, DownloadIcon, FileTextIcon } from 'lucide-react';
-import { useData } from '../../context/DataContextV2';
+import { useData } from '../../../context/DataContextV2';
 import { DataService } from '../../../services/DataService';
 
 // Mock completed shipments data (fallback only)
