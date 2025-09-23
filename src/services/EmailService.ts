@@ -215,7 +215,8 @@ class EmailService {
     const config = this.getSmtpConfig();
     
     if (!config) {
-      console.log('No SMTP configuration found in localStorage, falling back to simulation');
+      console.warn('⚠️ SMTP NOT CONFIGURED - Email will be simulated only');
+      console.log('To send actual emails, configure SMTP in Admin > Email Settings');
       // Fallback to simulation when no config
       return this.simulateEmail(to, templateId, variables);
     }
@@ -234,9 +235,14 @@ class EmailService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to, templateId, variables, config })
       });
-      
+
       if (response.ok) {
         const result = await response.json();
+        console.log('✅ EMAIL SENT SUCCESSFULLY via SMTP:', {
+          to,
+          template: templateId,
+          timestamp: new Date().toISOString()
+        });
         return result;
       }
     } catch (error) {
@@ -305,11 +311,13 @@ class EmailService {
   ): Promise<{ success: boolean; message: string }> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        console.log('📨 Email Notification (Simulated):', {
+        console.warn('📨 EMAIL SIMULATED (NOT ACTUALLY SENT):');
+        console.log({
           to,
           template: templateId,
           variables,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          note: '⚠️ Configure SMTP in Admin > Email Settings to send actual emails'
         });
         
         // Store simulated email in localStorage for demo purposes
