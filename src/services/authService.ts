@@ -365,17 +365,25 @@ const updateUsersWithDisplayId = () => {
   let updated = false;
 
   users.forEach((user: User, index: number) => {
-    if (!user.display_id) {
-      // Assign display_id based on existing pattern or index
-      if (user.id === '0' || user.email === 'admin@freightshark.com') {
-        user.display_id = 1;
-      } else if (user.id === '1' || user.email === 'customer@example.com') {
-        user.display_id = 2;
-      } else if (user.id === '2' || user.email === 'staff@freightshark.com') {
-        user.display_id = 3;
-      } else if (user.id === 'user-1') {
-        // Handle the specific user from the error message
+    // Force update for user-1 to fix any wrong display_id
+    if (user.id === 'user-1') {
+      if (user.display_id !== 14) {
         user.display_id = 14;
+        updated = true;
+        console.log('Fixed user-1 display_id to 14');
+      }
+    } else if (!user.display_id) {
+      // Assign display_id for users that don't have one
+      if (user.id === '0') {
+        user.display_id = 1;
+      } else if (user.id === '1') {
+        user.display_id = 2;
+      } else if (user.id === '2') {
+        user.display_id = 3;
+      } else if (user.email === 'admin@freightshark.com') {
+        user.display_id = 1;
+      } else if (user.email === 'staff@freightshark.com') {
+        user.display_id = 3;
       } else {
         // For other users, generate based on their position in the array
         user.display_id = index + 4;
