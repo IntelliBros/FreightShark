@@ -11,7 +11,7 @@ interface WarehouseRate {
 }
 
 export function ShipmentEstimator() {
-  const { shipments, quotes } = useData();
+  const { shipments, quotes, quoteRequests } = useData();
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [chargeableWeight, setChargeableWeight] = useState('');
   const [showEstimate, setShowEstimate] = useState(false);
@@ -44,25 +44,121 @@ export function ShipmentEstimator() {
       }
 
       console.log(`\n🏭 Processing quote ${index + 1}/${quotes.length}: ${quote.id}`);
-      console.log('📊 Quote data:', {
+      console.log('📊 Complete Quote object:', quote);
+      console.log('📊 Quote data summary:', {
         destinations: quote.destinations,
         ratePerKg: quote.ratePerKg,
         totalCost: quote.totalCost,
-        hasDestinations: !!quote.destinations && quote.destinations.length > 0
+        hasDestinations: !!quote.destinations && quote.destinations.length > 0,
+        allFields: Object.keys(quote),
+        possibleWarehouseFields: {
+          warehouse: quote.warehouse,
+          warehouses: quote.warehouses,
+          fbaWarehouse: quote.fbaWarehouse,
+          destinationWarehouse: quote.destinationWarehouse
+        }
       });
 
-      // Extract warehouse data from quote destinations (most reliable source)
+      // Extract warehouse data from multiple possible sources
       let warehouseData: any[] = [];
 
-      // Primary approach: Use destinations from quote
-      if (quote.destinations && Array.isArray(quote.destinations) && quote.destinations.length > 0) {
-        console.log('✅ Found', quote.destinations.length, 'destinations in quote');
+      // Method 1: Check per_warehouse_costs (most detailed)
+      console.log('🔍 Checking per_warehouse_costs for quote', quote.id);
+      console.log('   Raw per_warehouse_costs:', quote.per_warehouse_costs);
+      console.log('   Type:', typeof quote.per_warehouse_costs);
+
+      if (quote.per_warehouse_costs) {
+        try {
+          let warehouseCosts: any;
+          if (typeof quote.per_warehouse_costs === 'string') {
+            console.log('   Parsing as JSON string...');
+            warehouseCosts = JSON.parse(quote.per_warehouse_costs);
+          } else {
+            console.log('   Using as object directly...');
+            warehouseCosts = quote.per_warehouse_costs;
+          }
+
+          console.log('   Parsed warehouse costs:', warehouseCosts);
+
+          if (Array.isArray(warehouseCosts)) {
+            warehouseData = warehouseCosts;
+            console.log('✅ Found per_warehouse_costs as array:', warehouseData.length, 'warehouses');
+          } else if (typeof warehouseCosts === 'object') {
+            warehouseData = Object.values(warehouseCosts);
+            console.log('✅ Found per_warehouse_costs as object, converted to array:', warehouseData.length, 'warehouses');
+          }
+
+          if (warehouseData.length > 0) {
+            console.log('   First warehouse entry:', warehouseData[0]);
+          }
+        } catch (e) {
+          console.log('⚠️ Failed to parse per_warehouse_costs:', e);
+        }
+      } else {
+        console.log('   ❌ No per_warehouse_costs found');
+      }
+
+      // Method 2: Get warehouse data from related QuoteRequest
+      if (warehouseData.length === 0) {
+        console.log('🔍 Looking for related QuoteRequest for quote', quote.id, 'with request_id:', quote.request_id);
+        const relatedRequest = quoteRequests.find(req => req.id === quote.request_id);
+        console.log('   Found related request:', !!relatedRequest);
+
+        if (relatedRequest) {
+          console.log('   Request destination_warehouses:', relatedRequest.destination_warehouses);
+          console.log('   Request type:', typeof relatedRequest.destination_warehouses);
+
+          if (relatedRequest.destination_warehouses) {
+            let destinations: any;
+
+            try {
+              if (typeof relatedRequest.destination_warehouses === 'string') {
+                console.log('   Parsing destination_warehouses as JSON...');
+                destinations = JSON.parse(relatedRequest.destination_warehouses);
+              } else {
+                console.log('   Using destination_warehouses as object...');
+                destinations = relatedRequest.destination_warehouses;
+              }
+
+              console.log('   Parsed destinations:', destinations);
+
+              if (Array.isArray(destinations)) {
+                warehouseData = destinations.map((dest: any, idx: number) => {
+                  const warehouseName = dest.fbaWarehouse || dest.warehouse || dest.warehouseName || `Warehouse-${dest.id || idx}`;
+                  const estimatedRate = quote.total_cost / (relatedRequest.total_weight || 100) || 8.5;
+                  const weight = dest.weight || dest.cartons * 20 || relatedRequest.total_weight / destinations.length || 100;
+
+                  console.log(`   Destination ${idx + 1}: ${warehouseName}, Rate: $${estimatedRate}/kg`);
+
+                  return {
+                    warehouse: warehouseName,
+                    warehouseName: warehouseName,
+                    ratePerKg: estimatedRate,
+                    chargeableWeight: weight
+                  };
+                });
+                console.log('✅ Extracted', warehouseData.length, 'warehouses from quote request');
+              } else {
+                console.log('   ⚠️ destinations is not an array:', typeof destinations);
+              }
+            } catch (e) {
+              console.log('⚠️ Failed to parse destination_warehouses:', e);
+            }
+          } else {
+            console.log('   ❌ No destination_warehouses in request');
+          }
+        } else {
+          console.log('   ❌ No related QuoteRequest found');
+        }
+      }
+
+      // Method 3: Use quote destinations (legacy)
+      if (warehouseData.length === 0 && quote.destinations) {
+        console.log('✅ Found legacy destinations in quote');
         warehouseData = quote.destinations.map((dest: any) => {
           const warehouseName = dest.fbaWarehouse || dest.warehouse || `Warehouse-${dest.id || Math.random()}`;
-          const estimatedRate = quote.ratePerKg || quote.totalCost / 100 || 8.5; // Extract or estimate rate
+          const estimatedRate = quote.ratePerKg || quote.total_cost / 100 || 8.5;
           const weight = dest.chargeableWeight || dest.weight || dest.cartons * 20 || 100;
-
-          console.log(`  📦 Destination: ${warehouseName}, Rate: $${estimatedRate}/kg, Weight: ${weight}kg`);
 
           return {
             warehouse: warehouseName,
@@ -71,13 +167,15 @@ export function ShipmentEstimator() {
             chargeableWeight: weight
           };
         });
-      } else {
-        console.log('⚠️ No destinations found, using default warehouse');
-        // Create a default warehouse entry so every quote contributes data
+      }
+
+      // Method 4: Create default if no warehouse data found
+      if (warehouseData.length === 0) {
+        console.log('⚠️ No warehouse data found, creating estimated entry');
         warehouseData = [{
           warehouse: 'FBA Warehouse (Estimated)',
           warehouseName: 'FBA Warehouse (Estimated)',
-          ratePerKg: quote.ratePerKg || 8.5,
+          ratePerKg: quote.total_cost / 100 || 8.5,
           chargeableWeight: 100
         }];
       }
