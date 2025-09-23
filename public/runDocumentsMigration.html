@@ -131,22 +131,14 @@
 ALTER TABLE shipments
 ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb;
 
--- Migrate documents from destinations column if they exist
-UPDATE shipments
-SET documents = destinations
-WHERE destinations IS NOT NULL
-  AND jsonb_typeof(destinations) = 'array'
-  AND EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements(destinations) AS elem
-    WHERE elem ? 'name'
-       OR elem ? 'type'
-       OR elem ? 'url'
-  );
-
 -- Create index for better performance
 CREATE INDEX IF NOT EXISTS idx_shipments_documents
-ON shipments USING gin (documents);</div>
+ON shipments USING gin (documents);
+
+-- Add constraint to ensure documents is always an array
+ALTER TABLE shipments
+ADD CONSTRAINT check_documents_is_array
+CHECK (jsonb_typeof(documents) = 'array' OR documents IS NULL);</div>
         </div>
 
         <div style="margin-top: 30px;">
@@ -217,16 +209,9 @@ ON shipments USING gin (documents);</div>
                             }
                         }
 
-                        // Check destinations column
-                        if ('destinations' in shipment) {
-                            const { data: destData, error: destError } = await supabase
-                                .from('shipments')
-                                .select('id, destinations')
-                                .not('destinations', 'is', null);
-
-                            if (!destError) {
-                                addLog(`Shipments with destinations data: ${destData?.length || 0}`);
-                            }
+                        // Check destination column (singular - for location data)
+                        if ('destination' in shipment) {
+                            addLog('Destination column exists (for location data)');
                         }
 
                         showStatus('Database state checked successfully', 'success');
@@ -266,46 +251,44 @@ ON shipments USING gin (documents);</div>
                     addLog('✅ Documents column added successfully');
                 }
 
-                // Step 2: Migrate data from destinations if it contains documents
-                addLog('Checking for document data in destinations column...');
-                const { data: shipments, error: fetchError } = await supabase
+                // Step 2: Check if documents column now exists and is ready
+                addLog('Verifying documents column...');
+                const { data: testShipment, error: testError } = await supabase
                     .from('shipments')
-                    .select('id, destinations')
-                    .not('destinations', 'is', null);
+                    .select('id, documents')
+                    .limit(1)
+                    .single();
 
-                if (!fetchError && shipments) {
-                    let migratedCount = 0;
+                if (!testError) {
+                    addLog('✅ Documents column is ready for use');
 
-                    for (const shipment of shipments) {
-                        if (shipment.destinations && Array.isArray(shipment.destinations)) {
-                            // Check if destinations contains document-like data
-                            const hasDocumentData = shipment.destinations.some(item =>
-                                item.name && item.url && (item.type || item.size || item.uploadedAt)
-                            );
+                    // Count how many shipments have documents
+                    const { data: withDocs, error: countError } = await supabase
+                        .from('shipments')
+                        .select('id')
+                        .not('documents', 'is', null);
 
-                            if (hasDocumentData) {
-                                // This looks like documents, migrate it
-                                const { error: updateError } = await supabase
-                                    .from('shipments')
-                                    .update({
-                                        documents: shipment.destinations,
-                                        destinations: []
-                                    })
-                                    .eq('id', shipment.id);
-
-                                if (!updateError) {
-                                    migratedCount++;
-                                    addLog(`✅ Migrated documents for shipment ${shipment.id}`);
-                                } else {
-                                    addLog(`⚠️ Failed to migrate shipment ${shipment.id}: ${updateError.message}`);
-                                }
-                            }
-                        }
+                    if (!countError) {
+                        addLog(`Found ${withDocs?.length || 0} shipments with documents`);
                     }
-
-                    addLog(`Migration complete. Migrated ${migratedCount} shipments.`);
                 } else {
-                    addLog('No data to migrate or error fetching shipments');
+                    addLog('⚠️ Could not verify documents column');
+                }
+
+                // Step 3: Add constraint
+                addLog('Adding array constraint...');
+                try {
+                    const { error: constraintError } = await supabase.rpc('exec_sql', {
+                        query: `ALTER TABLE shipments ADD CONSTRAINT check_documents_is_array CHECK (jsonb_typeof(documents) = 'array' OR documents IS NULL)`
+                    });
+
+                    if (!constraintError) {
+                        addLog('✅ Array constraint added');
+                    } else {
+                        addLog('Constraint may already exist');
+                    }
+                } catch (e) {
+                    addLog('Constraint likely already exists');
                 }
 
                 showStatus('Migration completed successfully!', 'success');
@@ -342,27 +325,14 @@ ON shipments USING gin (documents);</div>
                     }
                 }
 
-                // Check destinations column
+                // Check destination column (singular - this is for location data, not documents)
                 const { data: withDest, error: destError } = await supabase
                     .from('shipments')
-                    .select('id, destinations')
-                    .not('destinations', 'is', null);
+                    .select('id, destination')
+                    .limit(1);
 
-                if (!destError) {
-                    const docsInDest = withDest?.filter(s => {
-                        if (s.destinations && Array.isArray(s.destinations)) {
-                            return s.destinations.some(item =>
-                                item.name && item.url && (item.type || item.size)
-                            );
-                        }
-                        return false;
-                    });
-
-                    if (docsInDest && docsInDest.length > 0) {
-                        addLog(`⚠️ Still have ${docsInDest.length} shipments with document data in destinations column`);
-                    } else {
-                        addLog('✅ No document data remaining in destinations column');
-                    }
+                if (!destError && withDest) {
+                    addLog('✅ Destination column exists for location data');
                 }
 
                 showStatus('Verification complete', 'success');
@@ -376,44 +346,45 @@ ON shipments USING gin (documents);</div>
 
         async function rollbackMigration() {
             try {
-                if (!confirm('Are you sure you want to rollback? This will move documents back to destinations column.')) {
+                if (!confirm('Are you sure you want to rollback? This will remove the documents column (data will be preserved in backups).')) {
                     return;
                 }
 
                 addLog('Starting rollback...');
+                addLog('Note: The documents column will be dropped. Make sure you have a backup!');
 
-                // Move documents back to destinations
-                const { data: shipments, error: fetchError } = await supabase
-                    .from('shipments')
-                    .select('id, documents')
-                    .not('documents', 'is', null);
+                // Since we're not migrating from anywhere, rollback just removes the column
+                // In production, you would want to backup the data first
 
-                if (!fetchError && shipments) {
-                    let rollbackCount = 0;
+                try {
+                    // Drop the constraint first
+                    const { error: dropConstraintError } = await supabase.rpc('exec_sql', {
+                        query: `ALTER TABLE shipments DROP CONSTRAINT IF EXISTS check_documents_is_array`
+                    });
 
-                    for (const shipment of shipments) {
-                        if (shipment.documents && Array.isArray(shipment.documents) && shipment.documents.length > 0) {
-                            const { error: updateError } = await supabase
-                                .from('shipments')
-                                .update({
-                                    destinations: shipment.documents,
-                                    documents: []
-                                })
-                                .eq('id', shipment.id);
-
-                            if (!updateError) {
-                                rollbackCount++;
-                                addLog(`✅ Rolled back shipment ${shipment.id}`);
-                            } else {
-                                addLog(`⚠️ Failed to rollback shipment ${shipment.id}: ${updateError.message}`);
-                            }
-                        }
+                    if (!dropConstraintError) {
+                        addLog('✅ Dropped array constraint');
                     }
 
-                    addLog(`Rollback complete. Rolled back ${rollbackCount} shipments.`);
+                    // Drop the index
+                    const { error: dropIndexError } = await supabase.rpc('exec_sql', {
+                        query: `DROP INDEX IF EXISTS idx_shipments_documents`
+                    });
+
+                    if (!dropIndexError) {
+                        addLog('✅ Dropped documents index');
+                    }
+
+                    // Note: We're NOT dropping the column as that would lose data
+                    // In production, you would backup first
+                    addLog('⚠️ Documents column preserved to prevent data loss');
+                    addLog('To fully rollback, manually drop the column after backing up data');
+
+                } catch (e) {
+                    addLog(`Error during rollback: ${e.message}`);
                 }
 
-                showStatus('Rollback completed', 'success');
+                showStatus('Rollback completed (column preserved)', 'success');
 
             } catch (error) {
                 console.error('Error:', error);

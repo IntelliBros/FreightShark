@@ -6,36 +6,12 @@
 ALTER TABLE shipments
 ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb;
 
--- Step 2: Migrate documents from destinations column if they exist there
--- This checks if destinations contains document-like data and moves it
-UPDATE shipments
-SET documents = destinations
-WHERE destinations IS NOT NULL
-  AND jsonb_typeof(destinations) = 'array'
-  AND EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements(destinations) AS elem
-    WHERE elem ? 'name'
-       OR elem ? 'type'
-       OR elem ? 'url'
-       OR elem ? 'uploadedAt'
-       OR elem ? 'size'
-  );
+-- Step 2: Note - Documents are currently stored in the 'documents' column already
+-- No migration from destination needed as destination is for location data
+-- This step is kept for documentation purposes only
 
--- Step 3: Clean up destinations column by removing document data
--- Only remove if the data looks like documents (has document fields)
-UPDATE shipments
-SET destinations = '[]'::jsonb
-WHERE destinations IS NOT NULL
-  AND jsonb_typeof(destinations) = 'array'
-  AND EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements(destinations) AS elem
-    WHERE elem ? 'name'
-       AND elem ? 'type'
-       AND elem ? 'url'
-       AND NOT (elem ? 'fbaWarehouse' OR elem ? 'amazonShipmentId')
-  );
+-- Step 3: Ensure documents column has proper default value
+-- No cleanup needed for destination column as it stores location data
 
 -- Step 4: Create an index on the documents column for better query performance
 CREATE INDEX IF NOT EXISTS idx_shipments_documents ON shipments USING gin (documents);
