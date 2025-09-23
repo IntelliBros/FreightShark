@@ -249,12 +249,31 @@ export const SampleConsolidation = () => {
     addToast('Sample consolidation request created successfully!', 'success');
   };
 
-  const handleDownloadLabel = async (request?: SampleRequest) => {
-    const requestToUse = request || currentRequest;
-    if (!requestToUse || !user) return;
+  const handleDownloadLabel = async (request?: SampleRequest | React.MouseEvent) => {
+    // If request is an event object (from button click), ignore it and use currentRequest
+    const isEvent = request && 'preventDefault' in request;
+    const requestToUse = (isEvent || !request) ? currentRequest : request as SampleRequest;
+
+    if (!requestToUse || !user) {
+      console.error('Missing request or user data:', { requestToUse, user, currentRequest });
+      addToast('Unable to download label - missing data', 'error');
+      return;
+    }
 
     console.log('Downloading label for:', requestToUse);
+    console.log('Request structure:', {
+      id: requestToUse.id,
+      productName: requestToUse.productName,
+      hasAllFields: !!(requestToUse.id && requestToUse.productName)
+    });
     console.log('Sample delivery address:', sampleDeliveryAddress);
+
+    // Ensure we have the required fields
+    if (!requestToUse.id || !requestToUse.productName) {
+      console.error('Request missing required fields:', requestToUse);
+      addToast('Unable to generate label - incomplete request data', 'error');
+      return;
+    }
 
     const labelData = {
       userId: user.id,
@@ -465,7 +484,7 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                   </div>
 
                   <div className="flex gap-3">
-                    <Button variant="primary" onClick={handleDownloadLabel}>
+                    <Button variant="primary" onClick={() => handleDownloadLabel()}>
                       <DownloadIcon className="h-4 w-4 mr-1" />
                       Download Shipping Label
                     </Button>
