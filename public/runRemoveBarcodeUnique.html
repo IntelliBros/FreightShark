@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove Barcode Unique Constraint Migration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold mb-4">🔓 Remove Barcode Unique Constraint</h1>
+
+            <div class="bg-blue-50 p-4 rounded mb-4">
+                <h3 class="font-semibold text-blue-900">What this migration does:</h3>
+                <ul class="text-sm text-blue-800 mt-2 list-disc list-inside">
+                    <li>Removes the UNIQUE constraint on the barcode column</li>
+                    <li>Allows unlimited scanning of the same sample ID</li>
+                    <li>Enables staff to process samples multiple times</li>
+                    <li>Keeps the index for performance but without uniqueness</li>
+                </ul>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Supabase URL:
+                </label>
+                <input type="text" id="supabaseUrl"
+                       value="https://isvuolzqqjutrfytebtl.supabase.co"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Supabase Anon Key:
+                </label>
+                <input type="text" id="supabaseKey"
+                       value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjMxMzQxNDQsImV4cCI6MjAzODcxMDE0NH0.EzgQE3Y7_T-7964wCmGkLRaGGED2Q5s9yB9uRj_QMNU"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            </div>
+
+            <button onclick="runMigration()"
+                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-semibold">
+                🚀 Run Migration
+            </button>
+
+            <div id="result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        window.runMigration = async function() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.innerHTML = '<div class="bg-yellow-50 p-4 rounded">⏳ Running migration...</div>';
+
+            try {
+                const supabase = createClient(url, key);
+
+                // Get the service role key from localStorage if available
+                const serviceKey = localStorage.getItem('supabaseServiceKey') || key;
+                const adminClient = createClient(url, serviceKey);
+
+                // SQL statements to run
+                const statements = [
+                    `ALTER TABLE received_samples DROP CONSTRAINT IF EXISTS received_samples_barcode_key`,
+                    `DROP INDEX IF EXISTS idx_received_samples_barcode`,
+                    `CREATE INDEX idx_received_samples_barcode ON received_samples(barcode)`,
+                    `COMMENT ON COLUMN received_samples.barcode IS 'Sample barcode/QR code - can be scanned multiple times for unlimited sample processing'`
+                ];
+
+                const results = [];
+
+                for (const sql of statements) {
+                    console.log('Executing:', sql);
+                    try {
+                        const { data, error } = await adminClient.rpc('exec_sql', {
+                            sql_query: sql
+                        });
+
+                        if (error) {
+                            // Try direct execution if exec_sql doesn't exist
+                            console.log('exec_sql failed, trying direct query:', error);
+                            // For DDL statements, we can't use .sql() directly, but we can check if constraint exists
+                            if (sql.includes('DROP CONSTRAINT')) {
+                                // Check if constraint exists
+                                const { data: constraints, error: checkError } = await adminClient
+                                    .from('information_schema.table_constraints')
+                                    .select('constraint_name')
+                                    .eq('table_name', 'received_samples')
+                                    .eq('constraint_name', 'received_samples_barcode_key');
+
+                                if (constraints && constraints.length > 0) {
+                                    results.push({ sql, status: 'constraint exists - manual removal needed' });
+                                } else {
+                                    results.push({ sql, status: 'constraint already removed' });
+                                }
+                            } else {
+                                results.push({ sql, status: 'may need manual execution', error: error.message });
+                            }
+                        } else {
+                            results.push({ sql, status: 'success', data });
+                        }
+                    } catch (err) {
+                        results.push({ sql, status: 'error', error: err.message });
+                    }
+                }
+
+                // Test if we can now insert duplicate barcodes
+                console.log('Testing duplicate barcode insertion...');
+                const testBarcode = 'TEST-DUPLICATE-' + Date.now();
+
+                // Try inserting two records with the same barcode
+                const { data: test1, error: error1 } = await supabase
+                    .from('received_samples')
+                    .insert({
+                        id: 'TEST-1-' + Date.now(),
+                        sample_request_id: 'SMPL-USER-1-1758601912039-325', // Use existing request
+                        barcode: testBarcode,
+                        received_by: 'staff-1',
+                        status: 'in_warehouse'
+                    });
+
+                const { data: test2, error: error2 } = await supabase
+                    .from('received_samples')
+                    .insert({
+                        id: 'TEST-2-' + Date.now(),
+                        sample_request_id: 'SMPL-USER-1-1758601912039-325',
+                        barcode: testBarcode,
+                        received_by: 'staff-1',
+                        status: 'in_warehouse'
+                    });
+
+                // Clean up test records
+                await supabase
+                    .from('received_samples')
+                    .delete()
+                    .eq('barcode', testBarcode);
+
+                const testPassed = !error1 && !error2;
+
+                if (testPassed) {
+                    resultDiv.innerHTML = `
+                        <div class="bg-green-50 p-4 rounded">
+                            <p class="font-semibold text-green-900">✅ Migration successful!</p>
+                            <p class="text-sm text-green-800 mt-2">Unique constraint removed successfully. Duplicate barcodes are now allowed.</p>
+                            <details class="mt-4">
+                                <summary class="cursor-pointer text-sm text-green-700">View details</summary>
+                                <pre class="text-xs mt-2 bg-green-100 p-2 rounded overflow-x-auto">${JSON.stringify(results, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    const errorMsg = error1?.message || error2?.message || 'Unknown error';
+                    if (errorMsg.includes('duplicate key')) {
+                        resultDiv.innerHTML = `
+                            <div class="bg-red-50 p-4 rounded">
+                                <p class="font-semibold text-red-900">❌ Migration needed - constraint still exists</p>
+                                <p class="text-sm text-red-800 mt-2">The unique constraint is still active. Please run this migration in Supabase SQL Editor:</p>
+                                <pre class="text-xs mt-2 bg-red-100 p-2 rounded overflow-x-auto">ALTER TABLE received_samples DROP CONSTRAINT received_samples_barcode_key;</pre>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="bg-yellow-50 p-4 rounded">
+                                <p class="font-semibold text-yellow-900">⚠️ Migration partially successful</p>
+                                <p class="text-sm text-yellow-800 mt-2">Some operations may need manual execution in Supabase SQL Editor.</p>
+                                <details class="mt-4">
+                                    <summary class="cursor-pointer text-sm text-yellow-700">View details</summary>
+                                    <pre class="text-xs mt-2 bg-yellow-100 p-2 rounded overflow-x-auto">${JSON.stringify(results, null, 2)}</pre>
+                                </details>
+                            </div>
+                        `;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Migration error:', error);
+                resultDiv.innerHTML = `
+                    <div class="bg-red-50 p-4 rounded">
+                        <p class="font-semibold text-red-900">❌ Migration failed</p>
+                        <p class="text-sm text-red-800 mt-2">${error.message}</p>
+                        <div class="mt-4 p-3 bg-red-100 rounded">
+                            <p class="text-xs font-semibold text-red-900 mb-2">Manual steps required:</p>
+                            <ol class="text-xs text-red-800 list-decimal list-inside">
+                                <li>Go to Supabase Dashboard > SQL Editor</li>
+                                <li>Run: <code class="bg-red-200 px-1">ALTER TABLE received_samples DROP CONSTRAINT received_samples_barcode_key;</code></li>
+                                <li>Run: <code class="bg-red-200 px-1">DROP INDEX IF EXISTS idx_received_samples_barcode;</code></li>
+                                <li>Run: <code class="bg-red-200 px-1">CREATE INDEX idx_received_samples_barcode ON received_samples(barcode);</code></li>
+                            </ol>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
