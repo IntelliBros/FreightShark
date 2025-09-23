@@ -20,6 +20,7 @@ export interface ReceivedSample {
   status: 'in_warehouse' | 'consolidated' | 'shipped';
   notes?: string;
   photo?: string; // Base64 encoded image
+  delivery_address?: string; // Single field for complete address
   created_at: string;
   updated_at: string;
 }
@@ -163,7 +164,8 @@ class SampleService {
           received_at: sample.received_at,
           status: sample.status,
           notes: sample.notes,
-          photo: sample.photo
+          photo: sample.photo,
+          delivery_address: sample.delivery_address
         })
         .select()
         .single();
