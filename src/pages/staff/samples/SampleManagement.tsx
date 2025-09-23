@@ -51,6 +51,7 @@ export const SampleManagement = () => {
   const [paymentLink, setPaymentLink] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [packagePhoto, setPackagePhoto] = useState<string>('');
+  const [shipmentSampleDetails, setShipmentSampleDetails] = useState<Record<string, any>>({});
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
@@ -132,6 +133,17 @@ export const SampleManagement = () => {
     } catch (error) {
       console.error('Error loading shipment requests:', error);
     }
+  };
+
+  const loadShipmentSampleDetails = async (sampleIds: string[]) => {
+    const details: Record<string, any> = {};
+    for (const sampleId of sampleIds) {
+      const sample = await sampleService.getSampleById(sampleId);
+      if (sample) {
+        details[sampleId] = sample;
+      }
+    }
+    setShipmentSampleDetails(details);
   };
 
   const startScanning = async () => {
@@ -817,6 +829,58 @@ export const SampleManagement = () => {
 
                       {selectedShipmentRequest?.id === request.id ? (
                         <div className="space-y-3 border-t pt-3">
+                          {/* Sample Details */}
+                          <div className="bg-blue-50 rounded-lg p-4 mb-3">
+                            <h4 className="font-medium text-gray-900 mb-3">Sample Details</h4>
+                            <div className="space-y-3">
+                              {request.sample_ids.map((sampleId) => {
+                                const sample = shipmentSampleDetails[sampleId];
+                                return (
+                                  <div key={sampleId} className="bg-white rounded-lg p-3 border border-blue-200">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium text-gray-900">
+                                          {sample?.product_name || 'Loading...'}
+                                        </p>
+                                        <p className="text-xs text-gray-600">
+                                          Sample ID: {sampleId}
+                                        </p>
+                                        {sample?.consolidation_id && (
+                                          <p className="text-xs text-gray-600">
+                                            Consolidation ID: {sample.consolidation_id}
+                                          </p>
+                                        )}
+                                        {sample?.received_at && (
+                                          <p className="text-xs text-gray-600">
+                                            Received: {new Date(sample.received_at).toLocaleDateString()}
+                                          </p>
+                                        )}
+                                      </div>
+                                      {sample?.photos && sample.photos.length > 0 && (
+                                        <div className="ml-3">
+                                          <img
+                                            src={sample.photos[0]}
+                                            alt="Sample"
+                                            className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80"
+                                            onClick={() => {
+                                              const modal = document.createElement('div');
+                                              modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                                              modal.onclick = () => modal.remove();
+                                              modal.innerHTML = `
+                                                <img src="${sample.photos[0]}" class="max-w-[90%] max-h-[90%] rounded-lg" />
+                                              `;
+                                              document.body.appendChild(modal);
+                                            }}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
                           {/* Package Photo Upload */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -943,6 +1007,7 @@ export const SampleManagement = () => {
                               setPackagePhoto('');
                               setPaymentLink('');
                               setTrackingNumber('');
+                              setShipmentSampleDetails({});
                             }}
                             className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
                           >
@@ -969,7 +1034,10 @@ export const SampleManagement = () => {
                           )}
                           {request.status !== 'shipped' && (
                             <button
-                              onClick={() => setSelectedShipmentRequest(request)}
+                              onClick={async () => {
+                                setSelectedShipmentRequest(request);
+                                await loadShipmentSampleDetails(request.sample_ids);
+                              }}
                               className="px-4 py-2 bg-[#00b4d8] text-white text-sm rounded hover:bg-[#0096c7]"
                             >
                               Manage
