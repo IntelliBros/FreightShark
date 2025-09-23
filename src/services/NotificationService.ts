@@ -345,32 +345,38 @@ class NotificationService {
     if (!customer.email) return;
 
     try {
+      // Create custom email content for sample notifications
+      const receivedCount = sample.received_count || 1;
+      const expectedCount = sample.expected_count || 1;
+
       // Log the exact data being sent for debugging
       const emailData = {
         to: customer.email,
-        template: 'sample-received',
+        template: 'custom-sample',
         variables: {
-          sampleId: sample.id,
-          customerName: customer.name || 'Valued Customer',
+          title: 'Sample Received in Warehouse',
+          message: `We have received a sample in your consolidation request ${sample.consolidation_id}`,
+          sampleCount: `Samples Received: ${receivedCount}/${expectedCount}`,
           productName: sample.product_name || 'Sample',
-          consolidationId: sample.consolidation_id || '',
-          receivedDate: new Date(sample.received_date).toLocaleDateString()
+          instructions: 'Once you are ready, you can view your warehouse samples and submit a request to ship the samples to the address of your choice.',
+          buttonText: 'Submit Samples for Shipment',
+          buttonUrl: 'https://freight-shark.vercel.app/samples'
         }
       };
 
       console.log('Sending sample email with data:', JSON.stringify(emailData, null, 2));
 
-      // Use 'shipment-update' template since backend doesn't have 'sample-received'
-      // The backend will recognize this template and send the email
+      // Use the new sample-received template with proper formatting
       await emailService.sendNotification(
         customer.email,
-        'shipment-update',  // Using existing template that backend recognizes
+        'sample-received',
         {
-          shipmentId: sample.id,  // Use sample ID as shipment ID
           customerName: customer.name || 'Valued Customer',
-          status: 'Sample Received',  // Custom status for samples
-          trackingInfo: `Sample ${sample.product_name} received at warehouse`,
-          estimatedDelivery: ''  // No delivery date for sample receipt
+          consolidationId: sample.consolidation_id,
+          productName: sample.product_name || 'Sample',
+          receivedCount: receivedCount.toString(),
+          expectedCount: expectedCount.toString(),
+          receivedDate: new Date(sample.received_date).toLocaleDateString()
         }
       );
       console.log(`✅ Sample received email sent successfully to ${customer.email}`);

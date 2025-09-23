@@ -408,13 +408,15 @@ export const SampleManagement = () => {
         );
 
         if (customer) {
-          // Send email notification
+          // Send email notification with sample counts
           await notificationService.notifySampleReceived(
             {
               id: scannedSampleId, // Use the actual scanned sample ID, not the database record ID
               product_name: request.productName,
               consolidation_id: scannedSampleId,
-              received_date: dbSample.received_at
+              received_date: dbSample.received_at,
+              received_count: request.receivedSamples + 1, // Add 1 for the current sample
+              expected_count: request.expectedSamples
             },
             customer
           );
