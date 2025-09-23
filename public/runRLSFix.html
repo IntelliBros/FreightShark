@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Notifications RLS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .output {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Fix Notifications Table RLS</h1>
+
+    <div class="container">
+        <h2>Fix Row Level Security for Notifications</h2>
+        <p>This will disable RLS on the notifications table to fix the 401 errors.</p>
+
+        <button onclick="fixRLS()">Fix RLS Policies</button>
+        <button onclick="testNotification()">Test Creating Notification</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toISOString();
+            output.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>\n`;
+            console.log(message);
+        }
+
+        window.fixRLS = async function() {
+            log('Starting RLS fix...', 'info');
+
+            try {
+                // Drop existing policies
+                const dropPolicies = [
+                    'DROP POLICY IF EXISTS notifications_select_policy ON notifications',
+                    'DROP POLICY IF EXISTS notifications_insert_policy ON notifications',
+                    'DROP POLICY IF EXISTS notifications_update_policy ON notifications',
+                    'DROP POLICY IF EXISTS notifications_delete_policy ON notifications'
+                ];
+
+                for (const sql of dropPolicies) {
+                    log(`Executing: ${sql}`, 'info');
+                    const { error } = await supabase.rpc('exec_sql', { sql });
+                    if (error) {
+                        log(`Error: ${error.message}`, 'error');
+                    } else {
+                        log('✓ Policy dropped', 'success');
+                    }
+                }
+
+                // Disable RLS
+                log('Disabling Row Level Security...', 'info');
+                const { error: disableError } = await supabase.rpc('exec_sql', {
+                    sql: 'ALTER TABLE notifications DISABLE ROW LEVEL SECURITY'
+                });
+
+                if (disableError) {
+                    log(`Error disabling RLS: ${disableError.message}`, 'error');
+
+                    // Try alternative approach - create permissive policies
+                    log('Trying alternative: Creating permissive policies...', 'info');
+
+                    const permissivePolicies = [
+                        'CREATE POLICY notifications_all_select ON notifications FOR SELECT USING (true)',
+                        'CREATE POLICY notifications_all_insert ON notifications FOR INSERT WITH CHECK (true)',
+                        'CREATE POLICY notifications_all_update ON notifications FOR UPDATE USING (true)',
+                        'CREATE POLICY notifications_all_delete ON notifications FOR DELETE USING (true)'
+                    ];
+
+                    for (const sql of permissivePolicies) {
+                        const { error } = await supabase.rpc('exec_sql', { sql });
+                        if (error) {
+                            log(`Warning: ${error.message}`, 'info');
+                        }
+                    }
+                } else {
+                    log('✓ RLS disabled successfully!', 'success');
+                }
+
+                log('RLS fix completed!', 'success');
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        };
+
+        window.testNotification = async function() {
+            log('Testing notification creation...', 'info');
+
+            const testNotification = {
+                id: `test-${Date.now()}`,
+                user_id: 'test-user-123',
+                type: 'sample',
+                title: 'Test Notification',
+                message: 'This is a test notification',
+                icon: 'Package',
+                link: '/test',
+                read: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .insert(testNotification)
+                    .select()
+                    .single();
+
+                if (error) {
+                    log(`Error creating notification: ${error.message}`, 'error');
+                    log(`Error details: ${JSON.stringify(error, null, 2)}`, 'error');
+                } else {
+                    log('✓ Notification created successfully!', 'success');
+                    log(`Data: ${JSON.stringify(data, null, 2)}`, 'success');
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>

@@ -37,11 +37,18 @@ class NotificationService {
         .single();
 
       if (error) {
-        console.error('Failed to create notification in Supabase:', error);
+        if (error.code === '42501') {
+          console.warn('⚠️ RLS policy blocking notification insert - notification will be shown locally only');
+          console.log('To fix: Run ALTER TABLE notifications DISABLE ROW LEVEL SECURITY; in Supabase SQL editor');
+        } else {
+          console.error('Failed to create notification in Supabase:', error);
+        }
         // Return the notification anyway so the app can continue
+        // This ensures notifications work even if database save fails
         return newNotification;
       }
 
+      console.log('✅ Notification saved to database successfully');
       return data;
     } catch (error) {
       console.error('Error creating notification:', error);

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Direct Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .output {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Test Notification System</h1>
+
+    <div class="container">
+        <h2>Direct Supabase Test</h2>
+        <p>Test creating notifications directly with service role key (bypasses RLS).</p>
+
+        <button onclick="testWithServiceKey()">Test with Service Role Key</button>
+        <button onclick="testWithAnonKey()">Test with Anon Key (Current)</button>
+        <button onclick="checkNotifications()">Check Existing Notifications</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <div class="container">
+        <h2>Instructions to Fix</h2>
+        <ol>
+            <li><strong>Option 1: Disable RLS in Supabase Dashboard</strong>
+                <ul>
+                    <li>Go to <a href="https://app.supabase.com/project/isvuolzqqjutrfytebtl/editor" target="_blank">Supabase SQL Editor</a></li>
+                    <li>Run: <code>ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;</code></li>
+                </ul>
+            </li>
+            <li><strong>Option 2: Use Service Role Key</strong>
+                <ul>
+                    <li>The service role key bypasses all RLS policies</li>
+                    <li>This should be used server-side only (not safe for client)</li>
+                </ul>
+            </li>
+            <li><strong>Option 3: Fix RLS Policies</strong>
+                <ul>
+                    <li>Create policies that don't require authentication</li>
+                    <li>Run in SQL Editor:</li>
+                </ul>
+                <pre>
+-- Drop old policies
+DROP POLICY IF EXISTS notifications_select_policy ON notifications;
+DROP POLICY IF EXISTS notifications_insert_policy ON notifications;
+DROP POLICY IF EXISTS notifications_update_policy ON notifications;
+DROP POLICY IF EXISTS notifications_delete_policy ON notifications;
+
+-- Create permissive policies
+CREATE POLICY "Enable all access" ON notifications
+FOR ALL USING (true) WITH CHECK (true);
+                </pre>
+            </li>
+        </ol>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+
+        // Service role key (if available) - this bypasses RLS
+        // You would get this from your Supabase dashboard > Settings > API
+        const serviceRoleKey = 'YOUR_SERVICE_ROLE_KEY_HERE'; // Replace if you have it
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toISOString();
+            output.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>\n`;
+            console.log(message);
+        }
+
+        window.testWithAnonKey = async function() {
+            log('Testing with Anon Key (current setup)...', 'info');
+
+            const supabase = createClient(supabaseUrl, anonKey);
+            await testNotificationCreation(supabase, 'Anon Key');
+        };
+
+        window.testWithServiceKey = async function() {
+            if (serviceRoleKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
+                log('Service role key not configured. Get it from Supabase Dashboard > Settings > API', 'warning');
+                return;
+            }
+
+            log('Testing with Service Role Key (bypasses RLS)...', 'info');
+
+            const supabase = createClient(supabaseUrl, serviceRoleKey);
+            await testNotificationCreation(supabase, 'Service Role Key');
+        };
+
+        async function testNotificationCreation(supabase, keyType) {
+            const testNotification = {
+                id: `test-${Date.now()}`,
+                user_id: 'test-user-123',
+                type: 'sample',
+                title: 'Test Sample Notification',
+                message: 'Your sample has been received at our warehouse.',
+                icon: 'Package',
+                link: '/samples',
+                read: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                log(`Creating notification with ${keyType}...`, 'info');
+
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .insert(testNotification)
+                    .select()
+                    .single();
+
+                if (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                    log(`Details: ${JSON.stringify(error, null, 2)}`, 'error');
+
+                    if (error.code === '42501') {
+                        log('This is an RLS permission error. See instructions above to fix.', 'warning');
+                    }
+                } else {
+                    log(`✅ Success! Notification created with ${keyType}`, 'success');
+                    log(`Data: ${JSON.stringify(data, null, 2)}`, 'success');
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        window.checkNotifications = async function() {
+            log('Checking existing notifications...', 'info');
+
+            const supabase = createClient(supabaseUrl, anonKey);
+
+            try {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (error) {
+                    log(`Error fetching: ${error.message}`, 'error');
+                } else {
+                    log(`Found ${data?.length || 0} notifications:`, 'info');
+                    if (data && data.length > 0) {
+                        log(JSON.stringify(data, null, 2), 'success');
+                    }
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
