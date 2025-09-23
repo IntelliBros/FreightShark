@@ -7,7 +7,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 export const UnifiedLogin = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -18,7 +18,7 @@ export const UnifiedLogin = () => {
     e.preventDefault();
     
     if (!email || !password) {
-      showToast('Please enter both email and password', 'error');
+      addToast('Please enter both email and password', 'error');
       return;
     }
 
@@ -40,14 +40,14 @@ export const UnifiedLogin = () => {
             break;
         }
 
-        showToast('Login successful!', 'success');
+        addToast('Login successful!', 'success');
       } else {
         // The login function handles navigation, just show success message
-        showToast('Login successful!', 'success');
+        addToast('Login successful!', 'success');
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      showToast(error.message || 'Invalid email or password', 'error');
+      addToast(error.message || 'Invalid email or password', 'error');
     }
   };
 

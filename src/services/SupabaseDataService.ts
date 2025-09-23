@@ -163,32 +163,28 @@ class SupabaseDataService {
   // Helper function to clear old cache entries
   private clearOldCache(): void {
     const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('cache_'));
-    const now = Date.now();
-    let clearedCount = 0;
 
-    // Clear entries older than 1 hour
+    // Clear ALL cache entries when quota is exceeded
+    // This ensures we have maximum space available
+    console.log(`Clearing ${cacheKeys.length} cache entries to free up space...`);
     for (const key of cacheKeys) {
-      try {
-        const cached = localStorage.getItem(key);
-        if (cached) {
-          const { timestamp } = JSON.parse(cached);
-          if (now - timestamp > 3600000) { // 1 hour
-            localStorage.removeItem(key);
-            clearedCount++;
-          }
-        }
-      } catch (e) {
-        // Invalid cache entry, remove it
-        localStorage.removeItem(key);
-        clearedCount++;
-      }
+      localStorage.removeItem(key);
     }
 
-    // If still not enough space cleared, remove half of all cache entries
-    if (clearedCount === 0) {
-      const halfCount = Math.floor(cacheKeys.length / 2);
-      for (let i = 0; i < halfCount; i++) {
-        localStorage.removeItem(cacheKeys[i]);
+    // Also clear any other large data that might be taking up space
+    const keysToCheck = ['notifications_', 'last_checked_', 'quoteRequests', 'quotes', 'shipments'];
+    for (const prefix of keysToCheck) {
+      const keys = Object.keys(localStorage).filter(k => k.includes(prefix));
+      for (const key of keys) {
+        try {
+          const item = localStorage.getItem(key);
+          if (item && item.length > 10000) { // Remove large items over 10KB
+            localStorage.removeItem(key);
+            console.log(`Removed large item: ${key} (${item.length} bytes)`);
+          }
+        } catch (e) {
+          // Ignore errors
+        }
       }
     }
   }

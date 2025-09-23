@@ -273,12 +273,16 @@ export const ShipmentsList = () => {
                       <div className="mt-2 text-sm text-gray-700">
                         <span className="font-medium">Destinations:</span>
                         <div className="mt-1 space-y-1">
-                          {shipment.destinations.map(dest => (
-                            <div key={dest.id} className="flex items-center text-xs">
-                              <MapPinIcon className="h-3 w-3 text-gray-400 mr-1" />
-                              {dest.fbaWarehouse} - {dest.amazonShipmentId}
-                            </div>
-                          ))}
+                          {shipment.destinations && shipment.destinations.length > 0 ? (
+                            shipment.destinations.map(dest => (
+                              <div key={dest.id} className="flex items-center text-xs">
+                                <MapPinIcon className="h-3 w-3 text-gray-400 mr-1" />
+                                {dest.fbaWarehouse} - {dest.amazonShipmentId || 'Pending'}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-xs text-gray-500">No destinations specified</div>
+                          )}
                         </div>
                       </div>
                     </div>
