@@ -267,6 +267,47 @@ class SampleService {
       return false;
     }
   }
+
+  // Get a single received sample by ID
+  async getSampleById(sampleId: string): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('received_samples')
+        .select(`
+          *,
+          sample_requests:sample_request_id (
+            id,
+            product_name
+          )
+        `)
+        .eq('id', sampleId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching sample by ID:', error);
+        return null;
+      }
+
+      // Transform the data to match expected format
+      if (data) {
+        return {
+          id: data.id,
+          product_name: data.sample_requests?.product_name || 'Unknown Product',
+          received_at: data.received_at,
+          consolidation_id: data.sample_request_id, // Use sample_request_id as consolidation ID
+          photos: data.photo ? [data.photo] : [],
+          status: data.status,
+          barcode: data.barcode,
+          notes: data.notes
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error in getSampleById:', error);
+      return null;
+    }
+  }
 }
 
 export const sampleService = new SampleService();
