@@ -26,12 +26,9 @@ class EmailService {
   private readonly BACKEND_URL = this.getBackendUrl();
 
   private getBackendUrl(): string {
-    // In production, use relative URL for Vercel API routes
-    // In development, use localhost backend
-    if (window.location.hostname === 'localhost') {
-      return import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:3001/api/email';
-    }
-    return '/api/email'; // Vercel API routes
+    // Always use relative URL - Vercel handles API routes automatically
+    // This works both in development (with Vite proxy) and production (Vercel)
+    return '/api/email';
   }
 
   getSmtpConfig(): SMTPConfig | null {
