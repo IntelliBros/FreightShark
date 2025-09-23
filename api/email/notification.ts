@@ -420,6 +420,82 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
       `),
       text: `Shipment ${variables.shipmentId} Status Update. Dear ${variables.customerName}, your shipment status has been updated to: ${variables.status}. ${variables.trackingInfo || ''}`
     },
+    'sample-received': {
+      subject: `Sample Received in Warehouse - ${variables.consolidationId}`,
+      html: wrapTemplate(`
+        <h1 style="color: #1e293b; margin: 0 0 20px 0; font-size: 28px; font-family: Arial, sans-serif;">
+          Sample Received in Warehouse
+        </h1>
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="padding: 20px; background-color: #f8f9fa; border-left: 4px solid #00b4d8;">
+              <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+                <strong>Dear ${variables.customerName},</strong>
+              </p>
+              <p style="color: #555555; font-size: 15px; margin: 0; line-height: 1.6; font-family: Arial, sans-serif;">
+                We have received a sample in your consolidation request <strong>${variables.consolidationId}</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Sample Details Card -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
+          <tr>
+            <td style="padding: 20px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <h3 style="color: #00b4d8; margin: 0 0 15px 0; font-size: 18px; font-family: Arial, sans-serif;">
+                Sample Details:
+              </h3>
+              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                    <span style="color: #64748b; font-size: 14px; font-family: Arial, sans-serif;">Product:</span>
+                    <strong style="color: #1e293b; font-size: 14px; font-family: Arial, sans-serif; float: right;">${variables.productName}</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                    <span style="color: #64748b; font-size: 14px; font-family: Arial, sans-serif;">Samples Received:</span>
+                    <strong style="color: #1e293b; font-size: 14px; font-family: Arial, sans-serif; float: right;">${variables.receivedCount}/${variables.expectedCount}</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0;">
+                    <span style="color: #64748b; font-size: 14px; font-family: Arial, sans-serif;">Received Date:</span>
+                    <strong style="color: #1e293b; font-size: 14px; font-family: Arial, sans-serif; float: right;">${variables.receivedDate}</strong>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Instructions -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
+          <tr>
+            <td style="padding: 20px;">
+              <p style="color: #555555; font-size: 15px; margin: 0; line-height: 1.6; font-family: Arial, sans-serif;">
+                Once you are ready, you can view your warehouse samples and submit a request to ship the samples to the address of your choice.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- CTA Button -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px;">
+          <tr>
+            <td align="center">
+              <a href="https://freight-shark.vercel.app/samples"
+                 style="background-color: #00b4d8; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block; font-family: Arial, sans-serif;">
+                Submit Samples for Shipment
+              </a>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Sample Received in Warehouse. Dear ${variables.customerName}, we have received a sample in your consolidation request ${variables.consolidationId}. Product: ${variables.productName}. Samples Received: ${variables.receivedCount}/${variables.expectedCount}. Once you are ready, you can view your warehouse samples and submit a request to ship the samples to the address of your choice.`
+    },
     'invoice-generated': {
       subject: `Invoice for Shipment ${variables.shipmentId}`,
       html: wrapTemplate(`
