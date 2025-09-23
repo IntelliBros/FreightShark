@@ -1210,10 +1210,12 @@ export const supabaseService = {
   // Suppliers management - USER SPECIFIC
   suppliers: {
     async getByUserId(userId: string) {
+      // IMPORTANT: Always filter by user_id to maintain privacy
+      // This is critical since RLS might be relaxed for mock auth
       const { data, error } = await supabase
         .from('suppliers')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId)  // Critical: ensures user privacy
         .order('name', { ascending: true });
 
       if (error) throw error;
