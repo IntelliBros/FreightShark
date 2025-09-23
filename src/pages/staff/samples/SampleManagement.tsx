@@ -221,6 +221,11 @@ export const SampleManagement = () => {
 
     setScanResult(`Sample received successfully: ${request.productName}`);
     setScanError('');
+
+    // Show success for 3 seconds then clear
+    setTimeout(() => {
+      setScanResult('');
+    }, 3000);
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {

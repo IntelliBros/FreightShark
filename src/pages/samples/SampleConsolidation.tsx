@@ -56,10 +56,11 @@ export const SampleConsolidation = () => {
   const [consolidationHistory, setConsolidationHistory] = useState<SampleRequest[]>([]);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<SampleRequest | null>(null);
 
-  // Load consolidation history on component mount
+  // Load consolidation history and incoming samples on component mount
   React.useEffect(() => {
     if (user) {
       loadConsolidationHistory();
+      loadIncomingSamples();
     }
   }, [user]);
 
@@ -87,6 +88,47 @@ export const SampleConsolidation = () => {
     }));
     console.log('📜 Formatted requests for UI:', formattedRequests);
     setConsolidationHistory(formattedRequests);
+  };
+
+  const loadIncomingSamples = async () => {
+    if (!user) {
+      console.log('📦 Skipping incoming samples load - no user');
+      return;
+    }
+
+    console.log('📦 Loading incoming samples for user:', user.id);
+
+    // Get all user's sample requests
+    const userRequests = await sampleService.getUserSampleRequests(user.id);
+    console.log('📦 User requests:', userRequests);
+
+    // For each request, get the received samples
+    const allIncomingSamples: IncomingSample[] = [];
+
+    for (const request of userRequests) {
+      const receivedSamples = await sampleService.getReceivedSamples(request.id);
+      console.log(`📦 Received samples for request ${request.id}:`, receivedSamples);
+
+      // Format received samples for UI
+      receivedSamples.forEach(sample => {
+        const incomingSample: IncomingSample = {
+          id: sample.id,
+          requestId: request.id,
+          productName: request.product_name,
+          supplier: 'Supplier', // This would come from additional data
+          arrivalDate: sample.received_at,
+          weight: 0, // Would need to be added to database
+          volumetricWeight: 0, // Would need to be added to database
+          photos: [],
+          barcode: sample.barcode,
+          status: sample.status as 'received' | 'consolidated' | 'shipped'
+        };
+        allIncomingSamples.push(incomingSample);
+      });
+    }
+
+    console.log('📦 All incoming samples:', allIncomingSamples);
+    setIncomingSamples(allIncomingSamples);
   };
 
   const handleCreateRequest = async () => {
@@ -532,9 +574,20 @@ Sample ID: ${currentRequest?.id || 'N/A'}
         <div className="space-y-6">
           <Card>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-medium text-gray-900">
-                Incoming Samples
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-medium text-gray-900">
+                  Incoming Samples
+                </h2>
+                <button
+                  onClick={() => loadIncomingSamples()}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Refresh samples"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
               {selectedSamples.length > 0 && (
                 <div className="flex items-center gap-4">
                   <div className="text-sm text-gray-600">
