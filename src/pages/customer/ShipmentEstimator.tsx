@@ -65,17 +65,20 @@ export function ShipmentEstimator() {
       // Method 1: Check per_warehouse_costs (most detailed)
       console.log('🔍 Checking per_warehouse_costs for quote', quote.id);
       console.log('   Raw per_warehouse_costs:', quote.per_warehouse_costs);
-      console.log('   Type:', typeof quote.per_warehouse_costs);
+      console.log('   Raw perWarehouseCosts (camelCase):', (quote as any).perWarehouseCosts);
+      console.log('   Type per_warehouse_costs:', typeof quote.per_warehouse_costs);
+      console.log('   Type perWarehouseCosts:', typeof (quote as any).perWarehouseCosts);
 
-      if (quote.per_warehouse_costs) {
+      const warehouseCostsField = quote.per_warehouse_costs || (quote as any).perWarehouseCosts;
+      if (warehouseCostsField) {
         try {
           let warehouseCosts: any;
-          if (typeof quote.per_warehouse_costs === 'string') {
+          if (typeof warehouseCostsField === 'string') {
             console.log('   Parsing as JSON string...');
-            warehouseCosts = JSON.parse(quote.per_warehouse_costs);
+            warehouseCosts = JSON.parse(warehouseCostsField);
           } else {
             console.log('   Using as object directly...');
-            warehouseCosts = quote.per_warehouse_costs;
+            warehouseCosts = warehouseCostsField;
           }
 
           console.log('   Parsed warehouse costs:', warehouseCosts);
@@ -95,7 +98,7 @@ export function ShipmentEstimator() {
           console.log('⚠️ Failed to parse per_warehouse_costs:', e);
         }
       } else {
-        console.log('   ❌ No per_warehouse_costs found');
+        console.log('   ❌ No per_warehouse_costs or perWarehouseCosts found');
       }
 
       // Method 2: Get warehouse data from related QuoteRequest
