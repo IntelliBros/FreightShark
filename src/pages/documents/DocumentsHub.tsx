@@ -64,13 +64,24 @@ export const DocumentsHub = () => {
   const loadDocuments = async () => {
     setIsLoading(true);
     try {
+      console.log('📁 Loading documents from shipments...');
+      console.log('📦 Total shipments:', shipments?.length || 0);
+      console.log('📦 Shipments data:', shipments);
+
       // Collect all documents from all user's shipments
       const allDocuments: Document[] = [];
 
       if (shipments && shipments.length > 0) {
-        shipments.forEach(shipment => {
+        shipments.forEach((shipment, index) => {
+          console.log(`📦 Processing shipment ${index + 1}/${shipments.length}: ${shipment.id}`);
+          console.log('   Has invoice:', !!shipment.invoice);
+          console.log('   Has documents:', !!shipment.documents);
+          console.log('   Invoice data:', shipment.invoice);
+          console.log('   Documents data:', shipment.documents);
+
           // Add invoice if it exists
           if (shipment.invoice) {
+            console.log('   ✅ Adding invoice document for shipment', shipment.id);
             allDocuments.push({
               id: `invoice-${shipment.id}`,
               name: `Invoice - ${shipment.id}.pdf`,
@@ -83,11 +94,15 @@ export const DocumentsHub = () => {
               shipmentData: shipment,
               invoiceData: shipment.invoice
             });
+          } else {
+            console.log('   ❌ No invoice found for shipment', shipment.id);
           }
 
           // Add any other documents uploaded by staff
           if (shipment.documents && Array.isArray(shipment.documents)) {
+            console.log('   ✅ Adding', shipment.documents.length, 'additional documents for shipment', shipment.id);
             shipment.documents.forEach(doc => {
+              console.log('     Adding document:', doc.name || 'Untitled');
               allDocuments.push({
                 id: doc.id || `doc-${Date.now()}-${Math.random()}`,
                 name: doc.name || 'Untitled Document',
@@ -99,10 +114,16 @@ export const DocumentsHub = () => {
                 url: doc.url
               });
             });
+          } else {
+            console.log('   ❌ No additional documents for shipment', shipment.id);
           }
         });
+      } else {
+        console.log('❌ No shipments found');
       }
 
+      console.log('📁 Total documents collected:', allDocuments.length);
+      console.log('📁 Documents:', allDocuments);
       setDocuments(allDocuments);
     } catch (error) {
       console.error('Error loading documents:', error);
