@@ -27,6 +27,8 @@ class SampleService {
   // Create a new sample request
   async createSampleRequest(request: Omit<SampleRequest, 'created_at' | 'updated_at' | 'received_samples' | 'status'>): Promise<SampleRequest | null> {
     try {
+      console.log('Creating sample request:', request);
+
       const { data, error } = await supabase
         .from('sample_requests')
         .insert({
@@ -41,13 +43,25 @@ class SampleService {
         .single();
 
       if (error) {
-        console.error('Error creating sample request:', error);
+        console.error('Supabase error creating sample request:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+
+        // If table doesn't exist, provide helpful message
+        if (error.code === '42P01') {
+          console.error('Table does not exist. Please run the migration first.');
+        }
         return null;
       }
 
+      console.log('Sample request created successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error in createSampleRequest:', error);
+      console.error('Exception in createSampleRequest:', error);
       return null;
     }
   }

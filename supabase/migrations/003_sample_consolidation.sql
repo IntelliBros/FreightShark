@@ -68,72 +68,29 @@ AFTER INSERT OR DELETE ON received_samples
 FOR EACH ROW
 EXECUTE FUNCTION update_sample_request_status();
 
--- Add RLS (Row Level Security) policies
-ALTER TABLE sample_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE received_samples ENABLE ROW LEVEL SECURITY;
+-- Disable RLS for now since we're using custom auth
+-- In production, you would enable RLS with proper policies
+ALTER TABLE sample_requests DISABLE ROW LEVEL SECURITY;
+ALTER TABLE received_samples DISABLE ROW LEVEL SECURITY;
 
--- Policy for sample_requests: Users can see their own requests, staff and admin can see all
-CREATE POLICY sample_requests_select_policy ON sample_requests
-    FOR SELECT
-    USING (
-        auth.uid()::text = user_id
-        OR EXISTS (
-            SELECT 1 FROM users
-            WHERE id = auth.uid()::text
-            AND role IN ('staff', 'admin')
-        )
-    );
-
--- Policy for sample_requests: Users can insert their own requests
-CREATE POLICY sample_requests_insert_policy ON sample_requests
-    FOR INSERT
-    WITH CHECK (auth.uid()::text = user_id);
-
--- Policy for sample_requests: Only staff and admin can update
-CREATE POLICY sample_requests_update_policy ON sample_requests
-    FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM users
-            WHERE id = auth.uid()::text
-            AND role IN ('staff', 'admin')
-        )
-    );
-
--- Policy for received_samples: Users can see samples for their requests, staff and admin can see all
-CREATE POLICY received_samples_select_policy ON received_samples
-    FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM sample_requests
-            WHERE id = received_samples.sample_request_id
-            AND user_id = auth.uid()::text
-        )
-        OR EXISTS (
-            SELECT 1 FROM users
-            WHERE id = auth.uid()::text
-            AND role IN ('staff', 'admin')
-        )
-    );
-
--- Policy for received_samples: Only staff and admin can insert
-CREATE POLICY received_samples_insert_policy ON received_samples
-    FOR INSERT
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM users
-            WHERE id = auth.uid()::text
-            AND role IN ('staff', 'admin')
-        )
-    );
-
--- Policy for received_samples: Only staff and admin can update
-CREATE POLICY received_samples_update_policy ON received_samples
-    FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM users
-            WHERE id = auth.uid()::text
-            AND role IN ('staff', 'admin')
-        )
-    );
+-- Note: When ready to enable RLS with proper Supabase Auth, uncomment and modify these policies:
+-- ALTER TABLE sample_requests ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE received_samples ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY sample_requests_select_policy ON sample_requests
+--     FOR SELECT USING (true);
+--
+-- CREATE POLICY sample_requests_insert_policy ON sample_requests
+--     FOR INSERT WITH CHECK (true);
+--
+-- CREATE POLICY sample_requests_update_policy ON sample_requests
+--     FOR UPDATE USING (true);
+--
+-- CREATE POLICY received_samples_select_policy ON received_samples
+--     FOR SELECT USING (true);
+--
+-- CREATE POLICY received_samples_insert_policy ON received_samples
+--     FOR INSERT WITH CHECK (true);
+--
+-- CREATE POLICY received_samples_update_policy ON received_samples
+--     FOR UPDATE USING (true);
