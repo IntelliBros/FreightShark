@@ -183,13 +183,37 @@ export const DocumentsHub = () => {
         generateInvoicePDF(doc.shipmentData, doc.invoiceData);
         addToast('Invoice downloaded successfully', 'success');
       } else if (doc.url && doc.url !== '#') {
-        // For other documents with URLs
-        const link = document.createElement('a');
-        link.href = doc.url;
-        link.download = doc.name || 'document';
-
-        if (doc.url.startsWith('data:') || doc.url.startsWith('blob:')) {
-          // Handle data URLs (base64) and blob URLs - download directly
+        // Check if it's a data URL (base64)
+        if (doc.url.startsWith('data:')) {
+          // Convert data URL to blob and download
+          try {
+            const arr = doc.url.split(',');
+            const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while(n--) {
+              u8arr[n] = bstr.charCodeAt(n);
+            }
+            const blob = new Blob([u8arr], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = doc.name || 'document';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            addToast('Document downloaded successfully', 'success');
+          } catch (e) {
+            console.error('Error processing base64 data:', e);
+            addToast('Failed to download document', 'error');
+          }
+        } else if (doc.url.startsWith('blob:')) {
+          // Handle blob URLs - download directly
+          const link = document.createElement('a');
+          link.href = doc.url;
+          link.download = doc.name || 'document';
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -200,6 +224,9 @@ export const DocumentsHub = () => {
           addToast('Opening document in new tab', 'success');
         } else {
           // Try to download as-is for other URL types
+          const link = document.createElement('a');
+          link.href = doc.url;
+          link.download = doc.name || 'document';
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -207,7 +234,6 @@ export const DocumentsHub = () => {
         }
       } else {
         // Create a placeholder download for documents without URLs
-        // This creates a text file with document information
         const docInfo = `Document: ${doc.name}\nType: ${doc.type}\nShipment: ${doc.shipmentId}\nUploaded: ${doc.uploadedAt}\nUploaded By: ${doc.uploadedBy}\n\nNote: The actual document file is not available. Please contact support for assistance.`;
         const blob = new Blob([docInfo], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);

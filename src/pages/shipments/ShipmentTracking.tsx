@@ -1402,15 +1402,46 @@ export const ShipmentTracking = () => {
                     onClick={() => {
                       // Handle document download
                       if (doc.url && doc.url !== '#') {
-                        window.open(doc.url, '_blank');
+                        // Check if it's a data URL (base64)
+                        if (doc.url.startsWith('data:')) {
+                          // Convert data URL to blob and download
+                          const arr = doc.url.split(',');
+                          const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+                          const bstr = atob(arr[1]);
+                          let n = bstr.length;
+                          const u8arr = new Uint8Array(n);
+                          while(n--) {
+                            u8arr[n] = bstr.charCodeAt(n);
+                          }
+                          const blob = new Blob([u8arr], { type: mime });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = doc.name || 'document';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        } else if (doc.url.startsWith('http://') || doc.url.startsWith('https://')) {
+                          // Regular URL - open in new tab
+                          window.open(doc.url, '_blank');
+                        } else {
+                          // Try to download as-is
+                          const a = document.createElement('a');
+                          a.href = doc.url;
+                          a.download = doc.name || 'document';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }
                       } else {
-                        // Create a sample download
-                        const content = `Document: ${doc.name}\nType: ${doc.type}\nShipment: ${shipment.id}`;
+                        // Create a placeholder download
+                        const content = `Document: ${doc.name}\nType: ${doc.type}\nShipment: ${shipment.id}\n\nNote: The actual document file is not available.`;
                         const blob = new Blob([content], { type: 'text/plain' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = doc.name || 'document.txt';
+                        a.download = `${doc.name || 'document'}.txt`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
@@ -1429,9 +1460,49 @@ export const ShipmentTracking = () => {
                     type="button"
                     className="text-xs text-[#2E3B55] hover:text-[#1e2940]"
                     onClick={() => {
-                      // Same as download for now
+                      // Handle document view/download
                       if (doc.url && doc.url !== '#') {
-                        window.open(doc.url, '_blank');
+                        // Check if it's a data URL (base64)
+                        if (doc.url.startsWith('data:')) {
+                          // For images, we can display in a new tab; for others, download
+                          if (doc.url.startsWith('data:image/')) {
+                            // Create a new window with the image
+                            const w = window.open('', '_blank');
+                            if (w) {
+                              w.document.write(`
+                                <html>
+                                  <head><title>${doc.name || 'Document'}</title></head>
+                                  <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6;">
+                                    <img src="${doc.url}" style="max-width: 100%; max-height: 100vh; object-fit: contain;" />
+                                  </body>
+                                </html>
+                              `);
+                            }
+                          } else {
+                            // For non-images, trigger download
+                            const arr = doc.url.split(',');
+                            const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+                            const bstr = atob(arr[1]);
+                            let n = bstr.length;
+                            const u8arr = new Uint8Array(n);
+                            while(n--) {
+                              u8arr[n] = bstr.charCodeAt(n);
+                            }
+                            const blob = new Blob([u8arr], { type: mime });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = doc.name || 'document';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          }
+                        } else if (doc.url.startsWith('http://') || doc.url.startsWith('https://')) {
+                          window.open(doc.url, '_blank');
+                        } else {
+                          addToast('Document preview not available', 'info');
+                        }
                       } else {
                         addToast('Document preview not available', 'info');
                       }
