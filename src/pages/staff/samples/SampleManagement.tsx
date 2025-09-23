@@ -3,6 +3,7 @@ import { Package, Scan, CheckCircle, XCircle, Search, Filter, Download, AlertCir
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
+import { sampleService } from '../../../services/sampleService';
 
 interface SampleRequest {
   id: string;
@@ -51,16 +52,61 @@ export const SampleManagement = () => {
     };
   }, []);
 
-  const loadSampleData = () => {
+  const loadSampleData = async () => {
+    // Load from database
+    const dbRequests = await sampleService.getAllSampleRequests();
+    const formattedRequests = dbRequests.map(req => ({
+      id: req.id,
+      productName: req.product_name,
+      expectedSamples: req.expected_samples,
+      receivedSamples: req.received_samples,
+      createdAt: req.created_at,
+      status: req.status === 'completed' ? 'completed' as const :
+              req.status === 'partially_received' ? 'partially_received' as const :
+              'pending' as const,
+      userId: req.user_id,
+      userName: undefined // We'd need to join with users table to get this
+    }));
+    setSampleRequests(formattedRequests);
+
+    // Load received samples from database
+    const dbReceived = await sampleService.getAllReceivedSamples();
+    const formattedReceived = dbReceived.map(sample => ({
+      id: sample.id,
+      sampleId: sample.barcode,
+      userId: '',
+      productName: '',
+      receivedAt: sample.received_at,
+      receivedBy: sample.received_by,
+      status: sample.status,
+      notes: sample.notes
+    }));
+    setReceivedSamples(formattedReceived);
+
+    // Also keep localStorage sync for backward compatibility
     const storedRequests = localStorage.getItem('sampleRequests');
     const storedReceived = localStorage.getItem('receivedSamples');
 
     if (storedRequests) {
-      setSampleRequests(JSON.parse(storedRequests));
+      const localRequests = JSON.parse(storedRequests);
+      // Merge with database requests, avoiding duplicates
+      const mergedRequests = [...formattedRequests];
+      localRequests.forEach((localReq: any) => {
+        if (!mergedRequests.find(r => r.id === localReq.id)) {
+          setSampleRequests(prev => [...prev, localReq]);
+        }
+      });
     }
 
     if (storedReceived) {
-      setReceivedSamples(JSON.parse(storedReceived));
+      const localReceived = JSON.parse(storedReceived);
+      // Merge with database received, avoiding duplicates
+      const mergedReceived = [...formattedReceived];
+      localReceived.forEach((localRec: any) => {
+        if (!mergedReceived.find(r => r.sampleId === localRec.sampleId)) {
+          setReceivedSamples(prev => [...prev, localRec]);
+        }
+      });
     }
   };
 
@@ -111,7 +157,7 @@ export const SampleManagement = () => {
     setIsScanning(false);
   };
 
-  const processScanResult = (sampleId: string) => {
+  const processScanResult = async (sampleId: string) => {
     // Parse the sample ID to extract user and product info
     // Format: SMPL-USERID-TIMESTAMP-RANDOM
     const parts = sampleId.split('-');
@@ -129,44 +175,49 @@ export const SampleManagement = () => {
       return;
     }
 
-    // Check if sample already received
-    const alreadyReceived = receivedSamples.some(s => s.sampleId === sampleId);
+    // Check if barcode already exists in database
+    const barcodeExists = await sampleService.checkBarcodeExists(sampleId);
 
-    if (alreadyReceived) {
+    if (barcodeExists) {
       setScanError('This sample has already been received');
       return;
     }
 
-    // Record the received sample
-    const newSample: ReceivedSample = {
+    // Record the received sample in database
+    const dbSample = await sampleService.recordReceivedSample({
       id: `RS-${Date.now()}`,
-      sampleId,
-      userId: request.userId,
-      productName: request.productName,
-      receivedAt: new Date().toISOString(),
-      receivedBy: user?.name || 'Staff',
+      sample_request_id: sampleId,
+      barcode: sampleId,
+      received_by: user?.id || '',
+      received_at: new Date().toISOString(),
       status: 'in_warehouse'
-    };
-
-    const updatedReceived = [...receivedSamples, newSample];
-    setReceivedSamples(updatedReceived);
-    localStorage.setItem('receivedSamples', JSON.stringify(updatedReceived));
-
-    // Update the sample request
-    const updatedRequests = sampleRequests.map(r => {
-      if (r.id === sampleId) {
-        const newReceivedCount = r.receivedSamples + 1;
-        return {
-          ...r,
-          receivedSamples: newReceivedCount,
-          status: newReceivedCount >= r.expectedSamples ? 'completed' : 'partially_received'
-        };
-      }
-      return r;
     });
 
-    setSampleRequests(updatedRequests);
-    localStorage.setItem('sampleRequests', JSON.stringify(updatedRequests));
+    if (!dbSample) {
+      setScanError('Failed to record sample. Please try again.');
+      return;
+    }
+
+    // Create local sample for UI update
+    const newSample: ReceivedSample = {
+      id: dbSample.id,
+      sampleId: dbSample.barcode,
+      userId: request.userId,
+      productName: request.productName,
+      receivedAt: dbSample.received_at,
+      receivedBy: user?.name || 'Staff',
+      status: dbSample.status
+    };
+
+    // Update UI
+    const updatedReceived = [...receivedSamples, newSample];
+    setReceivedSamples(updatedReceived);
+
+    // Also update localStorage for backward compatibility
+    localStorage.setItem('receivedSamples', JSON.stringify(updatedReceived));
+
+    // Reload data to get updated counts from database
+    await loadSampleData();
 
     setScanResult(`Sample received successfully: ${request.productName}`);
     setScanError('');

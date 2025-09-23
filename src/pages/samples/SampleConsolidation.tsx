@@ -6,6 +6,7 @@ import { PackageIcon, CopyIcon, QrCodeIcon, ClipboardIcon, PlusIcon, ImageIcon, 
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { generateShippingLabel, generateSampleId } from '../../utils/generateShippingLabel';
+import { sampleService, type SampleRequest as DBSampleRequest } from '../../services/sampleService';
 
 // Warehouse address for sample consolidation
 const WAREHOUSE_ADDRESS = {
@@ -58,13 +59,30 @@ export const SampleConsolidation = () => {
   // Load consolidation history on component mount
   React.useEffect(() => {
     if (user) {
-      const allRequests = JSON.parse(localStorage.getItem('sampleRequests') || '[]');
-      const userRequests = allRequests.filter((req: SampleRequest) => req.userId === user.id);
-      setConsolidationHistory(userRequests);
+      loadConsolidationHistory();
     }
   }, [user]);
 
-  const handleCreateRequest = () => {
+  const loadConsolidationHistory = async () => {
+    if (!user) return;
+
+    const requests = await sampleService.getUserSampleRequests(user.id);
+    const formattedRequests = requests.map(req => ({
+      id: req.id,
+      productName: req.product_name,
+      expectedSamples: req.expected_samples,
+      createdAt: req.created_at,
+      status: req.status === 'completed' ? 'complete' as const :
+              req.status === 'partially_received' ? 'receiving' as const :
+              'pending' as const,
+      receivedSamples: req.received_samples,
+      userId: req.user_id,
+      userName: user.name
+    }));
+    setConsolidationHistory(formattedRequests);
+  };
+
+  const handleCreateRequest = async () => {
     if (!productName.trim()) {
       addToast('Please enter a product name', 'error');
       return;
@@ -75,19 +93,39 @@ export const SampleConsolidation = () => {
       return;
     }
 
-    const sampleId = generateSampleId(user?.id || 'USER');
+    if (!user) {
+      addToast('Please login to create a request', 'error');
+      return;
+    }
+
+    const sampleId = generateSampleId(user.id);
+
+    // Save to database
+    const dbRequest = await sampleService.createSampleRequest({
+      id: sampleId,
+      user_id: user.id,
+      product_name: productName.trim(),
+      expected_samples: expectedSamples
+    });
+
+    if (!dbRequest) {
+      addToast('Failed to create sample request. Please try again.', 'error');
+      return;
+    }
+
+    // Create local request object for UI
     const newRequest: SampleRequest = {
       id: sampleId,
       productName: productName.trim(),
       expectedSamples,
-      createdAt: new Date().toISOString(),
+      createdAt: dbRequest.created_at,
       status: 'pending',
       receivedSamples: 0,
-      userId: user?.id || '',
-      userName: user?.name || 'Customer'
+      userId: user.id,
+      userName: user.name || 'Customer'
     };
 
-    // Store the sample request in localStorage for staff to access
+    // Also store in localStorage for backward compatibility
     const existingRequests = JSON.parse(localStorage.getItem('sampleRequests') || '[]');
     existingRequests.push(newRequest);
     localStorage.setItem('sampleRequests', JSON.stringify(existingRequests));
