@@ -42,36 +42,22 @@ export const Dashboard = () => {
   // Filter shipments for current user
   const userShipments = useMemo(() => {
     if (!user) return [];
-    console.log('Dashboard - All shipments:', shipments);
-    console.log('Dashboard - Current user:', user.id);
-    const filtered = shipments.filter(shipment =>
+    return shipments.filter(shipment =>
       // Check both camelCase and snake_case for compatibility
       (shipment.customerId === user.id) || (shipment.customer_id === user.id)
     );
-    console.log('Dashboard - User shipments:', filtered);
-    return filtered;
   }, [shipments, user]);
   
   // Get active shipments (any shipment with approved quote that is not yet complete/delivered)
   const activeShipments = useMemo(() => {
-    console.log('Dashboard - Filtering active shipments from:', userShipments);
-    const active = userShipments
+    return userShipments
       .filter(shipment => {
         const hasQuote = shipment.quoteId || shipment.quote_id;
-        const isNotDelivered = shipment.status !== 'Delivered';
-        const isNotCancelled = shipment.status !== 'Cancelled';
-        console.log('Shipment check:', {
-          id: shipment.id,
-          hasQuote,
-          quoteId: shipment.quoteId,
-          quote_id: shipment.quote_id,
-          status: shipment.status,
-          isNotDelivered,
-          isNotCancelled,
-          passes: hasQuote && isNotDelivered && isNotCancelled
-        });
-        // Active = has an associated quote and is not delivered
-        return hasQuote && isNotDelivered && isNotCancelled;
+        const isActive = shipment.status !== 'Delivered' &&
+                        shipment.status !== 'Cancelled' &&
+                        shipment.status !== 'Completed';
+        // Active = has an associated quote and is not delivered/completed/cancelled
+        return hasQuote && isActive;
       })
       .map(shipment => {
         // Calculate progress based on status
@@ -118,20 +104,19 @@ export const Dashboard = () => {
           }
         }
         
-        // Get first destination for display
-        const firstDest = shipment.destinations[0];
-        
+        // Get first destination for display - handle undefined destinations
+        const firstDest = shipment.destinations && shipment.destinations.length > 0
+          ? shipment.destinations[0]
+          : null;
+
         return {
           id: shipment.id,
           status: displayStatus,
-          from: 'China', // You can enhance this by adding origin to the data model
-          to: firstDest ? firstDest.fbaWarehouse : 'N/A',
+          from: shipment.origin || 'China', // Use origin if available
+          to: firstDest ? firstDest.fbaWarehouse : 'USA',
           progress
         };
       });
-
-    console.log('Dashboard - Active shipments result:', active);
-    return active;
   }, [userShipments]);
   
   // Calculate stats
