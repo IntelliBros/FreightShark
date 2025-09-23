@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check User ID Mapping</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.success {
+            background-color: #28a745;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        #output {
+            margin-top: 20px;
+        }
+        .code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Check User ID Mapping</h1>
+
+    <div class="info">
+        <h2>User ID Mismatch Detector</h2>
+        <p>This tool helps identify and fix mismatches between localStorage user IDs and database user IDs.</p>
+    </div>
+
+    <div>
+        <input type="email" id="emailInput" placeholder="Enter email address" value="daniel.vadacchino+1@hotmail.com">
+        <button onclick="checkUser()">Check User</button>
+        <button onclick="listAllUsers()" class="success">List All Database Users</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        async function checkUser() {
+            const output = document.getElementById('output');
+            const email = document.getElementById('emailInput').value.trim();
+
+            if (!email) {
+                output.innerHTML = '<div class="error">Please enter an email address</div>';
+                return;
+            }
+
+            output.innerHTML = '<div class="info">Checking user...</div>';
+
+            try {
+                // Check database for this email
+                const { data: dbUser, error: dbError } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+
+                // Check localStorage
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                const localUser = localUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+                // Check current auth token
+                let currentUserId = null;
+                const authToken = localStorage.getItem('authToken');
+                if (authToken) {
+                    try {
+                        const decoded = JSON.parse(atob(authToken));
+                        if (decoded.email === email) {
+                            currentUserId = decoded.userId;
+                        }
+                    } catch (e) {}
+                }
+
+                let html = '<h2>Results for: ' + email + '</h2>';
+
+                // Database info
+                if (dbUser) {
+                    html += '<div class="success"><h3>✅ Database User Found</h3>';
+                    html += '<table>';
+                    html += '<tr><th>ID</th><td class="code">' + dbUser.id + '</td></tr>';
+                    html += '<tr><th>Name</th><td>' + dbUser.name + '</td></tr>';
+                    html += '<tr><th>Email</th><td>' + dbUser.email + '</td></tr>';
+                    html += '<tr><th>Role</th><td>' + dbUser.role + '</td></tr>';
+                    html += '<tr><th>Company</th><td>' + (dbUser.company || '-') + '</td></tr>';
+                    html += '</table></div>';
+                } else if (dbError && dbError.code !== 'PGRST116') {
+                    html += '<div class="error">Database error: ' + dbError.message + '</div>';
+                } else {
+                    html += '<div class="warning">⚠️ User not found in database</div>';
+                }
+
+                // LocalStorage info
+                if (localUser) {
+                    html += '<div class="info"><h3>📦 LocalStorage User Found</h3>';
+                    html += '<table>';
+                    html += '<tr><th>ID</th><td class="code">' + localUser.id + '</td></tr>';
+                    html += '<tr><th>Name</th><td>' + localUser.name + '</td></tr>';
+                    html += '<tr><th>Email</th><td>' + localUser.email + '</td></tr>';
+                    html += '<tr><th>Role</th><td>' + localUser.role + '</td></tr>';
+                    html += '</table></div>';
+                } else {
+                    html += '<div class="warning">⚠️ User not found in localStorage</div>';
+                }
+
+                // Current session
+                if (currentUserId) {
+                    html += '<div class="info">Current session user ID: <span class="code">' + currentUserId + '</span></div>';
+                }
+
+                // Analysis
+                if (dbUser && localUser) {
+                    if (dbUser.id !== localUser.id) {
+                        html += '<div class="error"><h3>❌ ID Mismatch Detected!</h3>';
+                        html += 'Database ID: <span class="code">' + dbUser.id + '</span><br>';
+                        html += 'LocalStorage ID: <span class="code">' + localUser.id + '</span><br><br>';
+                        html += '<strong>This causes foreign key errors!</strong><br><br>';
+                        html += '<button onclick="fixMismatch(\'' + email + '\', \'' + dbUser.id + '\')" class="danger">Fix Mismatch (Update LocalStorage)</button>';
+                        html += '</div>';
+                    } else {
+                        html += '<div class="success">✅ IDs match! No issues.</div>';
+                    }
+                }
+
+                output.innerHTML = html;
+
+            } catch (error) {
+                output.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function fixMismatch(email, correctId) {
+            const output = document.getElementById('output');
+
+            try {
+                // Update localStorage
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const userIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+                if (userIndex >= 0) {
+                    const oldId = users[userIndex].id;
+                    users[userIndex].id = correctId;
+                    localStorage.setItem('users', JSON.stringify(users));
+
+                    // Update auth token if this is the current user
+                    const authToken = localStorage.getItem('authToken');
+                    if (authToken) {
+                        try {
+                            const decoded = JSON.parse(atob(authToken));
+                            if (decoded.email === email) {
+                                decoded.userId = correctId;
+                                const newToken = btoa(JSON.stringify(decoded));
+                                localStorage.setItem('authToken', newToken);
+                            }
+                        } catch (e) {}
+                    }
+
+                    output.innerHTML = '<div class="success">✅ Fixed! Updated user ID from <span class="code">' + oldId + '</span> to <span class="code">' + correctId + '</span><br><br>Please refresh the app for changes to take effect.</div>';
+                } else {
+                    output.innerHTML = '<div class="error">User not found in localStorage</div>';
+                }
+            } catch (error) {
+                output.innerHTML = '<div class="error">Error fixing mismatch: ' + error.message + '</div>';
+            }
+        }
+
+        async function listAllUsers() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="info">Loading users...</div>';
+
+            try {
+                const { data: users, error } = await supabaseClient
+                    .from('users')
+                    .select('id, name, email, role, company')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    output.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+                    return;
+                }
+
+                let html = '<h2>All Database Users (' + users.length + ')</h2>';
+                html += '<table>';
+                html += '<tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Action</th></tr>';
+
+                users.forEach(user => {
+                    html += '<tr>';
+                    html += '<td class="code" style="font-size: 11px;">' + user.id + '</td>';
+                    html += '<td>' + user.name + '</td>';
+                    html += '<td>' + user.email + '</td>';
+                    html += '<td>' + user.role + '</td>';
+                    html += '<td>' + (user.company || '-') + '</td>';
+                    html += '<td><button onclick="document.getElementById(\'emailInput\').value=\'' + user.email + '\'; checkUser();">Check</button></td>';
+                    html += '</tr>';
+                });
+
+                html += '</table>';
+                output.innerHTML = html;
+
+            } catch (error) {
+                output.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        // Auto-check on load if email is provided
+        window.addEventListener('load', () => {
+            const emailInput = document.getElementById('emailInput');
+            if (emailInput.value) {
+                checkUser();
+            }
+        });
+    </script>
+</body>
+</html>

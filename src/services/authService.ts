@@ -78,12 +78,46 @@ export const authService = {
       await initializeDemoUsers();
       
       const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
-      
+      let user = users.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
+
       if (!user) {
-        throw new Error('Invalid email or password');
+        // Check if user exists in database
+        try {
+          const { supabase } = await import('../lib/supabase');
+          const { data: dbUser } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email.toLowerCase())
+            .single();
+
+          if (dbUser) {
+            // User exists in database but not in localStorage
+            // Create a localStorage entry with the database user ID
+            const passwordHash = await hashPassword(password);
+            user = {
+              id: dbUser.id,
+              name: dbUser.name,
+              email: dbUser.email,
+              passwordHash: passwordHash,
+              company: dbUser.company,
+              role: dbUser.role,
+              amazonSellerId: dbUser.amazon_seller_id,
+              einTaxId: dbUser.ein_tax_id,
+              staffPosition: dbUser.staff_position
+            };
+
+            // Add to localStorage for future logins
+            users.push(user);
+            localStorage.setItem('users', JSON.stringify(users));
+            console.log('Synced user from database:', user.id);
+          } else {
+            throw new Error('Invalid email or password');
+          }
+        } catch (supabaseError) {
+          throw new Error('Invalid email or password');
+        }
       }
-      
+
       const isValidPassword = await verifyPassword(password, user.passwordHash);
       if (!isValidPassword) {
         throw new Error('Invalid email or password');
@@ -168,15 +202,34 @@ export const authService = {
 
       const users = JSON.parse(localStorage.getItem('users') || '[]');
 
-      // Check if user already exists
-      if (users.find((u: User) => u.email.toLowerCase() === userData.email.toLowerCase())) {
+      // Check if user already exists in localStorage
+      const existingLocalUser = users.find((u: User) => u.email.toLowerCase() === userData.email.toLowerCase());
+      if (existingLocalUser) {
         throw new Error('User already exists');
       }
 
-      // Create new user
+      // Check if user exists in Supabase database and use their ID if they do
+      let userId = `user-${Date.now()}`;
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data: dbUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', userData.email.toLowerCase())
+          .single();
+
+        if (dbUser) {
+          userId = dbUser.id;
+          console.log('Found existing user in database with ID:', userId);
+        }
+      } catch (supabaseError) {
+        console.log('Could not check database for existing user:', supabaseError);
+      }
+
+      // Create new user with either existing or new ID
       const passwordHash = await hashPassword(userData.password);
       const newUser = {
-        id: `user-${Date.now()}`,
+        id: userId,
         name: userData.name,
         email: userData.email,
         passwordHash,
