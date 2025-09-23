@@ -19,7 +19,7 @@ export const generateShippingLabel = async (data: LabelData) => {
   // Create a canvas element for the label
   const canvas = document.createElement('canvas');
   canvas.width = 400;
-  canvas.height = 380;
+  canvas.height = 390;
 
   // Temporarily add to DOM to ensure it's accessible
   canvas.style.display = 'none';
@@ -45,7 +45,7 @@ export const generateShippingLabel = async (data: LabelData) => {
   // Draw border
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 2;
-  ctx.strokeRect(10, 10, 380, 360);
+  ctx.strokeRect(10, 10, 380, 370);
 
   // Sample Information
   ctx.font = 'bold 14px Arial';
@@ -95,8 +95,8 @@ export const generateShippingLabel = async (data: LabelData) => {
 
         // Generate QR code directly to canvas
         await QRCode.toCanvas(qrCanvas, data.sampleId, {
-          width: 120,
-          height: 120,
+          width: 150,
+          height: 150,
           margin: 2,
           color: {
             dark: '#000000',
@@ -104,18 +104,13 @@ export const generateShippingLabel = async (data: LabelData) => {
           }
         });
 
-        // Draw QR code on main canvas (adjusted position for address)
-        const qrX = (canvas.width - 120) / 2;
-        ctx.drawImage(qrCanvas, qrX, 250, 100, 100);
+        // Draw QR code on main canvas (bigger and centered)
+        const qrSize = 140;
+        const qrX = (canvas.width - qrSize) / 2;
+        ctx.drawImage(qrCanvas, qrX, 230, qrSize, qrSize);
 
         // Remove temporary QR canvas
         document.body.removeChild(qrCanvas);
-
-        // Add QR code label
-        ctx.font = '11px Arial';
-        ctx.fillStyle = 'black';
-        ctx.textAlign = 'center';
-        ctx.fillText('Scan QR Code', 200, 360);
       } catch (qrError) {
         console.error('QR generation failed, generating without QR:', qrError);
         // Continue without QR code
@@ -126,7 +121,7 @@ export const generateShippingLabel = async (data: LabelData) => {
     ctx.font = '10px Arial';
     ctx.fillStyle = 'gray';
     ctx.textAlign = 'center';
-    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, 365);
+    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, 200, 375);
 
     // Add manual sample ID text if no QR
     if (!includeQR) {
