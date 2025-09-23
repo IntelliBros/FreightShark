@@ -124,6 +124,31 @@
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Test connection on load
+        async function testConnection() {
+            try {
+                const { data, error } = await supabase
+                    .from('shipments')
+                    .select('id')
+                    .limit(1);
+
+                if (error) {
+                    showStatus(`Database connection error: ${error.message}`, 'error');
+                    addLog('❌ Failed to connect to database');
+                    console.error('Supabase connection error:', error);
+                    return false;
+                } else {
+                    addLog('✅ Connected to database successfully');
+                    return true;
+                }
+            } catch (err) {
+                showStatus(`Connection failed: ${err.message}. Please check your internet connection.`, 'error');
+                addLog('❌ Connection failed - check network/DNS');
+                console.error('Connection error:', err);
+                return false;
+            }
+        }
+
         function showStatus(message, type = 'info') {
             const statusDiv = document.getElementById('status');
             statusDiv.className = type === 'error' ? 'error' : 'success';
@@ -161,6 +186,13 @@
 
         async function generateInvoices() {
             try {
+                // Test connection first
+                const connected = await testConnection();
+                if (!connected) {
+                    showStatus('Cannot connect to database. Please check your connection and try again.', 'error');
+                    return;
+                }
+
                 addLog('Starting invoice generation...');
 
                 // Get all shipments
@@ -341,16 +373,29 @@
         // Load initial stats
         window.addEventListener('load', async () => {
             try {
-                const { data: shipments } = await supabase
-                    .from('shipments')
-                    .select('invoice, documents');
+                // Test connection first
+                const connected = await testConnection();
 
-                const invoiceCount = shipments.filter(s => s.invoice).length;
-                const docCount = shipments.reduce((sum, s) => sum + (s.documents?.length || 0), 0);
+                if (connected) {
+                    const { data: shipments, error } = await supabase
+                        .from('shipments')
+                        .select('invoice, documents');
 
-                showStats(shipments.length, invoiceCount, docCount);
+                    if (error) {
+                        console.error('Error loading stats:', error);
+                        showStats(0, 0, 0);
+                    } else if (shipments) {
+                        const invoiceCount = shipments.filter(s => s.invoice).length;
+                        const docCount = shipments.reduce((sum, s) => sum + (s.documents?.length || 0), 0);
+                        showStats(shipments.length, invoiceCount, docCount);
+                    }
+                } else {
+                    showStats(0, 0, 0);
+                    showStatus('⚠️ Cannot connect to database. This might be a network issue or DNS problem. Try refreshing the page.', 'error');
+                }
             } catch (error) {
                 console.error('Error loading stats:', error);
+                showStats(0, 0, 0);
             }
         });
     </script>
