@@ -8,27 +8,36 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { DataService } from '../services/DataService';
+import { sampleShipmentService } from '../services/sampleShipmentService';
 
 export const Dashboard = () => {
   const { user } = useAuth();
   const { shipments } = useData();
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [sampleShipmentRequests, setSampleShipmentRequests] = useState<any[]>([]);
 
   usePageTitle('Dashboard');
 
   useEffect(() => {
-    const fetchAnnouncements = async () => {
+    const fetchData = async () => {
       try {
-        const data = await DataService.getAnnouncements();
+        // Fetch announcements
+        const announcementData = await DataService.getAnnouncements();
         // Get only the 3 most recent announcements
-        setAnnouncements(data.slice(0, 3));
+        setAnnouncements(announcementData.slice(0, 3));
+
+        // Fetch sample shipment requests for the user
+        if (user) {
+          const requests = await sampleShipmentService.getUserShipmentRequests(user.id);
+          setSampleShipmentRequests(requests);
+        }
       } catch (error) {
-        console.error('Error fetching announcements:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    fetchAnnouncements();
-  }, []);
+    fetchData();
+  }, [user]);
   
   // Filter shipments for current user
   const userShipments = useMemo(() => {
@@ -110,20 +119,9 @@ export const Dashboard = () => {
   const stats = useMemo(() => ({
     activeShipments: activeShipments.length,
     completedShipments: userShipments.filter(s => s.status === 'Delivered').length,
-    // Count sample shipments (typically smaller shipments with weight < 10kg or marked as samples)
-    sampleShipments: userShipments.filter(s => {
-      // Check if it's a sample shipment based on:
-      // 1. Low weight (typically samples are < 10kg)
-      // 2. Special naming convention (contains 'sample' in ID or cargo details)
-      // 3. Or if there's a sample flag in cargo details
-      const isLowWeight = s.actual_weight ? s.actual_weight < 10 : s.estimated_weight ? s.estimated_weight < 10 : false;
-      const hasSampleInId = s.id?.toLowerCase().includes('sample') || false;
-      const hasSampleInCargo = s.cargo_details?.description?.toLowerCase().includes('sample') ||
-                               s.cargo_details?.type?.toLowerCase().includes('sample') || false;
-
-      return isLowWeight || hasSampleInId || hasSampleInCargo;
-    }).length
-  }), [activeShipments, userShipments]);
+    // Count actual sample shipment requests
+    sampleShipments: sampleShipmentRequests.length
+  }), [activeShipments, userShipments, sampleShipmentRequests]);
   return <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">
@@ -177,7 +175,7 @@ export const Dashboard = () => {
               </p>
             </div>
             <div className="w-24 h-24 flex items-center justify-center">
-              <TruckIcon className="w-16 h-16 text-[#00b4d8]" />
+              <img src="/new-shipment-icon.svg" alt="New Shipment" className="w-full h-full" />
             </div>
           </div>
           <Link to="/quotes/new">
@@ -198,7 +196,7 @@ export const Dashboard = () => {
               </p>
             </div>
             <div className="w-24 h-24 flex items-center justify-center">
-              <BoxIcon className="w-16 h-16 text-[#00b4d8]" />
+              <img src="/sample-shipment-icon.svg" alt="Sample Shipment" className="w-full h-full" />
             </div>
           </div>
           <Link to="/samples">
