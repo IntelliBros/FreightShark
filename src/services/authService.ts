@@ -88,17 +88,15 @@ const initializeDemoUsers = async () => {
 // Auth service with fallback to localStorage
 export const authService = {
   login: async (email: string, password: string) => {
-    try {
-      // Try backend API first
-      const result = await authAPI.login(email, password);
-      return result;
-    } catch (error) {
-      // Fallback to localStorage
-      console.log('Backend unavailable, using localStorage fallback');
-      await initializeDemoUsers();
-      
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      let user = users.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
+    // Skip backend API and use localStorage/Supabase directly
+    // This prevents ERR_BLOCKED_BY_CLIENT errors when no backend is running
+
+    // Use localStorage authentication
+    console.log('Using localStorage authentication');
+    await initializeDemoUsers();
+
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    let user = users.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
 
       if (!user) {
         // Check if user exists in database
@@ -204,14 +202,13 @@ export const authService = {
         console.warn('Could not sync user to Supabase:', supabaseError);
       }
 
-      // Remove passwordHash from returned user
-      const { passwordHash, ...userWithoutPassword } = user;
-      
-      return {
-        user: userWithoutPassword,
-        token
-      };
-    }
+    // Remove passwordHash from returned user
+    const { passwordHash, ...userWithoutPassword } = user;
+
+    return {
+      user: userWithoutPassword,
+      token
+    };
   },
   
   register: async (userData: any) => {
