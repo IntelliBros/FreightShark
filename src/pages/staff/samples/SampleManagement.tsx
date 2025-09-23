@@ -299,8 +299,7 @@ export const SampleManagement = () => {
     setScannedSampleId(trimmedSampleId);
     setSelectedRequestId(matchingRequest.id);
 
-    // Skip manual selection and directly open photo capture
-    setShowRequestSelection(false);
+    // Directly open photo capture
     setShowPhotoCapture(true);
 
     setScanResult(`Sample for: ${matchingRequest.productName} - Take a photo`);
