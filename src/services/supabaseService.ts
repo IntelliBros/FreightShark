@@ -1,6 +1,45 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
+// Helper function to get next user ID
+const getNextUserId = async (): Promise<string> => {
+  // Get all users from Supabase to find the highest ID
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('id')
+    .order('id', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching users for ID generation:', error);
+    return '0'; // Start from 0 if error
+  }
+
+  // Find the highest numerical ID
+  let maxId = -1;
+  (users || []).forEach((user) => {
+    const numId = parseInt(user.id, 10);
+    if (!isNaN(numId) && numId > maxId) {
+      maxId = numId;
+    }
+  });
+
+  // Also check localStorage for consistency
+  try {
+    const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    localUsers.forEach((user: any) => {
+      const numId = parseInt(user.id, 10);
+      if (!isNaN(numId) && numId > maxId) {
+        maxId = numId;
+      }
+    });
+  } catch (e) {
+    console.warn('Could not check localStorage for user IDs');
+  }
+
+  // Return next ID
+  return String(maxId + 1);
+};
+
 // Types
 export interface QuoteRequest {
   id: string;
@@ -124,7 +163,7 @@ export const supabaseService = {
     async create(user: Partial<User>) {
       const newUser = {
         ...user,
-        id: user.id || `user-${uuidv4()}`
+        id: user.id || await getNextUserId()
       };
 
       const { data, error } = await supabase
