@@ -52,6 +52,17 @@ export const SampleConsolidation = () => {
   const [currentRequest, setCurrentRequest] = useState<SampleRequest | null>(null);
   const [incomingSamples, setIncomingSamples] = useState<IncomingSample[]>([]);
   const [selectedSamples, setSelectedSamples] = useState<string[]>([]);
+  const [consolidationHistory, setConsolidationHistory] = useState<SampleRequest[]>([]);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<SampleRequest | null>(null);
+
+  // Load consolidation history on component mount
+  React.useEffect(() => {
+    if (user) {
+      const allRequests = JSON.parse(localStorage.getItem('sampleRequests') || '[]');
+      const userRequests = allRequests.filter((req: SampleRequest) => req.userId === user.id);
+      setConsolidationHistory(userRequests);
+    }
+  }, [user]);
 
   const handleCreateRequest = () => {
     if (!productName.trim()) {
@@ -81,19 +92,23 @@ export const SampleConsolidation = () => {
     existingRequests.push(newRequest);
     localStorage.setItem('sampleRequests', JSON.stringify(existingRequests));
 
+    // Update consolidation history
+    setConsolidationHistory([...consolidationHistory, newRequest]);
+
     setCurrentRequest(newRequest);
     setShowRequestForm(false);
     addToast('Sample consolidation request created successfully!', 'success');
   };
 
-  const handleDownloadLabel = () => {
-    if (!currentRequest || !user) return;
+  const handleDownloadLabel = (request?: SampleRequest) => {
+    const requestToUse = request || currentRequest;
+    if (!requestToUse || !user) return;
 
     const labelData = {
       userId: user.id,
       userName: user.name || 'Customer',
-      productName: currentRequest.productName,
-      sampleId: currentRequest.id,
+      productName: requestToUse.productName,
+      sampleId: requestToUse.id,
       warehouseAddress: WAREHOUSE_ADDRESS
     };
 
@@ -578,20 +593,114 @@ Sample ID: ${currentRequest?.id || 'N/A'}
       )}
 
       {activeTab === 'history' && (
-        <Card>
-          <h2 className="text-lg font-medium text-gray-900 mb-6">
-            Consolidation History
-          </h2>
-          <div className="text-center py-12">
-            <TruckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No Previous Consolidations
-            </h3>
-            <p className="text-gray-500">
-              Your completed consolidations will appear here
-            </p>
-          </div>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <h2 className="text-lg font-medium text-gray-900 mb-6">
+              Consolidation History
+            </h2>
+            {consolidationHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <TruckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">
+                  No Previous Consolidations
+                </h3>
+                <p className="text-gray-500">
+                  Your consolidation requests will appear here
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {consolidationHistory.map((request) => (
+                  <div
+                    key={request.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setSelectedHistoryItem(selectedHistoryItem?.id === request.id ? null : request)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{request.productName}</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Sample ID: <span className="font-mono">{request.id}</span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Created: {new Date(request.createdAt).toLocaleDateString()}
+                        </p>
+                        <div className="mt-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            request.status === 'complete' ? 'bg-green-100 text-green-800' :
+                            request.status === 'receiving' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {request.status === 'complete' ? 'Completed' :
+                             request.status === 'receiving' ? 'Receiving' : 'Pending'}
+                          </span>
+                          <span className="ml-2 text-sm text-gray-600">
+                            {request.receivedSamples} / {request.expectedSamples} samples received
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4 flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadLabel(request);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <DownloadIcon className="h-4 w-4 mr-1" />
+                          Label
+                        </button>
+                      </div>
+                    </div>
+
+                    {selectedHistoryItem?.id === request.id && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Request Details</h4>
+                            <dl className="space-y-1">
+                              <div className="flex justify-between">
+                                <dt className="text-sm text-gray-500">Product:</dt>
+                                <dd className="text-sm text-gray-900">{request.productName}</dd>
+                              </div>
+                              <div className="flex justify-between">
+                                <dt className="text-sm text-gray-500">Expected Samples:</dt>
+                                <dd className="text-sm text-gray-900">{request.expectedSamples}</dd>
+                              </div>
+                              <div className="flex justify-between">
+                                <dt className="text-sm text-gray-500">Received:</dt>
+                                <dd className="text-sm text-gray-900">{request.receivedSamples}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Warehouse Address</h4>
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <p>{WAREHOUSE_ADDRESS.warehouse}</p>
+                              <p>{WAREHOUSE_ADDRESS.street}</p>
+                              <p>{WAREHOUSE_ADDRESS.city}, {WAREHOUSE_ADDRESS.province}</p>
+                              <p>{WAREHOUSE_ADDRESS.postal}, {WAREHOUSE_ADDRESS.country}</p>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyAddress();
+                              }}
+                              className="mt-2 inline-flex items-center text-sm text-blue-600 hover:text-blue-500"
+                            >
+                              <CopyIcon className="h-4 w-4 mr-1" />
+                              Copy Address
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </div>
   );
