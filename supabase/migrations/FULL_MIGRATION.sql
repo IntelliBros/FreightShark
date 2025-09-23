@@ -83,7 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_tracking_date ON tracking_events(date);
 CREATE INDEX IF NOT EXISTS idx_documents_shipment_id ON documents(shipment_id);
 
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_messages_recipient_id ON messages(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_messages_shipment_id ON messages(shipment_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
