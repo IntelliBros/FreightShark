@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Mock User in Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info {
+            background-color: #fffbf0;
+            border: 2px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .sql-box {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>👤 Create Mock User in Database</h1>
+
+    <div class="info">
+        <h2>⚠️ Issue: User doesn't exist in database</h2>
+        <p>The mock authentication creates a user ID like <code>user-1757383342555</code> that doesn't exist in the Supabase users table.</p>
+        <p>This causes a foreign key constraint error when trying to create suppliers.</p>
+    </div>
+
+    <h2>Solution: Create the mock user in the database</h2>
+    <p>Run this SQL in your Supabase SQL Editor to create the necessary user records:</p>
+
+    <div class="sql-box">-- Create mock users if they don't exist
+-- This ensures the foreign key constraint is satisfied
+
+-- First, check if the users exist
+SELECT id, name, email, role FROM users WHERE id LIKE 'user-%';
+
+-- Create a generic mock user that matches the pattern
+INSERT INTO users (id, name, email, password_hash, company, role, created_at, updated_at)
+VALUES
+  ('user-1757383342555', 'Test User', 'user@example.com', 'mock_hash', 'Test Company', 'user', NOW(), NOW()),
+  ('user-1', 'Demo User', 'demo@example.com', 'mock_hash', 'Demo Company', 'user', NOW(), NOW()),
+  ('staff-1', 'Staff User', 'staff@example.com', 'mock_hash', 'Demo Company', 'staff', NOW(), NOW()),
+  ('admin-1', 'Admin User', 'admin@example.com', 'mock_hash', 'Demo Company', 'admin', NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+-- Verify the users were created
+SELECT id, name, email, role FROM users WHERE id LIKE 'user-%' OR id LIKE 'staff-%' OR id LIKE 'admin-%';
+</div>
+
+    <h2>Alternative: Remove Foreign Key Constraint (Not Recommended)</h2>
+    <p>If you prefer to work without the foreign key constraint during development:</p>
+    <div class="sql-box">-- Remove the foreign key constraint
+ALTER TABLE suppliers DROP CONSTRAINT IF EXISTS suppliers_user_id_fkey;
+
+-- Add back the user_id column without constraint
+-- (Only if needed - it should already exist)</div>
+
+    <button onclick="checkUser()">Check Current User Status</button>
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNzMzMDksImV4cCI6MjA3Mjk0OTMwOX0.-TXgy5LNMMpjSSTq78P4QvQAO1QXJia07cdVBHchHRU';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        // Get current user from localStorage
+        function getCurrentUserId() {
+            const authData = localStorage.getItem('auth_token');
+            if (authData) {
+                try {
+                    const parsed = JSON.parse(authData);
+                    return parsed.userId || parsed.user?.id || null;
+                } catch {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        async function checkUser() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Checking...';
+
+            const currentUserId = getCurrentUserId();
+
+            if (!currentUserId) {
+                output.innerHTML = `<div class="error">No user logged in locally. Please log in to the app first.</div>`;
+                return;
+            }
+
+            output.innerHTML = `<div class="info">Current local user ID: <strong>${currentUserId}</strong></div>`;
+
+            try {
+                // Check if user exists in database
+                const { data: user, error } = await supabaseClient
+                    .from('users')
+                    .select('id, name, email, role')
+                    .eq('id', currentUserId)
+                    .single();
+
+                if (error && error.code === 'PGRST116') {
+                    output.innerHTML += `<div class="error">❌ User <strong>${currentUserId}</strong> does NOT exist in database!</div>`;
+                    output.innerHTML += `<div class="info">Run this SQL to create the user:</div>`;
+                    output.innerHTML += `<div class="sql-box">INSERT INTO users (id, name, email, password_hash, company, role, created_at, updated_at)
+VALUES ('${currentUserId}', 'Test User', 'test@example.com', 'mock_hash', 'Test Company', 'user', NOW(), NOW());</div>`;
+                } else if (user) {
+                    output.innerHTML += `<div class="success">✅ User exists in database!<br>
+                        Name: ${user.name}<br>
+                        Email: ${user.email}<br>
+                        Role: ${user.role}</div>`;
+
+                    // Try to check suppliers for this user
+                    const { data: suppliers, error: suppliersError, count } = await supabaseClient
+                        .from('suppliers')
+                        .select('*', { count: 'exact' })
+                        .eq('user_id', currentUserId);
+
+                    if (!suppliersError) {
+                        output.innerHTML += `<div class="info">User has ${count || 0} supplier(s) in database</div>`;
+                    }
+                } else if (error) {
+                    output.innerHTML += `<div class="error">Error checking user: ${error.message}</div>`;
+                }
+            } catch (e) {
+                output.innerHTML += `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', checkUser);
+    </script>
+</body>
+</html>

@@ -92,7 +92,43 @@ export const authService = {
       // Generate mock token
       const token = btoa(JSON.stringify({ userId: user.id, email: user.email, role: user.role }));
       localStorage.setItem('authToken', token);
-      
+
+      // Ensure user exists in Supabase database for foreign key constraints
+      try {
+        const { supabase } = await import('../lib/supabase');
+        // Check if user exists in Supabase
+        const { data: existingUser, error: checkError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (!existingUser || checkError?.code === 'PGRST116') {
+          // Create user in Supabase if doesn't exist
+          const { error: insertError } = await supabase.from('users').insert({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            password_hash: user.passwordHash || 'mock_hash',
+            company: user.company,
+            role: user.role,
+            amazon_seller_id: user.amazonSellerId,
+            ein_tax_id: user.einTaxId,
+            staff_position: user.staffPosition,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+          if (!insertError) {
+            console.log('Created user in Supabase:', user.id);
+          } else if (insertError.code !== '23505') { // Ignore unique constraint errors
+            console.warn('Error creating user in Supabase:', insertError);
+          }
+        }
+      } catch (supabaseError) {
+        console.warn('Could not sync user to Supabase:', supabaseError);
+      }
+
       // Remove passwordHash from returned user
       const { passwordHash, ...userWithoutPassword } = user;
       
@@ -111,14 +147,14 @@ export const authService = {
     } catch (error) {
       // Fallback to localStorage
       console.log('Backend unavailable, using localStorage fallback');
-      
+
       const users = JSON.parse(localStorage.getItem('users') || '[]');
-      
+
       // Check if user already exists
       if (users.find((u: User) => u.email.toLowerCase() === userData.email.toLowerCase())) {
         throw new Error('User already exists');
       }
-      
+
       // Create new user
       const passwordHash = await hashPassword(userData.password);
       const newUser = {
@@ -132,17 +168,43 @@ export const authService = {
         einTaxId: userData.einTaxId,
         staffPosition: userData.staffPosition
       };
-      
+
       users.push(newUser);
       localStorage.setItem('users', JSON.stringify(users));
-      
+
+      // Create user in Supabase immediately for foreign key constraints
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { error: insertError } = await supabase.from('users').insert({
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          password_hash: passwordHash || 'mock_hash',
+          company: newUser.company,
+          role: newUser.role,
+          amazon_seller_id: newUser.amazonSellerId,
+          ein_tax_id: newUser.einTaxId,
+          staff_position: newUser.staffPosition,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+        if (!insertError) {
+          console.log('Created user in Supabase:', newUser.id);
+        } else if (insertError.code !== '23505') {
+          console.warn('Error creating user in Supabase:', insertError);
+        }
+      } catch (supabaseError) {
+        console.warn('Could not sync user to Supabase:', supabaseError);
+      }
+
       // Generate mock token
       const token = btoa(JSON.stringify({ userId: newUser.id, email: newUser.email, role: newUser.role }));
       localStorage.setItem('authToken', token);
-      
+
       // Remove passwordHash from returned user
       const { passwordHash: _, ...userWithoutPassword } = newUser;
-      
+
       return {
         user: userWithoutPassword,
         token
