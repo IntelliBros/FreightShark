@@ -1374,8 +1374,7 @@ export const ShipmentTracking = () => {
                   </span>
                 </div>
               </Card>
-            </>
-          )}
+          </>}
         </div>
       )}
       {activeTab === 'documents' && (

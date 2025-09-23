@@ -2052,13 +2052,15 @@ export const NewQuote = () => {
       <Card>
         {renderStepContent()}
         <div className="mt-8 flex justify-between">
-          {currentStep > 0 ? <Button variant="secondary" onClick={handlePrevStep}>
+          {currentStep > 0 ? (
+            <Button variant="secondary" onClick={handlePrevStep}>
               Back
             </Button>
           ) : (
             <div></div>
           )}
-          {currentStep < STEPS.length - 1 ? <Button variant="primary" onClick={handleNextStep}>
+          {currentStep < STEPS.length - 1 ? (
+            <Button variant="primary" onClick={handleNextStep}>
               Continue
             </Button>
           ) : null}

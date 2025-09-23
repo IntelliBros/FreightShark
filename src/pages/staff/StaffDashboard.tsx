@@ -129,8 +129,10 @@ export const StaffDashboard = () => {
 
       {/* Quote Requests Section */}
       <Card title="Pending Quote Requests" subtitle="Customer requests awaiting pricing" color="red" className="mb-6">
-        {pendingQuoteRequests.length > 0 ? <div className="space-y-4">
-            {pendingQuoteRequests.map(request => <div key={request.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
+        {pendingQuoteRequests.length > 0 ? (
+          <div className="space-y-4">
+            {pendingQuoteRequests.map(request => (
+              <div key={request.id} className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <div className="flex items-center">
@@ -167,7 +169,8 @@ export const StaffDashboard = () => {
                     </Button>
                   </Link>
                 </div>
-              </div>)}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-8">
