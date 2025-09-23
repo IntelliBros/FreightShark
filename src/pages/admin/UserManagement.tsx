@@ -94,11 +94,14 @@ export const UserManagement = () => {
     }));
   };
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-[400px]">
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-10 h-10 border-4 border-[#1E293B] rounded-full border-t-transparent animate-spin"></div>
-      </div>;
+      </div>
+    );
   }
-  return <div className="max-w-7xl mx-auto">
+  return (
+    <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-xl font-bold text-[#1E293B]">User Management</h1>
@@ -311,5 +314,6 @@ export const UserManagement = () => {
           </div>
         </div>
       )}
-    </div>;
+    </div>
+  );
 };

@@ -217,11 +217,14 @@ export const AllQuotes = () => {
     }
   };
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">
+    return (
+      <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>;
+      </div>
+    );
   }
-  return <div className="max-w-6xl mx-auto">
+  return (
+    <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Quotes</h1>
         <p className="text-gray-600 mt-1">
@@ -246,7 +249,8 @@ export const AllQuotes = () => {
           </select>
         </div>
       </div>
-      {filteredQuotes.length === 0 ? <Card>
+      {filteredQuotes.length === 0 ? (
+        <Card>
           <div className="text-center py-8">
             <FileTextIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-lg font-medium text-gray-900">
@@ -261,8 +265,11 @@ export const AllQuotes = () => {
               </Link>
             </div>
           </div>
-        </Card> : <div className="space-y-4">
-          {filteredQuotes.map(item => <Card key={item.request.id} className={`p-4 transition-all duration-500 ${animatingQuotes.has(item.request.id) ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredQuotes.map(item => (
+            <Card key={item.request.id} className={`p-4 transition-all duration-500 ${animatingQuotes.has(item.request.id) ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* Quote ID and Supplier Info */}
                 <div className="flex-shrink-0 lg:w-64">
@@ -349,10 +356,13 @@ export const AllQuotes = () => {
                       </div>
                     )}
                   </div>
-                  {item.request.status === 'Awaiting Quote' ? <div className="flex items-center justify-end text-sm text-yellow-600">
+                  {item.request.status === 'Awaiting Quote' ? (
+                    <div className="flex items-center justify-end text-sm text-yellow-600">
                       <ClockIcon className="h-3.5 w-3.5 mr-1" />
                       <span className="text-xs">Waiting for quote</span>
-                    </div> : item.request.status === 'Quote Provided' && item.quote ? <div className="flex space-x-2">
+                    </div>
+                  ) : item.request.status === 'Quote Provided' && item.quote ? (
+                    <div className="flex space-x-2">
                       <button 
                         className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full lg:w-auto justify-center"
                         onClick={() => handleAcceptQuote(item.quote!.id, item.request.id)}
@@ -384,15 +394,21 @@ export const AllQuotes = () => {
                           </>
                         )}
                       </button>
-                    </div> : <Link to={`/quotes/${item.request.id}`}>
+                    </div>
+                  ) : (
+                    <Link to={`/quotes/${item.request.id}`}>
                       <Button variant="primary" size="sm">
                         View Details
                         <ArrowRightIcon className="ml-1 h-4 w-4" />
                       </Button>
-                    </Link>}
+                    </Link>
+                  )}
                 </div>
               </div>
-            </Card>)}
-        </div>}
-    </div>;
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };

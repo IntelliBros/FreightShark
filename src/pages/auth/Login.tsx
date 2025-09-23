@@ -25,7 +25,8 @@ export const Login = () => {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex items-center justify-center mx-auto">
           <span className="text-5xl">🦈</span>
@@ -122,5 +123,6 @@ export const Login = () => {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };

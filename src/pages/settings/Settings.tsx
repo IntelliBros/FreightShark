@@ -4,7 +4,8 @@ export const Settings = () => {
   const {
     user
   } = useAuth();
-  return <div className="max-w-4xl mx-auto">
+  return (
+    <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-medium mb-4">Account Information</h2>
@@ -40,5 +41,6 @@ export const Settings = () => {
           Save Changes
         </button>
       </div>
-    </div>;
+    </div>
+  );
 };

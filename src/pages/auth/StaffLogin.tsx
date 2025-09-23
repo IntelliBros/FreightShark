@@ -25,7 +25,8 @@ export const StaffLogin = () => {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen bg-[#F5F7FA] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  return (
+    <div className="min-h-screen bg-[#F5F7FA] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="w-16 h-16 rounded-full bg-[#2E3B55] flex items-center justify-center mx-auto">
           <span className="text-white text-xl font-bold">DDP</span>
@@ -101,5 +102,6 @@ export const StaffLogin = () => {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };

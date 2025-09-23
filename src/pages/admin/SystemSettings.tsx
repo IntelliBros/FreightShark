@@ -55,7 +55,8 @@ export const SystemSettings = () => {
       alert('Failed to save settings. Please try again.');
     }
   };
-  return <div className="max-w-7xl mx-auto">
+  return (
+    <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-[#1E293B]">System Settings</h1>
         <p className="text-gray-600 text-sm mt-1">
@@ -249,5 +250,6 @@ export const SystemSettings = () => {
           </Button>
         </div>
       </form>
-    </div>;
+    </div>
+  );
 };

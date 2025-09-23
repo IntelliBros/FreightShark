@@ -68,7 +68,8 @@ export const StaffDashboard = () => {
         <div className="w-10 h-10 border-4 border-[#1E2A45] rounded-full border-t-transparent animate-spin"></div>
       </div>;
   }
-  return <div className="max-w-7xl mx-auto">
+  return (
+    <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-[#1E2A45]">
           Welcome back, {user?.name}
@@ -167,7 +168,9 @@ export const StaffDashboard = () => {
                   </Link>
                 </div>
               </div>)}
-          </div> : <div className="text-center py-8">
+          </div>
+        ) : (
+          <div className="text-center py-8">
             <FileTextIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <h3 className="text-sm font-medium text-gray-700 mb-1">
               No quote requests
@@ -175,7 +178,9 @@ export const StaffDashboard = () => {
             <p className="text-xs text-gray-500 mb-3">
               All customer quote requests have been handled
             </p>
-          </div>}
+          </div>
+        )}
       </Card>
-    </div>;
+    </div>
+  );
 };

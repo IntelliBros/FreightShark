@@ -886,7 +886,8 @@ export const ShipmentTracking = () => {
     );
   }
   
-  return <div className="max-w-6xl mx-auto">
+  return (
+    <div className="max-w-6xl mx-auto">
       <div className="mb-4 flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-lg font-bold text-gray-900 mr-3">
@@ -943,7 +944,8 @@ export const ShipmentTracking = () => {
           </button>
         </nav>
       </div>
-      {activeTab === 'overview' && <div className="space-y-5">
+      {activeTab === 'overview' && (
+        <div className="space-y-5">
           {/* Required IDs Notice - Show after payment but only if IDs are missing */}
           {shipment.invoice && shipment.invoice.status === 'Paid' && 
            Array.isArray(shipment.destinations) && shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '') && (
@@ -1372,14 +1374,18 @@ export const ShipmentTracking = () => {
                   </span>
                 </div>
               </Card>
-            </>}
-        </div>}
-      {activeTab === 'documents' && <Card>
+            </>
+          )}
+        </div>
+      )}
+      {activeTab === 'documents' && (
+        <Card>
           <h2 className="text-base font-medium text-gray-900 mb-4">
             Shipment Documents
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {shipment.documents.map((doc: any) => <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-[#2E3B55]/30 transition">
+            {shipment.documents.map((doc: any) => (
+              <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-[#2E3B55]/30 transition">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center min-w-0 flex-1">
                     <FileTextIcon className="h-7 w-7 text-[#2E3B55] mr-3 flex-shrink-0" />
@@ -1402,7 +1408,8 @@ export const ShipmentTracking = () => {
                     View
                   </button>
                 </div>
-              </div>)}
+              </div>
+            ))}
             <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-center">
               <input
                 type="file"
@@ -1429,13 +1436,16 @@ export const ShipmentTracking = () => {
               </Button>
             </div>
           </div>
-        </Card>}
-      {activeTab === 'photos' && <Card>
+        </Card>
+      )}
+      {activeTab === 'photos' && (
+        <Card>
           <h2 className="text-base font-medium text-gray-900 mb-4">
             Shipment Photos
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {shipment.photos.map((photo: any) => <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
+            {shipment.photos.map((photo: any) => (
+              <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 <div className="h-48 bg-gray-100 flex items-center justify-center">
                   <ImageIcon className="h-12 w-12 text-gray-400" />
                 </div>
@@ -1453,7 +1463,8 @@ export const ShipmentTracking = () => {
                     </button>
                   </div>
                 </div>
-              </div>)}
+              </div>
+            ))}
             <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-center">
               <div className="w-10 h-10 bg-[#E6EDF8] rounded-full flex items-center justify-center mb-2">
                 <ImageIcon className="h-5 w-5 text-[#2E3B55]" />
@@ -1467,7 +1478,8 @@ export const ShipmentTracking = () => {
               </Button>
             </div>
           </div>
-        </Card>}
+        </Card>
+      )}
       {activeTab === 'chat' && (
         <div className="h-[600px] bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
           {console.log('=== Chat Tab is Active ===', { activeTab, id, user })}
@@ -1812,5 +1824,6 @@ export const ShipmentTracking = () => {
           </div>
         </div>
       )}
-    </div>;
+    </div>
+  );
 };

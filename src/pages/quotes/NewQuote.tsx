@@ -2026,7 +2026,8 @@ export const NewQuote = () => {
         return null;
     }
   };
-  return <div className="max-w-5xl mx-auto">
+  return (
+    <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">New Quote</h1>
         <p className="text-gray-600 mt-1">
@@ -2053,11 +2054,16 @@ export const NewQuote = () => {
         <div className="mt-8 flex justify-between">
           {currentStep > 0 ? <Button variant="secondary" onClick={handlePrevStep}>
               Back
-            </Button> : <div></div>}
+            </Button>
+          ) : (
+            <div></div>
+          )}
           {currentStep < STEPS.length - 1 ? <Button variant="primary" onClick={handleNextStep}>
               Continue
-            </Button> : null}
+            </Button>
+          ) : null}
         </div>
       </Card>
-    </div>;
+    </div>
+  );
 };
