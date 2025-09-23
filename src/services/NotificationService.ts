@@ -341,24 +341,34 @@ class NotificationService {
 
   // Send notification when sample is received at warehouse
   async notifySampleReceived(sample: any, customer: User) {
-    // Send email notification
-    if (customer.email) {
-      try {
-        await emailService.sendNotification(
-          customer.email,
-          'sample-received',
-          {
-            sampleId: sample.id,
-            customerName: customer.name || 'Valued Customer',
-            productName: sample.product_name || 'Sample',
-            consolidationId: sample.consolidation_id || '',
-            receivedDate: new Date(sample.received_date).toLocaleDateString()
-          }
-        );
-        console.log(`Sample received email sent to ${customer.email}`);
-      } catch (error) {
-        console.error('Failed to send sample received email:', error);
-      }
+    // Send email notification - using exact same pattern as shipment notifications
+    if (!customer.email) return;
+
+    try {
+      // Log the exact data being sent for debugging
+      const emailData = {
+        to: customer.email,
+        template: 'sample-received',
+        variables: {
+          sampleId: sample.id,
+          customerName: customer.name || 'Valued Customer',
+          productName: sample.product_name || 'Sample',
+          consolidationId: sample.consolidation_id || '',
+          receivedDate: new Date(sample.received_date).toLocaleDateString()
+        }
+      };
+
+      console.log('Sending sample email with data:', JSON.stringify(emailData, null, 2));
+
+      await emailService.sendNotification(
+        customer.email,
+        'sample-received',
+        emailData.variables
+      );
+      console.log(`✅ Sample received email sent successfully to ${customer.email}`);
+    } catch (error) {
+      console.error('❌ Failed to send sample received email:', error);
+      // Don't throw - continue with in-app notification
     }
 
     // Create in-app notification in database

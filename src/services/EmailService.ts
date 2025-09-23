@@ -244,6 +244,11 @@ class EmailService {
           timestamp: new Date().toISOString()
         });
         return result;
+      } else {
+        // Log the error response for debugging
+        const errorText = await response.text();
+        console.error(`❌ Email API error (${response.status}):`, errorText);
+        throw new Error(`Email API error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.log('Backend not available, falling back to simulation');
