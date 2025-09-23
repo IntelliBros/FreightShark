@@ -173,6 +173,12 @@ export const SampleConsolidation = () => {
       return;
     }
 
+    if (!user.display_id) {
+      console.error('❌ Validation failed: User does not have display_id');
+      addToast('User account needs to be updated. Please contact support.', 'error');
+      return;
+    }
+
     const sampleId = generateSampleId(user.id, user.display_id);
     console.log('📋 Generated Sample ID:', sampleId);
 

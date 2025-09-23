@@ -110,13 +110,13 @@ const getNextSampleSequence = (): number => {
 };
 
 // Generate a unique sample ID with format: SMPL[xxxx]-USER[display_id]
-export const generateSampleId = (userId: string, displayId?: number): string => {
+export const generateSampleId = (userId: string, displayId: number): string => {
   // Get the sequence number and pad to 4 digits
   const sequence = getNextSampleSequence();
   const paddedSequence = sequence.toString().padStart(4, '0');
 
-  // Use display_id if provided, otherwise fallback to userId
-  const userIdentifier = displayId ? displayId.toString() : userId.substring(0, 6).toUpperCase();
+  // Always use display_id
+  const userIdentifier = displayId.toString();
 
   return `SMPL${paddedSequence}-USER${userIdentifier}`;
 };
