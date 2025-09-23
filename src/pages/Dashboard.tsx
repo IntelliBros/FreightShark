@@ -61,46 +61,47 @@ export const Dashboard = () => {
       })
       .map(shipment => {
         // Calculate progress based on status
-        // Status flow: Waiting for Pickup (20%) -> Invoice Payment (10%) -> Shipment IDs (10%) -> In Progress (40%) -> Delivered (20%)
-        let progress = 0;
-        let displayStatus = shipment.status;
-        
-        // Check for Missing Shipment IDs status
-        if (shipment.invoice?.status === 'Paid' && 
-            shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
-          displayStatus = 'Missing Shipment IDs';
-          progress = 30; // Waiting (20%) + Payment (10%)
-        } else if (shipment.invoice?.status === 'Paid' && 
-                   shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
-          // IDs provided, check actual status
-          switch (shipment.status) {
-            case 'Delivered':
-              displayStatus = 'Delivered';
-              progress = 100;
-              break;
-            case 'Awaiting Pickup':
-              displayStatus = 'Waiting for Pickup';
-              progress = 40; // Waiting (20%) + Payment (10%) + IDs (10%)
-              break;
-            default:
-              // Any other status with payment and IDs means "In Progress"
-              displayStatus = 'In Progress';
-              progress = 80; // Waiting (20%) + Payment (10%) + IDs (10%) + In Progress (40%)
-          }
-        } else {
-          switch (shipment.status) {
-            case 'Awaiting Pickup': 
-              displayStatus = 'Waiting for Pickup';
-              progress = 20; 
-              break;
-            case 'In Transit':
-            case 'Customs':
-              displayStatus = 'In Progress';
-              progress = 80; 
-              break;
-            case 'Delivered': 
-              progress = 100; 
-              break;
+        // Default to a reasonable progress for active shipments
+        let progress = 25; // Default progress for active shipments
+        let displayStatus = shipment.status || 'In Progress';
+
+        // Simplified and more reliable progress calculation
+        switch (shipment.status?.toLowerCase()) {
+          case 'quote approved':
+          case 'booking confirmed':
+            displayStatus = 'Booking Confirmed';
+            progress = 20;
+            break;
+          case 'awaiting pickup':
+            displayStatus = 'Awaiting Pickup';
+            progress = 40;
+            break;
+          case 'in transit':
+          case 'customs':
+            displayStatus = 'In Transit';
+            progress = 70;
+            break;
+          case 'out for delivery':
+            displayStatus = 'Out for Delivery';
+            progress = 90;
+            break;
+          case 'delivered':
+            displayStatus = 'Delivered';
+            progress = 100;
+            break;
+          default:
+            // For any other status, show as "In Progress"
+            displayStatus = 'In Progress';
+            progress = 50;
+        }
+
+        // Override with invoice-based logic if available
+        if (shipment.invoice?.status === 'Paid') {
+          progress = Math.max(progress, 30); // At least 30% if invoice is paid
+
+          if (shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
+            displayStatus = 'Missing Shipment IDs';
+            progress = 35;
           }
         }
         
