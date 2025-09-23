@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Documents Migration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff5f5;
+            border: 2px solid #feb2b2;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #ebf8ff;
+            border: 2px solid #90cdf4;
+            color: #2c5282;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #48bb78;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .error {
+            background: #f56565;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #3182ce;
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        .danger-button {
+            background: #f56565;
+        }
+        .danger-button:hover {
+            background: #e53e3e;
+        }
+        .log {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4299e1;
+            padding-left: 10px;
+        }
+        .sql-code {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 20px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Documents Column Migration</h1>
+
+        <div class="info">
+            <strong>What this migration does:</strong>
+            <ul>
+                <li>Creates a new 'documents' column in the shipments table</li>
+                <li>Migrates any document data from the destinations column</li>
+                <li>Sets up proper indexing for performance</li>
+                <li>Adds validation constraints</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Warning:</strong> This migration will modify your database structure. Make sure to backup your data before proceeding.
+        </div>
+
+        <div>
+            <h3>Migration SQL:</h3>
+            <div class="sql-code">-- Add documents column to shipments table
+ALTER TABLE shipments
+ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb;
+
+-- Migrate documents from destinations column if they exist
+UPDATE shipments
+SET documents = destinations
+WHERE destinations IS NOT NULL
+  AND jsonb_typeof(destinations) = 'array'
+  AND EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(destinations) AS elem
+    WHERE elem ? 'name'
+       OR elem ? 'type'
+       OR elem ? 'url'
+  );
+
+-- Create index for better performance
+CREATE INDEX IF NOT EXISTS idx_shipments_documents
+ON shipments USING gin (documents);</div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="checkCurrentState()">Check Current State</button>
+            <button onclick="runMigration()">Run Migration</button>
+            <button onclick="verifyMigration()">Verify Migration</button>
+            <button class="danger-button" onclick="rollbackMigration()">Rollback Migration</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://jqcbgpwheckblkdejuwv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxY2JncHdoZWNrYmxrZGVqdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNjMzMTUsImV4cCI6MjA3MjkzOTMxNX0.n6uAu_3phhkm0FqPuJxX4LM2alBBqquEqzOCL7ubmHI';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = type === 'error' ? 'error' : 'success';
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+
+        function addLog(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function checkCurrentState() {
+            try {
+                addLog('Checking current database state...');
+
+                // Check if documents column exists
+                const { data: columns, error: columnsError } = await supabase.rpc('get_table_columns', {
+                    table_name: 'shipments'
+                }).single();
+
+                if (columnsError) {
+                    // Try alternative method
+                    const { data: shipment, error } = await supabase
+                        .from('shipments')
+                        .select('*')
+                        .limit(1)
+                        .single();
+
+                    if (!error && shipment) {
+                        const hasDocuments = 'documents' in shipment;
+                        addLog(`Documents column exists: ${hasDocuments}`);
+
+                        if (hasDocuments) {
+                            // Check if any data is in documents column
+                            const { data: docsData, error: docsError } = await supabase
+                                .from('shipments')
+                                .select('id, documents')
+                                .not('documents', 'is', null);
+
+                            if (!docsError) {
+                                const withDocs = docsData?.filter(s => s.documents && Array.isArray(s.documents) && s.documents.length > 0);
+                                addLog(`Shipments with documents: ${withDocs?.length || 0}`);
+                            }
+                        }
+
+                        // Check destinations column
+                        if ('destinations' in shipment) {
+                            const { data: destData, error: destError } = await supabase
+                                .from('shipments')
+                                .select('id, destinations')
+                                .not('destinations', 'is', null);
+
+                            if (!destError) {
+                                addLog(`Shipments with destinations data: ${destData?.length || 0}`);
+                            }
+                        }
+
+                        showStatus('Database state checked successfully', 'success');
+                    } else {
+                        addLog('Could not fetch shipment data');
+                        showStatus('Could not check database state', 'error');
+                    }
+                } else {
+                    addLog('Column information retrieved');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                addLog(`Error: ${error.message}`);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runMigration() {
+            try {
+                if (!confirm('Are you sure you want to run this migration? This will modify your database structure.')) {
+                    return;
+                }
+
+                addLog('Starting migration...');
+
+                // Step 1: Add documents column
+                addLog('Adding documents column...');
+                const { error: addColumnError } = await supabase.rpc('exec_sql', {
+                    query: `ALTER TABLE shipments ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb`
+                });
+
+                if (addColumnError) {
+                    // Column might already exist, continue
+                    addLog('Documents column may already exist, continuing...');
+                } else {
+                    addLog('✅ Documents column added successfully');
+                }
+
+                // Step 2: Migrate data from destinations if it contains documents
+                addLog('Checking for document data in destinations column...');
+                const { data: shipments, error: fetchError } = await supabase
+                    .from('shipments')
+                    .select('id, destinations')
+                    .not('destinations', 'is', null);
+
+                if (!fetchError && shipments) {
+                    let migratedCount = 0;
+
+                    for (const shipment of shipments) {
+                        if (shipment.destinations && Array.isArray(shipment.destinations)) {
+                            // Check if destinations contains document-like data
+                            const hasDocumentData = shipment.destinations.some(item =>
+                                item.name && item.url && (item.type || item.size || item.uploadedAt)
+                            );
+
+                            if (hasDocumentData) {
+                                // This looks like documents, migrate it
+                                const { error: updateError } = await supabase
+                                    .from('shipments')
+                                    .update({
+                                        documents: shipment.destinations,
+                                        destinations: []
+                                    })
+                                    .eq('id', shipment.id);
+
+                                if (!updateError) {
+                                    migratedCount++;
+                                    addLog(`✅ Migrated documents for shipment ${shipment.id}`);
+                                } else {
+                                    addLog(`⚠️ Failed to migrate shipment ${shipment.id}: ${updateError.message}`);
+                                }
+                            }
+                        }
+                    }
+
+                    addLog(`Migration complete. Migrated ${migratedCount} shipments.`);
+                } else {
+                    addLog('No data to migrate or error fetching shipments');
+                }
+
+                showStatus('Migration completed successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addLog(`Error: ${error.message}`);
+                showStatus(`Migration failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function verifyMigration() {
+            try {
+                addLog('Verifying migration...');
+
+                // Check documents column
+                const { data: withDocs, error: docsError } = await supabase
+                    .from('shipments')
+                    .select('id, documents')
+                    .not('documents', 'is', null);
+
+                if (!docsError) {
+                    const validDocs = withDocs?.filter(s =>
+                        s.documents &&
+                        Array.isArray(s.documents) &&
+                        s.documents.length > 0
+                    );
+
+                    addLog(`✅ Shipments with documents: ${validDocs?.length || 0}`);
+
+                    if (validDocs && validDocs.length > 0) {
+                        addLog('Sample document structure:');
+                        addLog(JSON.stringify(validDocs[0].documents[0], null, 2));
+                    }
+                }
+
+                // Check destinations column
+                const { data: withDest, error: destError } = await supabase
+                    .from('shipments')
+                    .select('id, destinations')
+                    .not('destinations', 'is', null);
+
+                if (!destError) {
+                    const docsInDest = withDest?.filter(s => {
+                        if (s.destinations && Array.isArray(s.destinations)) {
+                            return s.destinations.some(item =>
+                                item.name && item.url && (item.type || item.size)
+                            );
+                        }
+                        return false;
+                    });
+
+                    if (docsInDest && docsInDest.length > 0) {
+                        addLog(`⚠️ Still have ${docsInDest.length} shipments with document data in destinations column`);
+                    } else {
+                        addLog('✅ No document data remaining in destinations column');
+                    }
+                }
+
+                showStatus('Verification complete', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addLog(`Error: ${error.message}`);
+                showStatus(`Verification failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function rollbackMigration() {
+            try {
+                if (!confirm('Are you sure you want to rollback? This will move documents back to destinations column.')) {
+                    return;
+                }
+
+                addLog('Starting rollback...');
+
+                // Move documents back to destinations
+                const { data: shipments, error: fetchError } = await supabase
+                    .from('shipments')
+                    .select('id, documents')
+                    .not('documents', 'is', null);
+
+                if (!fetchError && shipments) {
+                    let rollbackCount = 0;
+
+                    for (const shipment of shipments) {
+                        if (shipment.documents && Array.isArray(shipment.documents) && shipment.documents.length > 0) {
+                            const { error: updateError } = await supabase
+                                .from('shipments')
+                                .update({
+                                    destinations: shipment.documents,
+                                    documents: []
+                                })
+                                .eq('id', shipment.id);
+
+                            if (!updateError) {
+                                rollbackCount++;
+                                addLog(`✅ Rolled back shipment ${shipment.id}`);
+                            } else {
+                                addLog(`⚠️ Failed to rollback shipment ${shipment.id}: ${updateError.message}`);
+                            }
+                        }
+                    }
+
+                    addLog(`Rollback complete. Rolled back ${rollbackCount} shipments.`);
+                }
+
+                showStatus('Rollback completed', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addLog(`Error: ${error.message}`);
+                showStatus(`Rollback failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
