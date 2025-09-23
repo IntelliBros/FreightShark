@@ -140,11 +140,34 @@ export const DocumentsHub = () => {
         generateInvoicePDF(doc.shipmentData, doc.invoiceData);
         addToast('Invoice downloaded successfully', 'success');
       } else if (doc.url && doc.url !== '#') {
-        // For other documents, open the URL
-        window.open(doc.url, '_blank');
+        // For other documents with URLs
+        if (doc.url.startsWith('blob:')) {
+          // Handle blob URLs - try to download directly
+          const link = document.createElement('a');
+          link.href = doc.url;
+          link.download = doc.name || 'document';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else {
+          // Open regular URLs in new tab
+          window.open(doc.url, '_blank');
+        }
         addToast('Document download started', 'success');
       } else {
-        addToast('Document not available for download', 'error');
+        // Create a placeholder download for documents without URLs
+        // This creates a text file with document information
+        const docInfo = `Document: ${doc.name}\nType: ${doc.type}\nShipment: ${doc.shipmentId}\nUploaded: ${doc.uploadedAt}\nUploaded By: ${doc.uploadedBy}\n\nNote: The actual document file is not available. Please contact support for assistance.`;
+        const blob = new Blob([docInfo], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${doc.name || 'document'}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        addToast('Document information downloaded. Contact support for the actual file.', 'warning');
       }
     } catch (error) {
       console.error('Error downloading document:', error);
@@ -158,21 +181,15 @@ export const DocumentsHub = () => {
     selectedDocuments.forEach(docId => {
       const doc = documents.find(d => d.id === docId);
       if (doc) {
-        if (doc.type === 'invoice' && doc.shipmentData && doc.invoiceData) {
-          // Generate and download invoice PDF
-          generateInvoicePDF(doc.shipmentData, doc.invoiceData);
-          downloadCount++;
-        } else if (doc.url && doc.url !== '#') {
-          // Open document URL in new tab for download
-          window.open(doc.url, '_blank');
-          downloadCount++;
-        }
+        // Use the same download logic as individual downloads
+        handleDownloadDocument(doc);
+        downloadCount++;
       }
     });
     if (downloadCount > 0) {
       addToast(`Downloading ${downloadCount} document(s)`, 'success');
     } else {
-      addToast('No documents available for download', 'warning');
+      addToast('No documents selected for download', 'warning');
     }
   };
 

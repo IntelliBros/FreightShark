@@ -36,6 +36,7 @@ export const ShipmentTracking = () => {
   const [shipment, setShipment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     cardNumber: '',
     cardHolder: '',
@@ -342,7 +343,58 @@ export const ShipmentTracking = () => {
       setIsSavingIds(false);
     }
   };
-  
+
+  // Handle document upload
+  const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !shipment) return;
+
+    setIsUploadingDocument(true);
+    try {
+      // Create document object
+      const newDocument = {
+        id: `doc-${Date.now()}`,
+        name: file.name,
+        type: file.type.includes('pdf') ? 'document' :
+              file.type.includes('image') ? 'image' : 'document',
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        uploadedAt: new Date().toISOString().split('T')[0],
+        uploadedBy: user?.name || 'Customer',
+        url: URL.createObjectURL(file) // Create temporary URL for preview
+      };
+
+      // Add document to shipment
+      const updatedDocuments = [...(shipment.documents || []), newDocument];
+
+      // Update shipment with new documents array
+      const updatedShipment = {
+        ...shipment,
+        documents: updatedDocuments
+      };
+
+      // Update local state immediately
+      setShipment(updatedShipment);
+
+      // Save to database - update the entire shipment with new documents
+      await DataService.updateShipment(shipment.id, {
+        documents: updatedDocuments
+      });
+
+      addToast('Document uploaded successfully', 'success');
+
+      // Optionally refresh data to sync with backend
+      setTimeout(() => refreshData(), 500);
+
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      addToast('Failed to upload document. Please try again.', 'error');
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
   // Fetch shipment data
   useEffect(() => {
     const fetchShipmentData = async () => {
@@ -1342,6 +1394,14 @@ export const ShipmentTracking = () => {
                 </div>
               </div>)}
             <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+              <input
+                type="file"
+                id="document-upload"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                onChange={handleDocumentUpload}
+                disabled={isUploadingDocument}
+              />
               <div className="w-10 h-10 bg-[#E6EDF8] rounded-full flex items-center justify-center mb-2">
                 <FileTextIcon className="h-5 w-5 text-[#2E3B55]" />
               </div>
@@ -1349,8 +1409,13 @@ export const ShipmentTracking = () => {
               <p className="text-xs text-gray-500 mt-1 mb-3">
                 Add additional documents to your shipment
               </p>
-              <Button variant="secondary" size="sm">
-                Upload File
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => document.getElementById('document-upload')?.click()}
+                disabled={isUploadingDocument}
+              >
+                {isUploadingDocument ? 'Uploading...' : 'Upload File'}
               </Button>
             </div>
           </div>
