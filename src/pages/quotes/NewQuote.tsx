@@ -28,6 +28,7 @@ type Supplier = {
   name: string;
   address: string;
   contact: string;
+  wechatPhone?: string;
 };
 type DestinationCarton = {
   cartonConfigId: string;
@@ -134,7 +135,8 @@ export const NewQuote = () => {
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     address: '',
-    contact: ''
+    contact: '',
+    wechatPhone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true);
@@ -159,7 +161,8 @@ export const NewQuote = () => {
         id: s.id,
         name: s.name,
         address: s.address,
-        contact: s.contact_name || ''
+        contact: s.contact_name || '',
+        wechatPhone: s.wechat_phone || ''
       }));
       setSavedSuppliers(transformedSuppliers);
     } catch (error) {
@@ -249,7 +252,8 @@ export const NewQuote = () => {
       const savedSupplier = await DataService.createSupplier(user.id, {
         name: newSupplier.name,
         address: newSupplier.address,
-        contact: newSupplier.contact
+        contact: newSupplier.contact,
+        wechatPhone: newSupplier.wechatPhone
       });
 
       // Transform to component's Supplier type
@@ -257,7 +261,8 @@ export const NewQuote = () => {
         id: savedSupplier.id,
         name: savedSupplier.name,
         address: savedSupplier.address,
-        contact: savedSupplier.contact_name || ''
+        contact: savedSupplier.contact_name || '',
+        wechatPhone: savedSupplier.wechat_phone || ''
       };
 
       // Update local state
@@ -270,7 +275,8 @@ export const NewQuote = () => {
       setNewSupplier({
         name: '',
         address: '',
-        contact: ''
+        contact: '',
+        wechatPhone: ''
       });
 
       addToast('Supplier added successfully', 'success');
@@ -722,6 +728,11 @@ export const NewQuote = () => {
                           <p className="text-sm text-gray-500 mt-1">
                             Contact: {supplier.contact}
                           </p>
+                          {supplier.wechatPhone && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              WeChat/Phone: {supplier.wechatPhone}
+                            </p>
+                          )}
                         </div>
                         {formData.supplier?.id === supplier.id && <CheckCircleIcon className="h-6 w-6 text-blue-500" />}
                       </div>
@@ -758,12 +769,21 @@ export const NewQuote = () => {
                     </div>
                     <div>
                       <label htmlFor="supplier-contact" className="block text-sm font-medium text-gray-700">
-                        Contact Person
+                        Contact Person Name
                       </label>
                       <input type="text" id="supplier-contact" value={newSupplier.contact} onChange={e => setNewSupplier({
                     ...newSupplier,
                     contact: e.target.value
                   })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div>
+                      <label htmlFor="supplier-wechat-phone" className="block text-sm font-medium text-gray-700">
+                        Supplier WeChat/Phone Number
+                      </label>
+                      <input type="text" id="supplier-wechat-phone" value={newSupplier.wechatPhone} onChange={e => setNewSupplier({
+                    ...newSupplier,
+                    wechatPhone: e.target.value
+                  })} placeholder="WeChat ID or Phone Number" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
                     <div className="flex justify-end">
                       <Button variant="primary" onClick={handleAddNewSupplier} disabled={!newSupplier.name || !newSupplier.address}>

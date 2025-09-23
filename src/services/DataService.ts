@@ -870,6 +870,7 @@ export const DataService = {
     name: string;
     address: string;
     contact?: string;
+    wechatPhone?: string;
     city?: string;
     country?: string;
   }) {
@@ -879,6 +880,7 @@ export const DataService = {
       name: supplier.name,
       address: supplier.address,
       contact_name: supplier.contact,
+      wechat_phone: supplier.wechatPhone,
       city: supplier.city,
       country: supplier.country || 'China'
     });
