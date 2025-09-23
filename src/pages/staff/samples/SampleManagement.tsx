@@ -411,7 +411,7 @@ export const SampleManagement = () => {
           // Send email notification
           await notificationService.notifySampleReceived(
             {
-              id: dbSample.id,
+              id: scannedSampleId, // Use the actual scanned sample ID, not the database record ID
               product_name: request.productName,
               consolidation_id: scannedSampleId,
               received_date: dbSample.received_at
@@ -419,28 +419,8 @@ export const SampleManagement = () => {
             customer
           );
 
-          // Add in-app notification for the customer
-          // This will be handled through the NotificationsContext when customer logs in
-          const inAppNotification = {
-            userId: customer.id,
-            type: 'sample' as const,
-            icon: Package,
-            title: 'Sample Received',
-            message: `Your sample ${request.productName} (${scannedSampleId}) has been received at our warehouse.`,
-            read: false,
-            link: '/samples'
-          };
-
-          // Store notification in localStorage for the customer
-          const existingNotifications = localStorage.getItem(`notifications_${customer.id}`);
-          const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
-          notifications.unshift({
-            ...inAppNotification,
-            id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            timestamp: 'Just now',
-            date: new Date().toISOString()
-          });
-          localStorage.setItem(`notifications_${customer.id}`, JSON.stringify(notifications.slice(0, 50)));
+          // The notifySampleReceived method above handles both email and database notification creation
+          // No need for separate localStorage logic here
 
           console.log('✅ Notifications sent to customer:', customer.email);
         }
@@ -1037,25 +1017,15 @@ export const SampleManagement = () => {
                                           await notificationService.notifySamplePaymentLink(request, customer);
 
                                           // Add in-app notification
-                                          const inAppNotification = {
-                                            userId: customer.id,
-                                            type: 'invoice' as const,
-                                            icon: CreditCard,
+                                          // Create in-app notification via NotificationService
+                                          await notificationService.createNotification({
+                                            user_id: customer.id,
+                                            type: 'invoice',
                                             title: 'Payment Required',
                                             message: `Payment link available for your sample shipment request ${request.id}`,
-                                            read: false,
+                                            icon: 'CreditCard',
                                             link: '/samples'
-                                          };
-
-                                          const existingNotifications = localStorage.getItem(`notifications_${customer.id}`);
-                                          const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
-                                          notifications.unshift({
-                                            ...inAppNotification,
-                                            id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                            timestamp: 'Just now',
-                                            date: new Date().toISOString()
                                           });
-                                          localStorage.setItem(`notifications_${customer.id}`, JSON.stringify(notifications.slice(0, 50)));
                                         }
                                       } catch (error) {
                                         console.error('Failed to send payment link notifications:', error);
@@ -1124,25 +1094,15 @@ export const SampleManagement = () => {
                                             );
 
                                             // Add in-app notification
-                                            const inAppNotification = {
-                                              userId: customer.id,
-                                              type: 'shipment' as const,
-                                              icon: TruckIcon,
+                                            // Create in-app notification via NotificationService
+                                            await notificationService.createNotification({
+                                              user_id: customer.id,
+                                              type: 'shipment',
                                               title: 'Sample Shipped',
                                               message: `Your samples have been shipped! Tracking: ${trackingNumber}`,
-                                              read: false,
+                                              icon: 'Truck',
                                               link: '/samples'
-                                            };
-
-                                            const existingNotifications = localStorage.getItem(`notifications_${customer.id}`);
-                                            const notifications = existingNotifications ? JSON.parse(existingNotifications) : [];
-                                            notifications.unshift({
-                                              ...inAppNotification,
-                                              id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                              timestamp: 'Just now',
-                                              date: new Date().toISOString()
                                             });
-                                            localStorage.setItem(`notifications_${customer.id}`, JSON.stringify(notifications.slice(0, 50)));
                                           }
                                         } catch (error) {
                                           console.error('Failed to send shipping notifications:', error);

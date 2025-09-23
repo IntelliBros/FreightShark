@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sample Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #0b7dda;
+        }
+        .output {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .info {
+            color: blue;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sample Notification Test</h1>
+
+    <div class="container">
+        <h2>Test Sample Reception Notification</h2>
+        <p>This will test the notification flow when a sample is received.</p>
+
+        <button onclick="testSampleNotification()">Test Sample Received Notification</button>
+        <button onclick="createTestCustomer()" class="secondary">Create Test Customer First</button>
+        <button onclick="checkNotifications()" class="secondary">Check Notifications</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        // Initialize Supabase client
+        const supabaseUrl = localStorage.getItem('freight_shark_supabase_url') || '';
+        const supabaseKey = localStorage.getItem('freight_shark_supabase_anon_key') || '';
+
+        let supabase = null;
+        if (supabaseUrl && supabaseKey) {
+            supabase = createClient(supabaseUrl, supabaseKey);
+        }
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toISOString();
+            output.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+
+        window.createTestCustomer = function() {
+            // Create a test customer
+            const testCustomer = {
+                id: 'test-customer-123',
+                email: 'test@example.com',
+                name: 'Test Customer',
+                company: 'Test Company',
+                phone: '555-0123',
+                role: 'customer',
+                createdAt: new Date().toISOString()
+            };
+
+            // Store in localStorage
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const existingIndex = users.findIndex(u => u.id === testCustomer.id);
+            if (existingIndex >= 0) {
+                users[existingIndex] = testCustomer;
+            } else {
+                users.push(testCustomer);
+            }
+            localStorage.setItem('users', JSON.stringify(users));
+
+            log(`Test customer created: ${testCustomer.email}`, 'success');
+            return testCustomer;
+        };
+
+        window.testSampleNotification = async function() {
+            log('Starting sample notification test...', 'info');
+
+            // Get or create test customer
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            let testCustomer = users.find(u => u.id === 'test-customer-123');
+
+            if (!testCustomer) {
+                log('No test customer found, creating one...', 'info');
+                testCustomer = window.createTestCustomer();
+            }
+
+            // Simulate sample data
+            const sample = {
+                id: 'SAMPLE-TEST-001',
+                product_name: 'Test Product',
+                consolidation_id: 'CONSOL-001',
+                received_date: new Date().toISOString()
+            };
+
+            log(`Testing notification for sample: ${JSON.stringify(sample, null, 2)}`, 'info');
+
+            try {
+                // Test 1: Email notification (simulated)
+                log('Testing email notification...', 'info');
+                const emailData = {
+                    to: testCustomer.email,
+                    templateId: 'sample-received',
+                    variables: {
+                        sampleId: sample.id,
+                        customerName: testCustomer.name || 'Valued Customer',
+                        productName: sample.product_name || 'Sample',
+                        consolidationId: sample.consolidation_id || '',
+                        receivedDate: new Date(sample.received_date).toLocaleDateString()
+                    }
+                };
+                log(`Email would be sent with data: ${JSON.stringify(emailData, null, 2)}`, 'success');
+
+                // Test 2: In-app notification
+                log('Testing in-app notification...', 'info');
+
+                const notification = {
+                    id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    user_id: testCustomer.id,
+                    type: 'sample',
+                    title: 'Sample Received',
+                    message: `Your sample ${sample.product_name} (${sample.id}) has been received at our warehouse.`,
+                    icon: 'Package',
+                    link: '/samples',
+                    read: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                // Try Supabase first
+                if (supabase) {
+                    log('Attempting to save notification to Supabase...', 'info');
+                    const { data, error } = await supabase
+                        .from('notifications')
+                        .insert(notification)
+                        .select()
+                        .single();
+
+                    if (error) {
+                        log(`Supabase error: ${error.message}`, 'error');
+                        log('Falling back to localStorage...', 'info');
+                        saveToLocalStorage(notification);
+                    } else {
+                        log(`Notification saved to Supabase: ${JSON.stringify(data, null, 2)}`, 'success');
+                    }
+                } else {
+                    log('Supabase not configured, using localStorage...', 'info');
+                    saveToLocalStorage(notification);
+                }
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        };
+
+        function saveToLocalStorage(notification) {
+            const notifications = JSON.parse(localStorage.getItem('freight_shark_notifications') || '[]');
+            notifications.push(notification);
+            localStorage.setItem('freight_shark_notifications', JSON.stringify(notifications));
+            log(`Notification saved to localStorage: ${JSON.stringify(notification, null, 2)}`, 'success');
+        }
+
+        window.checkNotifications = async function() {
+            log('Checking notifications...', 'info');
+
+            // Check localStorage
+            const localNotifications = JSON.parse(localStorage.getItem('freight_shark_notifications') || '[]');
+            log(`Found ${localNotifications.length} notifications in localStorage`, 'info');
+
+            if (localNotifications.length > 0) {
+                log(`<pre>${JSON.stringify(localNotifications, null, 2)}</pre>`, 'success');
+            }
+
+            // Check Supabase if configured
+            if (supabase) {
+                log('Checking Supabase notifications...', 'info');
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    log(`Supabase error: ${error.message}`, 'error');
+                } else {
+                    log(`Found ${data.length} notifications in Supabase`, 'info');
+                    if (data.length > 0) {
+                        log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                    }
+                }
+            }
+        };
+    </script>
+</body>
+</html>

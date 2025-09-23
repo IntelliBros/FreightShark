@@ -1,7 +1,137 @@
 import { emailService } from './EmailService';
 import { QuoteRequest, Quote, Shipment, Invoice, User } from './DataService';
+import { supabase } from '../lib/supabase';
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'quote' | 'shipment' | 'invoice' | 'sample' | 'message';
+  title: string;
+  message: string;
+  icon?: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 class NotificationService {
+  private supabase = supabase;
+
+  // Create in-app notification in database
+  async createNotification(notification: Omit<Notification, 'id' | 'created_at' | 'updated_at' | 'read'>): Promise<Notification | null> {
+    const newNotification: Notification = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      ...notification,
+      read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+
+    try {
+      const { data, error } = await this.supabase
+        .from('notifications')
+        .insert(newNotification)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to create notification in Supabase:', error);
+        // Return the notification anyway so the app can continue
+        return newNotification;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      // Return the notification anyway so the app can continue
+      return newNotification;
+    }
+  }
+
+  // Get all notifications for a user
+  async getUserNotifications(userId: string): Promise<Notification[]> {
+
+    try {
+      const { data, error } = await this.supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch notifications:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+  }
+
+  // Mark notification as read
+  async markAsRead(notificationId: string): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+
+      if (error) {
+        console.error('Failed to mark notification as read:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
+  }
+
+  // Mark all notifications as read for a user
+  async markAllAsRead(userId: string): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', userId)
+        .eq('read', false);
+
+      if (error) {
+        console.error('Failed to mark all notifications as read:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return false;
+    }
+  }
+
+  // Clear all notifications for a user
+  async clearAll(userId: string): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Failed to clear notifications:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      return false;
+    }
+  }
   // Send welcome email to new users
   async notifyWelcome(user: User) {
     if (!user.email) return;
@@ -204,23 +334,39 @@ class NotificationService {
 
   // Send notification when sample is received at warehouse
   async notifySampleReceived(sample: any, customer: User) {
-    if (!customer.email) return;
+    // Send email notification
+    if (customer.email) {
+      try {
+        await emailService.sendNotification(
+          customer.email,
+          'sample-received',
+          {
+            sampleId: sample.id,
+            customerName: customer.name || 'Valued Customer',
+            productName: sample.product_name || 'Sample',
+            consolidationId: sample.consolidation_id || '',
+            receivedDate: new Date(sample.received_date).toLocaleDateString()
+          }
+        );
+        console.log(`Sample received email sent to ${customer.email}`);
+      } catch (error) {
+        console.error('Failed to send sample received email:', error);
+      }
+    }
 
+    // Create in-app notification in database
     try {
-      await emailService.sendNotification(
-        customer.email,
-        'sample-received',
-        {
-          sampleId: sample.id,
-          customerName: customer.name || 'Valued Customer',
-          productName: sample.product_name || 'Sample',
-          consolidationId: sample.consolidation_id || '',
-          receivedDate: new Date(sample.received_date).toLocaleDateString()
-        }
-      );
-      console.log(`Sample received notification sent to ${customer.email}`);
+      await this.createNotification({
+        user_id: customer.id,
+        type: 'sample',
+        title: 'Sample Received',
+        message: `Your sample ${sample.product_name} (${sample.id}) has been received at our warehouse.`,
+        icon: 'Package',
+        link: '/samples'
+      });
+      console.log(`Sample received notification created for user ${customer.id}`);
     } catch (error) {
-      console.error('Failed to send sample received notification:', error);
+      console.error('Failed to create sample received notification:', error);
     }
   }
 
@@ -269,3 +415,4 @@ class NotificationService {
 }
 
 export const notificationService = new NotificationService();
+export default notificationService;

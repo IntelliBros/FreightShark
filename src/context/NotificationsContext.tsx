@@ -2,10 +2,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
 import { FileText, AlertCircle, MessageSquare, Package } from 'lucide-react';
+import notificationService from '../services/NotificationService';
 
 export interface Notification {
   id: string;
-  type: 'quote' | 'invoice' | 'alert' | 'message' | 'shipment';
+  type: 'quote' | 'invoice' | 'alert' | 'message' | 'shipment' | 'sample';
   icon: any;
   title: string;
   message: string;
@@ -90,12 +91,21 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
   }, [user]);
 
   // Mark notification as read
-  const markAsRead = useCallback((id: string) => {
+  const markAsRead = useCallback(async (id: string) => {
+    // Update in database
+    if (user?.id) {
+      const success = await notificationService.markAsRead(id);
+      if (!success) {
+        console.error('Failed to mark notification as read in database');
+      }
+    }
+
+    // Update local state
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
 
-    // Update localStorage
+    // Update cache
     if (user?.id) {
       const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
       localStorage.setItem(`notifications_${user.id}`, JSON.stringify(updated));
@@ -103,10 +113,19 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
   }, [notifications, user]);
 
   // Mark all as read
-  const markAllAsRead = useCallback(() => {
+  const markAllAsRead = useCallback(async () => {
+    // Update in database
+    if (user?.id) {
+      const success = await notificationService.markAllAsRead(user.id);
+      if (!success) {
+        console.error('Failed to mark all notifications as read in database');
+      }
+    }
+
+    // Update local state
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 
-    // Update localStorage
+    // Update cache
     if (user?.id) {
       const updated = notifications.map(n => ({ ...n, read: true }));
       localStorage.setItem(`notifications_${user.id}`, JSON.stringify(updated));
@@ -114,8 +133,19 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
   }, [notifications, user]);
 
   // Clear all notifications
-  const clearNotifications = useCallback(() => {
+  const clearNotifications = useCallback(async () => {
+    // Clear from database
+    if (user?.id) {
+      const success = await notificationService.clearAll(user.id);
+      if (!success) {
+        console.error('Failed to clear notifications from database');
+      }
+    }
+
+    // Clear local state
     setNotifications([]);
+
+    // Clear cache
     if (user?.id) {
       localStorage.removeItem(`notifications_${user.id}`);
     }
@@ -124,15 +154,10 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
   // Load notifications from localStorage on mount
   useEffect(() => {
     if (user?.id) {
-      const storedNotifications = localStorage.getItem(`notifications_${user.id}`);
-      if (storedNotifications) {
-        setNotifications(JSON.parse(storedNotifications));
-      } else {
-        // Generate some initial notifications based on existing data
-        generateInitialNotifications();
-      }
+      // Load notifications from database on user change
+      refreshNotifications();
     }
-  }, [user]);
+  }, [user, refreshNotifications]);
 
   // Generate initial notifications from existing data
   const generateInitialNotifications = () => {
@@ -179,14 +204,40 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
     setNotifications(initialNotifications);
   };
 
-  // Refresh notifications (called when new data arrives)
-  const refreshNotifications = useCallback(() => {
-    // This can be called by other components when they create new data
-    // For now, we'll just re-generate from existing data
-    if (user?.id) {
-      const storedNotifications = localStorage.getItem(`notifications_${user.id}`);
-      if (storedNotifications) {
-        setNotifications(JSON.parse(storedNotifications));
+  // Refresh notifications from database
+  const refreshNotifications = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      // Fetch notifications from database
+      const dbNotifications = await notificationService.getUserNotifications(user.id);
+
+      // Convert database notifications to UI format
+      const formattedNotifications = dbNotifications.map(notif => ({
+        id: notif.id,
+        type: notif.type as Notification['type'],
+        icon: notif.icon === 'Package' ? Package :
+              notif.icon === 'FileText' ? FileText :
+              notif.icon === 'MessageSquare' ? MessageSquare : AlertCircle,
+        title: notif.title,
+        message: notif.message,
+        timestamp: notif.created_at,
+        date: formatDate(new Date(notif.created_at)),
+        read: notif.read,
+        link: notif.link || '#'
+      }));
+
+      setNotifications(formattedNotifications);
+
+      // Cache in localStorage for faster initial load
+      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
+    } catch (error) {
+      console.error('Failed to refresh notifications:', error);
+
+      // Fallback to localStorage cache
+      const cachedNotifications = localStorage.getItem(`notifications_${user.id}`);
+      if (cachedNotifications) {
+        setNotifications(JSON.parse(cachedNotifications));
       }
     }
   }, [user]);
