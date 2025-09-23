@@ -1318,17 +1318,17 @@ export const ShipmentTracking = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shipment.documents.map((doc: any) => <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-[#2E3B55]/30 transition">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center">
-                    <FileTextIcon className="h-7 w-7 text-[#2E3B55] mr-3" />
-                    <div>
-                      <h3 className="font-medium text-gray-900">{doc.name}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center min-w-0 flex-1">
+                    <FileTextIcon className="h-7 w-7 text-[#2E3B55] mr-3 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-medium text-gray-900 truncate" title={doc.name}>{doc.name}</h3>
                       <p className="text-xs text-gray-500 mt-1">
                         {doc.type === 'invoice' ? 'Commercial Invoice' : doc.type === 'packing-list' ? 'Packing List' : doc.type === 'awb' ? 'Air Waybill' : 'Customs Documentation'}
                       </p>
                     </div>
                   </div>
-                  <button type="button" className="text-[#2E3B55] hover:text-[#1e2940]" title="Download">
+                  <button type="button" className="text-[#2E3B55] hover:text-[#1e2940] flex-shrink-0" title="Download">
                     <DownloadIcon className="h-4 w-4" />
                   </button>
                 </div>
