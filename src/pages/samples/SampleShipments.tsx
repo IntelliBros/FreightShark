@@ -178,7 +178,7 @@ export const SampleShipments = () => {
                   </div>
                 )}
 
-                {request.payment_link && (
+                {request.payment_link && request.status === 'payment_pending' && (
                   <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm font-medium text-blue-900 mb-2">Payment Required</p>
                     <a
