@@ -58,7 +58,7 @@ export const StaffAnnouncements = () => {
           title: formData.title,
           content: formData.content,
           type: formData.type,
-          created_by: user?.id || 'staff-1',
+          created_by: user?.id || '2',  // Default to staff user ID 2
           is_active: formData.isActive
         });
         addToast('Announcement created successfully', 'success');

@@ -23,16 +23,33 @@ const verifyPassword = async (password: string, hashedPassword: string): Promise
   return await bcrypt.compare(password, hashedPassword);
 };
 
+// Helper function to get next user ID
+const getNextUserId = (): string => {
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+
+  // Find the highest numerical ID
+  let maxId = -1;
+  users.forEach((user: User) => {
+    const numId = parseInt(user.id, 10);
+    if (!isNaN(numId) && numId > maxId) {
+      maxId = numId;
+    }
+  });
+
+  // Return next ID (starting from 0 if no users exist)
+  return String(maxId + 1);
+};
+
 // Initialize demo users in localStorage if not present
 const initializeDemoUsers = async () => {
   const users = localStorage.getItem('users');
   if (!users || users === '[]') {
     const defaultPassword = 'Password123!';
     const passwordHash = await hashPassword(defaultPassword);
-    
+
     const demoUsers = [
       {
-        id: 'admin-1',
+        id: '0',  // Admin user gets ID 0
         name: 'John Admin',
         email: 'admin@freightshark.com',
         passwordHash,
@@ -40,7 +57,7 @@ const initializeDemoUsers = async () => {
         role: 'admin' as const
       },
       {
-        id: 'user-1',
+        id: '1',  // First regular user gets ID 1
         name: 'Demo Customer',
         email: 'customer@example.com',
         passwordHash,
@@ -50,7 +67,7 @@ const initializeDemoUsers = async () => {
         einTaxId: '12-3456789'
       },
       {
-        id: 'staff-1',
+        id: '2',  // Staff user gets ID 2
         name: 'Sarah Chen',
         email: 'staff@freightshark.com',
         passwordHash,
@@ -208,8 +225,10 @@ export const authService = {
         throw new Error('User already exists');
       }
 
-      // Check if user exists in Supabase database and use their ID if they do
-      let userId = `user-${Date.now()}`;
+      // Generate new numerical user ID
+      let userId = getNextUserId();
+
+      // Check if user exists in Supabase database and use their ID if it's numerical
       try {
         const { supabase } = await import('../lib/supabase');
         const { data: dbUser } = await supabase
@@ -219,8 +238,14 @@ export const authService = {
           .single();
 
         if (dbUser) {
-          userId = dbUser.id;
-          console.log('Found existing user in database with ID:', userId);
+          // Check if the database ID is numerical
+          const numId = parseInt(dbUser.id, 10);
+          if (!isNaN(numId)) {
+            userId = dbUser.id;
+            console.log('Found existing user in database with numerical ID:', userId);
+          } else {
+            console.log('Database user has non-numerical ID, generating new numerical ID:', userId);
+          }
         }
       } catch (supabaseError) {
         console.log('Could not check database for existing user:', supabaseError);

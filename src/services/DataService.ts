@@ -406,7 +406,7 @@ export const DataService = {
     const transformedQuote = {
       request_id: quote.requestId,
       customer_id: quote.customerId,
-      staff_id: currentUser.id || 'staff-1',
+      staff_id: currentUser.id || '2',  // Default to staff user ID 2
       status: quote.status || 'Pending',
       rate_type: quote.rateType || 'per-kg',
       freight_cost: quote.subtotal || 0,

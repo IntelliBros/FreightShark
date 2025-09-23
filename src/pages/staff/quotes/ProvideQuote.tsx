@@ -264,7 +264,7 @@ export const ProvideQuote = () => {
       const quote = {
         requestId,
         customerId: quoteRequest.customerId,
-        staffId: 'staff-1',
+        staffId: user?.id || '2',  // Use current user ID or default to staff user ID 2
         status: 'Pending' as 'Pending' | 'Accepted' | 'Rejected' | 'Expired' | 'Shipped',
         rateType: quoteForm.rateType,
         warehouseRates: quoteForm.warehouseRates,
