@@ -33,11 +33,8 @@ interface IncomingSample {
   id: string;
   requestId: string;
   productName: string;
-  supplier: string;
   receivedDate: string;
-  weight: number;
-  dimensions: string;
-  volumetricWeight: number;
+  receivedBy: string;
   photos: string[];
   barcode: string;
   status: 'received' | 'consolidated' | 'shipped';
@@ -115,10 +112,8 @@ export const SampleConsolidation = () => {
           id: sample.id,
           requestId: request.id,
           productName: request.product_name,
-          supplier: 'Supplier', // This would come from additional data
-          arrivalDate: sample.received_at,
-          weight: 0, // Would need to be added to database
-          volumetricWeight: 0, // Would need to be added to database
+          receivedDate: sample.received_at,
+          receivedBy: sample.received_by,
           photos: sample.photo ? [sample.photo] : [], // Include photo if available
           barcode: sample.barcode,
           status: sample.status as 'received' | 'consolidated' | 'shipped'
@@ -130,6 +125,29 @@ export const SampleConsolidation = () => {
     console.log('📦 All incoming samples:', allIncomingSamples);
     setIncomingSamples(allIncomingSamples);
   };
+
+  // Group samples by consolidation request
+  const groupedSamples = React.useMemo(() => {
+    const groups: { [requestId: string]: { request: SampleRequest; samples: IncomingSample[] } } = {};
+
+    // First, create groups from consolidation history
+    consolidationHistory.forEach(request => {
+      groups[request.id] = {
+        request,
+        samples: []
+      };
+    });
+
+    // Then add samples to their respective groups
+    incomingSamples.forEach(sample => {
+      if (groups[sample.requestId]) {
+        groups[sample.requestId].samples.push(sample);
+      }
+    });
+
+    // Only return groups that have samples
+    return Object.values(groups).filter(group => group.samples.length > 0);
+  }, [incomingSamples, consolidationHistory]);
 
   const handleCreateRequest = async () => {
     console.log('===== STARTING SAMPLE CONSOLIDATION CREATION =====');
@@ -605,7 +623,7 @@ Sample ID: ${currentRequest?.id || 'N/A'}
               )}
             </div>
 
-            {incomingSamples.length === 0 ? (
+            {groupedSamples.length === 0 ? (
               <div className="text-center py-12">
                 <PackageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">
@@ -616,97 +634,116 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {incomingSamples.map((sample) => (
-                  <div
-                    key={sample.id}
-                    className={`border rounded-lg p-4 ${
-                      selectedSamples.includes(sample.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start">
-                        <input
-                          type="checkbox"
-                          className="h-5 w-5 text-blue-600 rounded border-gray-300 mt-1"
-                          checked={selectedSamples.includes(sample.id)}
-                          onChange={() => handleToggleSampleSelection(sample.id)}
-                        />
-                        <div className="ml-4">
+              <div className="space-y-6">
+                {groupedSamples.map((group) => (
+                  <div key={group.request.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Group Header */}
+                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
                           <h3 className="font-medium text-gray-900">
-                            {sample.productName}
+                            {group.request.productName}
                           </h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            From: {sample.supplier}
+                          <p className="text-sm text-gray-500">
+                            Consolidation Request ID: {group.request.id}
                           </p>
-                          <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-500">Weight:</span>{' '}
-                              <span className="font-medium">{sample.weight} kg</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Dimensions:</span>{' '}
-                              <span className="font-medium">{sample.dimensions}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Volumetric:</span>{' '}
-                              <span className="font-medium">
-                                {sample.volumetricWeight} kg
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Received:</span>{' '}
-                              <span className="font-medium">{sample.receivedDate}</span>
-                            </div>
-                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-blue-600">
+                            {group.samples.length}/{group.request.expectedSamples} samples received
+                          </span>
+                          <Badge
+                            variant={
+                              group.request.status === 'complete'
+                                ? 'success'
+                                : group.request.status === 'receiving'
+                                ? 'info'
+                                : 'default'
+                            }
+                          >
+                            {group.request.status}
+                          </Badge>
                         </div>
                       </div>
-                      <Badge
-                        variant={
-                          sample.status === 'shipped'
-                            ? 'success'
-                            : sample.status === 'consolidated'
-                            ? 'info'
-                            : 'default'
-                        }
-                      >
-                        {sample.status}
-                      </Badge>
                     </div>
-                    {sample.photos.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-xs text-gray-500 mb-2">Sample Photos:</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {sample.photos.map((photo, idx) => (
-                            <div key={idx} className="relative group">
-                              <img
-                                src={photo}
-                                alt={`Sample ${idx + 1}`}
-                                className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
-                                onClick={() => {
-                                  // Create modal to view larger image
-                                  const modal = document.createElement('div');
-                                  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-                                  modal.onclick = () => modal.remove();
 
-                                  const img = document.createElement('img');
-                                  img.src = photo;
-                                  img.className = 'max-w-4xl max-h-4xl rounded-lg';
+                    {/* Samples List */}
+                    <div className="divide-y divide-gray-100">
+                      {group.samples.map((sample) => (
+                        <div
+                          key={sample.id}
+                          className={`p-4 ${
+                            selectedSamples.includes(sample.id)
+                              ? 'bg-blue-50'
+                              : 'bg-white hover:bg-gray-50'
+                          } transition-colors`}
+                        >
+                          <div className="flex items-center gap-4">
+                            {/* Checkbox */}
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                              checked={selectedSamples.includes(sample.id)}
+                              onChange={() => handleToggleSampleSelection(sample.id)}
+                            />
 
-                                  modal.appendChild(img);
-                                  document.body.appendChild(modal);
-                                }}
-                              />
-                              <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                {idx + 1}
+                            {/* Sample Info - Left Side */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-medium text-gray-900">
+                                  Sample ID: {sample.barcode}
+                                </span>
+                                <Badge
+                                  variant={
+                                    sample.status === 'shipped'
+                                      ? 'success'
+                                      : sample.status === 'consolidated'
+                                      ? 'info'
+                                      : 'default'
+                                  }
+                                >
+                                  {sample.status}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                <span className="font-medium">Received:</span>{' '}
+                                {new Date(sample.receivedDate).toLocaleDateString()} at{' '}
+                                {new Date(sample.receivedDate).toLocaleTimeString()} by {sample.receivedBy}
                               </div>
                             </div>
-                          ))}
+
+                            {/* Sample Photo - Right Side */}
+                            {sample.photos.length > 0 && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={sample.photos[0]}
+                                  alt="Sample photo"
+                                  className="w-16 h-16 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => {
+                                    // Create modal to view larger image
+                                    const modal = document.createElement('div');
+                                    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+                                    modal.onclick = () => modal.remove();
+
+                                    const img = document.createElement('img');
+                                    img.src = sample.photos[0];
+                                    img.className = 'max-w-full max-h-full rounded-lg';
+
+                                    modal.appendChild(img);
+                                    document.body.appendChild(modal);
+                                  }}
+                                />
+                                {sample.photos.length > 1 && (
+                                  <div className="text-xs text-gray-500 text-center mt-1">
+                                    +{sample.photos.length - 1} more
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
