@@ -1336,6 +1336,38 @@ export const supabaseService = {
     }) {
       console.log('Creating carton configuration in database:', config);
 
+      // First, ensure the user exists in the database
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', config.user_id)
+        .single();
+
+      if (!existingUser) {
+        // Try to get user from localStorage and create them
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser && currentUser.id === config.user_id) {
+          const { error: userError } = await supabase
+            .from('users')
+            .insert({
+              id: currentUser.id,
+              display_id: currentUser.display_id || currentUser.id,
+              name: currentUser.name || 'Unknown User',
+              email: currentUser.email || 'unknown@example.com',
+              password_hash: 'mock_hash',
+              company: currentUser.company || '',
+              role: currentUser.role || 'user',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (userError && userError.code !== '23505') { // Ignore duplicate key errors
+            console.error('Failed to create user for carton config:', userError);
+            throw new Error('User must exist before creating carton configurations');
+          }
+        }
+      }
+
       const newConfig = {
         id: `carton-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...config,
