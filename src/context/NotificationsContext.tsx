@@ -236,7 +236,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
               id: `msg-${msg.id}`,
               type: 'message' as Notification['type'],
               icon: MessageSquare,
-              title: `${isRead ? '' : '🔵 '}Message - Shipment ${msg.shipment_id}`,
+              title: `Message - Shipment ${msg.shipment_id}`,
               message: `${msg.sender_name}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
               timestamp: msg.created_at,
               date: formatDate(new Date(msg.created_at)),
