@@ -861,15 +861,25 @@ export const ShipmentDetails = () => {
         setIsEditingCargo(false);
 
         // Create notification for customer about invoice
-        if (shipment.customerId) {
-          await notificationService.createNotification({
-            user_id: shipment.customerId,
-            type: 'invoice',
-            title: `Invoice Generated - Shipment ${shipment.id}`,
-            message: `Your invoice for shipment ${shipment.id} has been generated. Total amount: $${invoiceData.total.toFixed(2)}. Payment is due by ${new Date(invoiceData.dueDate).toLocaleDateString()}.`,
-            icon: 'FileText',
-            link: `/shipments/${shipment.id}`
-          });
+        const customerId = shipment.customer?.id || shipment.customerId || shipment.customer_id;
+        console.log('Creating invoice notification for customer:', customerId);
+
+        if (customerId) {
+          try {
+            await notificationService.createNotification({
+              user_id: customerId,
+              type: 'invoice',
+              title: `Invoice Generated - Shipment ${shipment.id}`,
+              message: `Your invoice for shipment ${shipment.id} has been generated. Total amount: $${invoiceData.total.toFixed(2)}. Payment is due by ${new Date(invoiceData.dueDate).toLocaleDateString()}.`,
+              icon: 'FileText',
+              link: `/shipments/${shipment.id}`
+            });
+            console.log('Invoice notification created successfully');
+          } catch (notifError) {
+            console.error('Failed to create invoice notification:', notifError);
+          }
+        } else {
+          console.warn('No customer ID found for invoice notification');
         }
 
         addToast('Invoice generated successfully! The customer has been notified.', 'success');
