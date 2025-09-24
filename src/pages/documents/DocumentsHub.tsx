@@ -308,6 +308,9 @@ export const DocumentsHub = () => {
               />
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Document
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -318,12 +321,6 @@ export const DocumentsHub = () => {
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Uploaded
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Size
-            </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
             </th>
           </tr>
         </thead>
@@ -337,6 +334,19 @@ export const DocumentsHub = () => {
                   checked={selectedDocuments.includes(document.id)}
                   onChange={() => handleToggleSelection(document.id)}
                 />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 mr-3"
+                  title="Download"
+                  onClick={() => handleDownloadDocument(document)}
+                >
+                  <DownloadIcon className="h-4 w-4" />
+                </button>
+                <button type="button" className="text-gray-400 hover:text-gray-600" title="More options">
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </button>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
@@ -363,22 +373,6 @@ export const DocumentsHub = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {document.uploadedAt}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {document.size}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-800 mr-3"
-                  title="Download"
-                  onClick={() => handleDownloadDocument(document)}
-                >
-                  <DownloadIcon className="h-4 w-4" />
-                </button>
-                <button type="button" className="text-gray-400 hover:text-gray-600" title="More options">
-                  <MoreHorizontalIcon className="h-4 w-4" />
-                </button>
               </td>
             </tr>
           ))}
