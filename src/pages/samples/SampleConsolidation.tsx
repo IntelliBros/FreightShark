@@ -628,6 +628,20 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                     </Button>
                   </div>
 
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h3 className="font-medium text-gray-900 mb-3">Sample Delivery Address</h3>
+                    <div className="bg-white p-3 rounded border border-gray-200 mb-3">
+                      <p className="text-sm text-gray-600">{sampleDeliveryAddress}</p>
+                      <p className="text-sm font-medium text-blue-600 mt-2">
+                        Sample ID: {currentRequest.id}
+                      </p>
+                    </div>
+                    <Button variant="secondary" size="sm" onClick={handleCopyAddress}>
+                      <CopyIcon className="h-4 w-4 mr-1" />
+                      Copy Address
+                    </Button>
+                  </div>
+
                   <div className="border border-gray-200 rounded-lg p-4">
                     <h3 className="font-medium text-gray-900 mb-3">Request Details</h3>
                     <dl className="space-y-2">
@@ -652,20 +666,6 @@ Sample ID: ${currentRequest?.id || 'N/A'}
                         </dd>
                       </div>
                     </dl>
-                  </div>
-
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h3 className="font-medium text-gray-900 mb-3">Sample Delivery Address</h3>
-                    <div className="bg-white p-3 rounded border border-gray-200 mb-3">
-                      <p className="text-sm text-gray-600">{sampleDeliveryAddress}</p>
-                      <p className="text-sm font-medium text-blue-600 mt-2">
-                        Sample ID: {currentRequest.id}
-                      </p>
-                    </div>
-                    <Button variant="secondary" size="sm" onClick={handleCopyAddress}>
-                      <CopyIcon className="h-4 w-4 mr-1" />
-                      Copy Address
-                    </Button>
                   </div>
                 </div>
               ) : null}
