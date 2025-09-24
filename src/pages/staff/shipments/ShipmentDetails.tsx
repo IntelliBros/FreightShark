@@ -11,6 +11,7 @@ import { ChatPanel } from '../../../components/chat/ChatPanel';
 import { useAuth } from '../../../context/AuthContext';
 import { amazonWarehouseService } from '../../../services/amazonWarehouseService';
 import { generateInvoicePDF } from '../../../utils/generateInvoicePDF';
+import { notificationService } from '../../../services/NotificationService';
 
 // Helper function to get warehouse addresses
 const getWarehouseAddress = (warehouseCode: string): string => {
@@ -858,8 +859,21 @@ export const ShipmentDetails = () => {
         };
         setShipment(updatedShipmentWithCustomer);
         setIsEditingCargo(false);
+
+        // Create notification for customer about invoice
+        if (shipment.customerId) {
+          await notificationService.createNotification({
+            user_id: shipment.customerId,
+            type: 'invoice',
+            title: `Invoice Generated - Shipment ${shipment.id}`,
+            message: `Your invoice for shipment ${shipment.id} has been generated. Total amount: $${invoiceData.total.toFixed(2)}. Payment is due by ${new Date(invoiceData.dueDate).toLocaleDateString()}.`,
+            icon: 'FileText',
+            link: `/shipments/${shipment.id}`
+          });
+        }
+
         addToast('Invoice generated successfully! The customer has been notified.', 'success');
-        
+
         // Don't refresh data context - it causes re-fetch without customer join
         // refreshData();
       } else {
