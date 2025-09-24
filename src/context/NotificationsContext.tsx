@@ -205,41 +205,45 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         link: notif.link || '#'
       }));
 
-      // Also fetch unread messages directly from messages table
+      // Also fetch ALL messages directly from messages table (both read and unread)
       try {
         const { supabaseService } = await import('../services/supabaseService');
 
-        // For customers, get unread messages from staff
-        // For staff, get unread messages from customers
+        // For customers, get messages from staff
+        // For staff, get messages from customers
         const isCustomer = user.role === 'user';
         const readField = isCustomer ? 'read_by_customer' : 'read_by_staff';
         const senderRoleFilter = isCustomer ? ['staff', 'admin'] : ['customer'];
 
-        // Get recent unread messages NOT from the current user
-        const { data: unreadMessages } = await supabaseService.supabase
+        // Get ALL recent messages NOT from the current user
+        const { data: allMessages } = await supabaseService.supabase
           .from('messages')
           .select('*')
-          .eq(readField, false)
           .neq('sender_id', user.id)  // Don't show user's own messages
           .in('sender_role', senderRoleFilter)  // Only show messages from the other party
           .order('created_at', { ascending: false })
-          .limit(20);
+          .limit(50);  // Increased limit to show more message history
 
-        console.log('📬 Found unread messages:', unreadMessages?.length || 0);
+        console.log('📬 Found all messages:', allMessages?.length || 0);
 
-        if (unreadMessages && unreadMessages.length > 0) {
+        if (allMessages && allMessages.length > 0) {
           // Convert messages to notification format
-          const messageNotifications = unreadMessages.map(msg => ({
-            id: `msg-${msg.id}`,
-            type: 'message' as Notification['type'],
-            icon: MessageSquare,
-            title: `New Message - Shipment ${msg.shipment_id}`,
-            message: `${msg.sender_name}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
-            timestamp: msg.created_at,
-            date: formatDate(new Date(msg.created_at)),
-            read: false,
-            link: `/shipments/${msg.shipment_id}`
-          }));
+          const messageNotifications = allMessages.map(msg => {
+            // Determine if message is read based on user role
+            const isRead = isCustomer ? msg.read_by_customer : msg.read_by_staff;
+
+            return {
+              id: `msg-${msg.id}`,
+              type: 'message' as Notification['type'],
+              icon: MessageSquare,
+              title: `${isRead ? '' : '🔵 '}Message - Shipment ${msg.shipment_id}`,
+              message: `${msg.sender_name}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
+              timestamp: msg.created_at,
+              date: formatDate(new Date(msg.created_at)),
+              read: isRead,
+              link: `/shipments/${msg.shipment_id}`
+            };
+          });
 
           console.log('📬 Created message notifications:', messageNotifications.length);
 
@@ -257,8 +261,8 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
           // Cache in localStorage
           localStorage.setItem(`notifications_${user.id}`, JSON.stringify(allNotifications));
         } else {
-          // No unread messages, just use regular notifications
-          console.log('📬 No unread messages, using regular notifications only:', formattedNotifications.length);
+          // No messages, just use regular notifications
+          console.log('📬 No messages found, using regular notifications only:', formattedNotifications.length);
           setNotifications(formattedNotifications);
           localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
         }
