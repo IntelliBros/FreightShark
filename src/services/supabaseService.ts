@@ -502,6 +502,7 @@ export const supabaseService = {
         }
         
         console.log('Returning shipment data after:', Date.now() - startTime, 'ms');
+        console.log('Shipment documents field:', data?.documents);
         return data;
       } catch (error) {
         console.error('Supabase query failed after:', Date.now() - startTime, 'ms', error);
@@ -564,6 +565,7 @@ export const supabaseService = {
       // Handle documents separately - save to dedicated documents column
       if (updates.documents !== undefined) {
         dbUpdates.documents = updates.documents;
+        console.log('Setting documents in dbUpdates:', dbUpdates.documents);
       }
 
       // Handle destination updates carefully to preserve all data
@@ -639,6 +641,7 @@ export const supabaseService = {
       }
       
       console.log('Shipment updated successfully:', data);
+      console.log('Updated shipment documents:', data?.documents);
       return data;
     }
   },
