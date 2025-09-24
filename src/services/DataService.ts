@@ -326,7 +326,8 @@ export const DataService = {
     
     // Send email notification if SMTP is configured
     try {
-      const currentUser = await authService.getCurrentUser();
+      // Get current user from localStorage since authService.getCurrentUser might not be available
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
       if (currentUser?.email) {
         await emailService.sendNotification(
           currentUser.email,
