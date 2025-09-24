@@ -160,11 +160,25 @@ class EmailService {
         variables: ['quoteId', 'customerName', 'amount']
       },
       {
+        id: 'shipment-created',
+        name: 'Shipment Created',
+        subject: 'Your Shipment {shipmentId} has been created',
+        body: 'Dear {customerName},\n\nGreat news! Your shipment {shipmentId} has been created and is being processed.\n\nOur team will provide tracking information once your shipment is picked up.\n\nYou can view your shipment details in your dashboard.\n\nBest regards,\nFreight Shark Team',
+        variables: ['shipmentId', 'customerName']
+      },
+      {
         id: 'shipment-update',
         name: 'Shipment Status Update',
         subject: 'Shipment {shipmentId} Status Update',
         body: 'Dear {customerName},\n\nYour shipment {shipmentId} status has been updated to: {status}.\n\nTracking Details:\n{trackingInfo}\n\nBest regards,\nFreight Shark Team',
         variables: ['shipmentId', 'customerName', 'status', 'trackingInfo']
+      },
+      {
+        id: 'shipment-delivered',
+        name: 'Shipment Delivered',
+        subject: 'Your Shipment {shipmentId} has been delivered!',
+        body: 'Dear {customerName},\n\nExcellent news! Your shipment {shipmentId} has been successfully delivered.\n\nDelivery Details:\nDelivered to: {destination}\nDelivery Date: {deliveryDate}\nTracking Number: {trackingNumber}\n\nThank you for choosing Freight Shark for your shipping needs.\n\nBest regards,\nFreight Shark Team',
+        variables: ['shipmentId', 'customerName', 'destination', 'deliveryDate', 'trackingNumber']
       },
       {
         id: 'invoice-generated',
