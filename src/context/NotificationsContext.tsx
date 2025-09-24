@@ -213,19 +213,21 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         // For staff, get unread messages from customers
         const isCustomer = user.role === 'user';
         const readField = isCustomer ? 'read_by_customer' : 'read_by_staff';
+        const senderRoleFilter = isCustomer ? ['staff', 'admin'] : ['customer'];
 
-        // Get recent unread messages
+        // Get recent unread messages NOT from the current user
         const { data: unreadMessages } = await supabaseService.supabase
           .from('messages')
           .select('*')
           .eq(readField, false)
+          .neq('sender_id', user.id)  // Don't show user's own messages
+          .in('sender_role', senderRoleFilter)  // Only show messages from the other party
           .order('created_at', { ascending: false })
           .limit(20);
 
-        if (unreadMessages && unreadMessages.length > 0) {
-          // Get shipment IDs to fetch shipment info
-          const shipmentIds = [...new Set(unreadMessages.map(msg => msg.shipment_id))];
+        console.log('📬 Found unread messages:', unreadMessages?.length || 0);
 
+        if (unreadMessages && unreadMessages.length > 0) {
           // Convert messages to notification format
           const messageNotifications = unreadMessages.map(msg => ({
             id: `msg-${msg.id}`,
@@ -239,6 +241,8 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
             link: `/shipments/${msg.shipment_id}`
           }));
 
+          console.log('📬 Created message notifications:', messageNotifications.length);
+
           // Combine regular notifications with message notifications
           const allNotifications = [...formattedNotifications, ...messageNotifications];
 
@@ -247,12 +251,14 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           );
 
+          console.log('📬 Total notifications (regular + messages):', allNotifications.length);
           setNotifications(allNotifications);
 
           // Cache in localStorage
           localStorage.setItem(`notifications_${user.id}`, JSON.stringify(allNotifications));
         } else {
           // No unread messages, just use regular notifications
+          console.log('📬 No unread messages, using regular notifications only:', formattedNotifications.length);
           setNotifications(formattedNotifications);
           localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
         }
