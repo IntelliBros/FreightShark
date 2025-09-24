@@ -260,11 +260,14 @@ export const ProvideQuote = () => {
       console.log('Quote request customerId:', quoteRequest.customerId);
       console.log('Locking in commission rate:', commissionRate);
       
+      // Get current user from localStorage
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
       // Create the quote
       const quote = {
         requestId,
         customerId: quoteRequest.customerId,
-        staffId: user?.id || '2',  // Use current user ID or default to staff user ID 2
+        staffId: currentUser?.id || 'staff-demo-user',  // Use current user ID or default to staff demo user
         status: 'Pending' as 'Pending' | 'Accepted' | 'Rejected' | 'Expired' | 'Shipped',
         rateType: quoteForm.rateType,
         warehouseRates: quoteForm.warehouseRates,
