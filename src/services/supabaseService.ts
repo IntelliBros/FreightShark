@@ -918,51 +918,8 @@ export const supabaseService = {
 
       console.log('Message created successfully:', data);
 
-      // Create notification for the recipient
-      if (data) {
-        try {
-          // Import notificationService dynamically to avoid circular dependencies
-          const { notificationService } = await import('./NotificationService');
-
-          // Get shipment details to find the customer
-          const { data: shipment } = await supabase
-            .from('shipments')
-            .select('customer_id')
-            .eq('id', message.shipment_id)
-            .single();
-
-          if (shipment) {
-            // Determine recipient based on sender role
-            let recipientId: string | null = null;
-            let notificationTitle = `New Message - Shipment ${message.shipment_id}`;
-            let notificationMessage = `${message.sender_name}: ${message.content.substring(0, 100)}${message.content.length > 100 ? '...' : ''}`;
-
-            if (message.sender_role === 'customer') {
-              // Customer sent message, notify staff
-              // For staff notifications, we'd need to know which staff member to notify
-              // This could be handled differently based on business logic
-            } else if (message.sender_role === 'staff' || message.sender_role === 'admin') {
-              // Staff/admin sent message, notify customer
-              recipientId = shipment.customer_id;
-            }
-
-            if (recipientId) {
-              await notificationService.createNotification({
-                user_id: recipientId,
-                type: 'message',
-                title: notificationTitle,
-                message: notificationMessage,
-                icon: 'MessageSquare',
-                link: `/shipments/${message.shipment_id}`
-              });
-              console.log('Notification created for new message');
-            }
-          }
-        } catch (notifError) {
-          console.error('Error creating notification for message:', notifError);
-          // Don't throw error for notification failure - message was still created successfully
-        }
-      }
+      // No longer creating duplicate notifications here
+      // Messages are now fetched directly from messages table in NotificationsContext
 
       return data;
     },

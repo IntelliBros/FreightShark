@@ -92,8 +92,23 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
   // Mark notification as read
   const markAsRead = useCallback(async (id: string) => {
-    // Update in database
-    if (user?.id) {
+    // Check if this is a message notification
+    if (id.startsWith('msg-')) {
+      // Extract the message ID
+      const messageId = id.replace('msg-', '');
+
+      try {
+        // Import supabaseService to mark message as read
+        const { supabaseService } = await import('../services/supabaseService');
+
+        // Mark message as read based on user role
+        const role = user?.role === 'user' ? 'customer' : 'staff';
+        await supabaseService.messages.markAsRead([messageId], role);
+      } catch (error) {
+        console.error('Failed to mark message as read:', error);
+      }
+    } else if (user?.id) {
+      // Regular notification - update in database
       const success = await notificationService.markAsRead(id);
       if (!success) {
         console.error('Failed to mark notification as read in database');
@@ -190,10 +205,63 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         link: notif.link || '#'
       }));
 
-      setNotifications(formattedNotifications);
+      // Also fetch unread messages directly from messages table
+      try {
+        const { supabaseService } = await import('../services/supabaseService');
 
-      // Cache in localStorage for faster initial load
-      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
+        // For customers, get unread messages from staff
+        // For staff, get unread messages from customers
+        const isCustomer = user.role === 'user';
+        const readField = isCustomer ? 'read_by_customer' : 'read_by_staff';
+
+        // Get recent unread messages
+        const { data: unreadMessages } = await supabaseService.supabase
+          .from('messages')
+          .select('*')
+          .eq(readField, false)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (unreadMessages && unreadMessages.length > 0) {
+          // Get shipment IDs to fetch shipment info
+          const shipmentIds = [...new Set(unreadMessages.map(msg => msg.shipment_id))];
+
+          // Convert messages to notification format
+          const messageNotifications = unreadMessages.map(msg => ({
+            id: `msg-${msg.id}`,
+            type: 'message' as Notification['type'],
+            icon: MessageSquare,
+            title: `New Message - Shipment ${msg.shipment_id}`,
+            message: `${msg.sender_name}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
+            timestamp: msg.created_at,
+            date: formatDate(new Date(msg.created_at)),
+            read: false,
+            link: `/shipments/${msg.shipment_id}`
+          }));
+
+          // Combine regular notifications with message notifications
+          const allNotifications = [...formattedNotifications, ...messageNotifications];
+
+          // Sort by timestamp (most recent first)
+          allNotifications.sort((a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+
+          setNotifications(allNotifications);
+
+          // Cache in localStorage
+          localStorage.setItem(`notifications_${user.id}`, JSON.stringify(allNotifications));
+        } else {
+          // No unread messages, just use regular notifications
+          setNotifications(formattedNotifications);
+          localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
+        }
+      } catch (msgError) {
+        console.error('Error fetching messages for notifications:', msgError);
+        // If fetching messages fails, just use regular notifications
+        setNotifications(formattedNotifications);
+        localStorage.setItem(`notifications_${user.id}`, JSON.stringify(formattedNotifications));
+      }
     } catch (error) {
       console.error('Failed to refresh notifications:', error);
 
