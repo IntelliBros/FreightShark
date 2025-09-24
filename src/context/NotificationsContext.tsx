@@ -191,19 +191,31 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
       const dbNotifications = await notificationService.getUserNotifications(user.id);
 
       // Convert database notifications to UI format
-      const formattedNotifications = dbNotifications.map(notif => ({
-        id: notif.id,
-        type: notif.type as Notification['type'],
-        icon: notif.icon === 'Package' ? Package :
-              notif.icon === 'FileText' ? FileText :
-              notif.icon === 'MessageSquare' ? MessageSquare : AlertCircle,
-        title: notif.title,
-        message: notif.message,
-        timestamp: notif.created_at,
-        date: formatDate(new Date(notif.created_at)),
-        read: notif.read,
-        link: notif.link || '#'
-      }));
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const formattedNotifications = dbNotifications
+        .filter(notif => {
+          // Keep all unread notifications
+          if (!notif.read) return true;
+
+          // For read notifications, only keep those from the last 7 days
+          const notifDate = new Date(notif.created_at);
+          return notifDate > sevenDaysAgo;
+        })
+        .map(notif => ({
+          id: notif.id,
+          type: notif.type as Notification['type'],
+          icon: notif.icon === 'Package' ? Package :
+                notif.icon === 'FileText' ? FileText :
+                notif.icon === 'MessageSquare' ? MessageSquare : AlertCircle,
+          title: notif.title,
+          message: notif.message,
+          timestamp: notif.created_at,
+          date: formatDate(new Date(notif.created_at)),
+          read: notif.read,
+          link: notif.link || '#'
+        }));
 
       // Also fetch ALL messages directly from messages table (both read and unread)
       try {
@@ -228,22 +240,34 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
         if (allMessages && allMessages.length > 0) {
           // Convert messages to notification format
-          const messageNotifications = allMessages.map(msg => {
-            // Determine if message is read based on user role
-            const isRead = isCustomer ? msg.read_by_customer : msg.read_by_staff;
+          const messageNotifications = allMessages
+            .filter(msg => {
+              // Determine if message is read based on user role
+              const isRead = isCustomer ? msg.read_by_customer : msg.read_by_staff;
 
-            return {
-              id: `msg-${msg.id}`,
-              type: 'message' as Notification['type'],
-              icon: MessageSquare,
-              title: `Message - Shipment ${msg.shipment_id}`,
-              message: `${msg.sender_name}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
-              timestamp: msg.created_at,
-              date: formatDate(new Date(msg.created_at)),
-              read: isRead,
-              link: `/shipments/${msg.shipment_id}`
-            };
-          });
+              // Keep all unread messages
+              if (!isRead) return true;
+
+              // For read messages, only keep those from the last 7 days
+              const msgDate = new Date(msg.created_at);
+              return msgDate > sevenDaysAgo;
+            })
+            .map(msg => {
+              // Determine if message is read based on user role
+              const isRead = isCustomer ? msg.read_by_customer : msg.read_by_staff;
+
+              return {
+                id: `msg-${msg.id}`,
+                type: 'message' as Notification['type'],
+                icon: MessageSquare,
+                title: `Message - Shipment ${msg.shipment_id}`,
+                message: `${msg.sender_name}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
+                timestamp: msg.created_at,
+                date: formatDate(new Date(msg.created_at)),
+                read: isRead,
+                link: `/shipments/${msg.shipment_id}`
+              };
+            });
 
           console.log('📬 Created message notifications:', messageNotifications.length);
 
