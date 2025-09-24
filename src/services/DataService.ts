@@ -692,7 +692,30 @@ export const DataService = {
 
   async createShipment(shipment: any) {
     await simulateDelay(500);
-    return await supabaseService.shipments.create(shipment);
+    const result = await supabaseService.shipments.create(shipment);
+
+    // Send email notification for new shipment
+    try {
+      if (shipment.customerId) {
+        const customer = await this.getUserById(shipment.customerId);
+        if (customer?.email) {
+          await emailService.sendNotification(
+            customer.email,
+            'shipment-created',
+            {
+              shipmentId: result.id,
+              customerName: customer.name || 'Customer'
+            }
+          );
+          console.log('Email notification sent for new shipment:', result.id);
+        }
+      }
+    } catch (emailError) {
+      console.error('Failed to send shipment creation email:', emailError);
+      // Don't fail the shipment creation if email fails
+    }
+
+    return result;
   },
 
   async updateShipment(id: string, updates: any) {
