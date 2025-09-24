@@ -46,9 +46,12 @@ export const AuthProvider: React.FC<{
           if (user) {
             setUser(user);
             setToken(storedToken);
+            // Update the stored user in localStorage
+            localStorage.setItem('currentUser', JSON.stringify(user));
           } else {
             // Invalid or expired token
             localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
           }
         } catch (error) {
           // Token validation failed
@@ -67,6 +70,9 @@ export const AuthProvider: React.FC<{
         setUser(result.user);
         setToken(result.token);
         localStorage.setItem('authToken', result.token);
+        // Store the actual user object for use in other parts of the app
+        localStorage.setItem('currentUser', JSON.stringify(result.user));
+        console.log('Stored user in localStorage:', result.user);
 
         // Navigate based on role
         if (result.user.role === 'admin') {
@@ -96,6 +102,9 @@ export const AuthProvider: React.FC<{
         setUser(result.user);
         setToken(result.token);
         localStorage.setItem('authToken', result.token);
+        // Store the actual user object for use in other parts of the app
+        localStorage.setItem('currentUser', JSON.stringify(result.user));
+        console.log('Stored staff user in localStorage:', result.user);
         navigate('/staff');
       } else {
         throw new Error('Invalid staff credentials');
@@ -115,6 +124,9 @@ export const AuthProvider: React.FC<{
         setUser(result.user);
         setToken(result.token);
         localStorage.setItem('authToken', result.token);
+        // Store the actual user object for use in other parts of the app
+        localStorage.setItem('currentUser', JSON.stringify(result.user));
+        console.log('Stored admin user in localStorage:', result.user);
         navigate('/admin');
       } else {
         throw new Error('Invalid admin credentials');
@@ -175,6 +187,7 @@ export const AuthProvider: React.FC<{
     setUser(null);
     setToken(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
     // Redirect to unified login
     navigate('/login');
   };
