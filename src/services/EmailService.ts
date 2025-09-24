@@ -54,6 +54,7 @@ class EmailService {
         return result;
       }
     } catch (error) {
+      console.error('❌ Email backend error:', error);
       console.log('Backend not available, falling back to simulation');
     }
 
@@ -112,6 +113,7 @@ class EmailService {
         return result;
       }
     } catch (error) {
+      console.error('❌ Email backend error:', error);
       console.log('Backend not available, falling back to simulation');
     }
 
@@ -231,7 +233,7 @@ class EmailService {
     variables: Record<string, string>
   ): Promise<{ success: boolean; message: string }> {
     const config = this.getSmtpConfig();
-    
+
     if (!config) {
       console.warn('⚠️ SMTP NOT CONFIGURED - Email will be simulated only');
       console.log('To send actual emails, configure SMTP in Admin > Email Settings');
@@ -239,19 +241,25 @@ class EmailService {
       return this.simulateEmail(to, templateId, variables);
     }
 
-    try {
-      // First update backend with current config
-      await fetch(`${this.BACKEND_URL}/config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      });
+    console.log('📧 SMTP Config found, attempting to send real email:', {
+      host: config.host,
+      port: config.port,
+      from: config.from?.email,
+      to,
+      template: templateId
+    });
 
-      // Then send notification email with config
+    try {
+      // Skip the config update endpoint - it may not be necessary
+
+      // Send notification email with config
+      const requestBody = { to, templateId, variables, config };
+      console.log('📤 Sending request to backend with config');
+
       const response = await fetch(`${this.BACKEND_URL}/notification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, templateId, variables, config })
+        body: JSON.stringify(requestBody)
       });
 
       if (response.ok) {
@@ -269,6 +277,7 @@ class EmailService {
         throw new Error(`Email API error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
+      console.error('❌ Email backend error:', error);
       console.log('Backend not available, falling back to simulation');
     }
 
