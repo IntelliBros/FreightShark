@@ -31,13 +31,66 @@ class EmailService {
     return '/api/email';
   }
 
-  getSmtpConfig(): SMTPConfig | null {
-    const config = localStorage.getItem(this.SMTP_CONFIG_KEY);
-    return config ? JSON.parse(config) : null;
+  async getSmtpConfig(): Promise<SMTPConfig | null> {
+    try {
+      const { supabaseService } = await import('./supabaseService');
+      const { data } = await supabaseService.supabase.rpc('get_smtp_config');
+
+      if (!data || !data.enabled) {
+        return null;
+      }
+
+      return {
+        host: data.host,
+        port: data.port,
+        secure: data.secure,
+        auth: {
+          user: data.auth.user,
+          pass: data.auth.pass
+        },
+        from: {
+          name: data.from.name,
+          email: data.from.email
+        }
+      };
+    } catch (error) {
+      console.error('Failed to get SMTP config from Supabase:', error);
+      return null;
+    }
   }
 
-  saveSmtpConfig(config: SMTPConfig): void {
-    localStorage.setItem(this.SMTP_CONFIG_KEY, JSON.stringify(config));
+  async saveSmtpConfig(config: SMTPConfig): Promise<void> {
+    try {
+      const { supabaseService } = await import('./supabaseService');
+
+      const smtpData = {
+        host: config.host,
+        port: config.port.toString(),
+        secure: config.secure.toString(),
+        auth: {
+          user: config.auth.user,
+          pass: config.auth.pass
+        },
+        from: {
+          name: config.from.name,
+          email: config.from.email
+        },
+        enabled: 'true'
+      };
+
+      const { error } = await supabaseService.supabase.rpc('update_smtp_config', {
+        config: smtpData
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ SMTP configuration saved to Supabase');
+    } catch (error) {
+      console.error('Failed to save SMTP config to Supabase:', error);
+      throw error;
+    }
   }
 
   async testSmtpConnection(config: SMTPConfig): Promise<{ success: boolean; message: string }> {
@@ -232,29 +285,15 @@ class EmailService {
     templateId: string,
     variables: Record<string, string>
   ): Promise<{ success: boolean; message: string }> {
-    const config = this.getSmtpConfig();
-
-    if (!config) {
-      console.warn('⚠️ SMTP NOT CONFIGURED - Email will be simulated only');
-      console.log('To send actual emails, configure SMTP in Admin > Email Settings');
-      // Fallback to simulation when no config
-      return this.simulateEmail(to, templateId, variables);
-    }
-
-    console.log('📧 SMTP Config found, attempting to send real email:', {
-      host: config.host,
-      port: config.port,
-      from: config.from?.email,
+    console.log('📧 Sending email notification:', {
       to,
       template: templateId
     });
 
     try {
-      // Skip the config update endpoint - it may not be necessary
-
-      // Send notification email with config
-      const requestBody = { to, templateId, variables, config };
-      console.log('📤 Sending request to backend with config');
+      // Send notification email - backend will fetch config from Supabase
+      const requestBody = { to, templateId, variables };
+      console.log('📤 Sending request to backend API');
 
       const response = await fetch(`${this.BACKEND_URL}/notification`, {
         method: 'POST',

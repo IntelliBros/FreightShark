@@ -573,8 +573,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { to, templateId, variables, config } = req.body;
-    
+    const { to, templateId, variables } = req.body;
+
     if (!to || !templateId) {
       return res.status(400).json({
         success: false,
@@ -592,8 +592,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check if SMTP config is provided
-    if (!config || !config.host || !config.port || !config.auth?.user || !config.auth?.pass) {
+    // Fetch SMTP config from Supabase
+    let smtpConfig: any = null;
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://isvuolzqqjutrfytebtl.supabase.co';
+      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Fetch SMTP configuration using the function
+      const { data, error } = await supabase.rpc('get_smtp_config');
+
+      if (!error && data) {
+        smtpConfig = data;
+        console.log('SMTP config fetched from Supabase:', {
+          enabled: smtpConfig.enabled,
+          host: smtpConfig.host,
+          from: smtpConfig.from?.email
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch SMTP config from Supabase:', error);
+    }
+
+    // Check if SMTP is configured and enabled
+    if (!smtpConfig || !smtpConfig.enabled || !smtpConfig.host || !smtpConfig.auth?.user) {
       // Fallback to simulation
       console.log('📨 Email Notification (Simulated - No SMTP Config):', {
         to,
@@ -617,14 +641,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error('Failed to load nodemailer createTransport');
     }
 
-    // Create transporter with the provided config
+    // Create transporter with the fetched config
     const transporter = createTransport({
-      host: config.host,
-      port: parseInt(config.port),
-      secure: config.secure,
+      host: smtpConfig.host,
+      port: parseInt(smtpConfig.port),
+      secure: smtpConfig.secure,
       auth: {
-        user: config.auth.user,
-        pass: config.auth.pass
+        user: smtpConfig.auth.user,
+        pass: smtpConfig.auth.pass
       }
     });
 
@@ -652,7 +676,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Send real email
     const mailOptions = {
-      from: `"${config.from?.name || 'Freight Shark'}" <${config.from?.email || config.auth.user}>`,
+      from: `"${smtpConfig.from?.name || 'Freight Shark'}" <${smtpConfig.from?.email || smtpConfig.auth.user}>`,
       to,
       subject: template.subject,
       html: template.html,

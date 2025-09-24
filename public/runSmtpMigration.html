@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SMTP System Settings Migration</title>
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f9fafb;
+        }
+        h1 { color: #111827; margin-bottom: 10px; }
+        .info {
+            background: #dbeafe;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #3b82f6;
+        }
+        .sql-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .copy-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .copy-btn:hover {
+            background: #2563eb;
+        }
+        .success {
+            background: #10b981;
+            color: white;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Setup SMTP Configuration in System Settings</h1>
+
+    <div class="info">
+        <strong>ℹ️ Important:</strong> This migration moves SMTP configuration from localStorage to the Supabase database for better security and consistency across sessions.
+    </div>
+
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <div class="step" data-step="1.">Go to your Supabase Dashboard</div>
+        <div class="step" data-step="2.">Navigate to SQL Editor (in the left sidebar)</div>
+        <div class="step" data-step="3.">Click "New Query"</div>
+        <div class="step" data-step="4.">Copy the SQL below and paste it into the editor</div>
+        <div class="step" data-step="5.">Update the SMTP values with your actual credentials</div>
+        <div class="step" data-step="6.">Click "Run" to execute the migration</div>
+    </div>
+
+    <h2>Migration SQL:</h2>
+    <div class="sql-code" id="sql-code">-- Setup SMTP Configuration in System Settings
+-- This stores email configuration in the database instead of localStorage
+
+-- First ensure the system_settings table exists
+CREATE TABLE IF NOT EXISTS system_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert SMTP settings
+-- UPDATE THESE VALUES WITH YOUR ACTUAL SMTP CREDENTIALS
+INSERT INTO system_settings (key, value, description) VALUES
+    ('smtp_host', 'smtp.gmail.com', 'SMTP server hostname'),
+    ('smtp_port', '587', 'SMTP server port'),
+    ('smtp_secure', 'false', 'Use SSL/TLS for SMTP connection'),
+    ('smtp_user', 'your-email@gmail.com', 'SMTP authentication username/email'),
+    ('smtp_pass', 'your-app-password', 'SMTP authentication password'),
+    ('smtp_from_name', 'FreightShark', 'From name for emails'),
+    ('smtp_from_email', 'noreply@freightshark.com', 'From email address'),
+    ('smtp_enabled', 'true', 'Whether SMTP email sending is enabled')
+ON CONFLICT (key) DO UPDATE SET
+    value = EXCLUDED.value,
+    description = EXCLUDED.description,
+    updated_at = CURRENT_TIMESTAMP;
+
+-- Create helper functions
+CREATE OR REPLACE FUNCTION get_smtp_config()
+RETURNS JSON AS $$
+DECLARE
+    result JSON;
+BEGIN
+    SELECT json_build_object(
+        'enabled', (SELECT value FROM system_settings WHERE key = 'smtp_enabled')::boolean,
+        'host', (SELECT value FROM system_settings WHERE key = 'smtp_host'),
+        'port', (SELECT value FROM system_settings WHERE key = 'smtp_port')::integer,
+        'secure', (SELECT value FROM system_settings WHERE key = 'smtp_secure')::boolean,
+        'auth', json_build_object(
+            'user', (SELECT value FROM system_settings WHERE key = 'smtp_user'),
+            'pass', (SELECT value FROM system_settings WHERE key = 'smtp_pass')
+        ),
+        'from', json_build_object(
+            'name', (SELECT value FROM system_settings WHERE key = 'smtp_from_name'),
+            'email', (SELECT value FROM system_settings WHERE key = 'smtp_from_email')
+        )
+    ) INTO result;
+    RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION get_smtp_config() TO authenticated;
+GRANT EXECUTE ON FUNCTION get_smtp_config() TO anon;
+GRANT EXECUTE ON FUNCTION get_smtp_config() TO service_role;
+
+-- Test the configuration
+SELECT get_smtp_config();
+
+-- View all SMTP settings
+SELECT key, value, description
+FROM system_settings
+WHERE key LIKE 'smtp_%'
+ORDER BY key;</div>
+
+    <div class="button-group">
+        <button class="copy-btn" onclick="copySQL()">Copy SQL to Clipboard</button>
+        <button class="copy-btn" style="background: #f59e0b;" onclick="window.open('https://supabase.com/dashboard/project/_/sql/new', '_blank')">Open Supabase SQL Editor</button>
+    </div>
+
+    <div id="message" style="margin-top: 20px;"></div>
+
+    <script>
+        async function copySQL() {
+            const sqlCode = document.getElementById('sql-code').textContent;
+            try {
+                await navigator.clipboard.writeText(sqlCode);
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('success');
+
+                setTimeout(() => {
+                    btn.textContent = 'Copy SQL to Clipboard';
+                    btn.classList.remove('success');
+                }, 3000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select the text manually.');
+            }
+        }
+    </script>
+</body>
+</html>

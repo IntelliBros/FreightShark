@@ -90,6 +90,8 @@ async function getNextSequenceId(type: 'quote' | 'shipment' | 'quote_request'): 
 
 // Supabase Service
 export const supabaseService = {
+  // Export the supabase client for direct use when needed
+  supabase,
   // User methods
   users: {
     async getAll() {
@@ -1209,6 +1211,72 @@ export const supabaseService = {
       const { error } = await supabase
         .from('user_carton_templates')
         .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true };
+    }
+  },
+
+  // SMTP Settings management - ADMIN ONLY
+  smtpSettings: {
+    async getActive() {
+      const { data, error } = await supabase
+        .from('smtp_settings')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
+        throw error;
+      }
+      return data;
+    },
+
+    async create(settings: any) {
+      // Deactivate any existing active settings
+      await supabase
+        .from('smtp_settings')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      const { data, error } = await supabase
+        .from('smtp_settings')
+        .insert({
+          ...settings,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, settings: any) {
+      const { data, error } = await supabase
+        .from('smtp_settings')
+        .update({
+          ...settings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async deactivate(id: string) {
+      const { error } = await supabase
+        .from('smtp_settings')
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id);
 
       if (error) throw error;
