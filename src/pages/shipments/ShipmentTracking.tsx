@@ -679,6 +679,7 @@ export const ShipmentTracking = () => {
           console.log('=== Shipment Data Debug ===');
           console.log('Original shipmentData from backend:', shipmentData);
           console.log('Transformed shipment destinations:', transformedShipment.destinations);
+          console.log('Transformed shipment documents:', transformedShipment.documents);
           console.log('IDs in destinations:', transformedShipment.destinations?.map((d: any) => ({
             id: d.id,
             warehouse: d.fbaWarehouse,
@@ -1382,6 +1383,7 @@ export const ShipmentTracking = () => {
           <h2 className="text-base font-medium text-gray-900 mb-4">
             Shipment Documents
           </h2>
+          {console.log('Documents tab - shipment.documents:', shipment?.documents)}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shipment.documents && Array.isArray(shipment.documents) && shipment.documents.length > 0 ? (
               shipment.documents.map((doc: any) => (
