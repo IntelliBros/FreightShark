@@ -153,6 +153,13 @@ class EmailService {
         variables: ['quoteId', 'customerName']
       },
       {
+        id: 'quote-created',
+        name: 'Quote Created',
+        subject: 'Quote #{quoteId} has been created for your request',
+        body: 'Dear {customerName},\n\nWe have created a quote for your request #{requestId}.\n\nQuote Details:\n- Quote ID: {quoteId}\n- Total Amount: ${amount}\n- Valid Until: {validUntil}\n\nPlease log in to your account to review and accept the quote.\n\nBest regards,\nFreight Shark Team',
+        variables: ['quoteId', 'requestId', 'customerName', 'amount', 'validUntil']
+      },
+      {
         id: 'quote-ready',
         name: 'Quote Ready',
         subject: 'Your Quote #{quoteId} is ready',

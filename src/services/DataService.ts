@@ -429,21 +429,36 @@ export const DataService = {
       
       // Send email notification to customer if SMTP is configured
       try {
+        console.log('📧 Preparing to send quote email for customer:', quote.customerId);
+
         // Get customer details
         const customer = await supabaseService.users.getById(quote.customerId);
+        console.log('📧 Customer details retrieved:', customer);
+
         if (customer?.email) {
-          await emailService.sendNotification(
+          console.log('📨 Sending quote creation email to:', customer.email);
+
+          // Calculate valid until date (7 days from now)
+          const validUntilDate = new Date();
+          validUntilDate.setDate(validUntilDate.getDate() + 7);
+
+          const emailResult = await emailService.sendNotification(
             customer.email,
-            'quote-ready',
+            'quote-created',
             {
               quoteId: result.id,
+              requestId: quote.requestId,
               customerName: customer.name || 'Customer',
-              amount: `$${quote.total.toFixed(2)}`
+              amount: quote.total.toFixed(2),
+              validUntil: validUntilDate.toLocaleDateString()
             }
           );
+          console.log('✅ Quote email notification sent:', emailResult);
+        } else {
+          console.log('⚠️ Customer has no email address');
         }
       } catch (emailError) {
-        console.error('Failed to send email notification:', emailError);
+        console.error('❌ Failed to send email notification:', emailError);
         // Don't fail the quote creation if email fails
       }
       
