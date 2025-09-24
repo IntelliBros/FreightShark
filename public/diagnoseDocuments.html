@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnose Documents Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #ebf8ff;
+            border: 2px solid #90cdf4;
+            color: #2c5282;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #3182ce;
+        }
+        .log {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #4299e1;
+            padding-left: 15px;
+            background: white;
+            border-radius: 4px;
+        }
+        .log-entry.error {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+        .log-entry.success {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        .log-entry.warning {
+            border-left-color: #ecc94b;
+            background: #fffdf7;
+        }
+        .data-preview {
+            background: #2d3748;
+            color: #68d391;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 10px 0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnose Documents Data</h1>
+
+        <div class="info">
+            <strong>This tool will:</strong>
+            <ul>
+                <li>Show you exactly what's in the destination column</li>
+                <li>Identify the data type (text vs jsonb)</li>
+                <li>Detect document patterns</li>
+                <li>Provide a custom transfer script based on your data</li>
+            </ul>
+        </div>
+
+        <div id="stats" class="stats" style="display: none;"></div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="diagnoseData()">1. Diagnose Data Structure</button>
+            <button onclick="generateCustomScript()" disabled id="generateBtn">2. Generate Custom Transfer Script</button>
+            <button onclick="executeCustomTransfer()" disabled id="executeBtn">3. Execute Custom Transfer</button>
+        </div>
+
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://jqcbgpwheckblkdejuwv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxY2JncHdoZWNrYmxrZGVqdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNjMzMTUsImV4cCI6MjA3MjkzOTMxNX0.n6uAu_3phhkm0FqPuJxX4LM2alBBqquEqzOCL7ubmHI';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let dataPattern = null;
+        let customScript = '';
+
+        function addLog(message, type = 'info', data = null) {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+
+            let content = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            if (data) {
+                content += `<div class="data-preview">${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}</div>`;
+            }
+            entry.innerHTML = content;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showStats(stats) {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.style.display = 'grid';
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalShipments || 0}</div>
+                    <div class="stat-label">Total Shipments</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.withDestination || 0}</div>
+                    <div class="stat-label">With Destination Data</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.withDocuments || 0}</div>
+                    <div class="stat-label">With Documents</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.dataType || 'unknown'}</div>
+                    <div class="stat-label">Destination Type</div>
+                </div>
+            `;
+        }
+
+        async function diagnoseData() {
+            try {
+                addLog('Starting diagnosis...', 'info');
+
+                // Fetch shipments with destination data
+                const { data: shipments, error } = await supabase
+                    .from('shipments')
+                    .select('id, destination, documents')
+                    .not('destination', 'is', null)
+                    .limit(10);
+
+                if (error) throw error;
+
+                addLog(`Found ${shipments.length} shipments with destination data`, 'info');
+
+                // Analyze the data patterns
+                let textCount = 0;
+                let jsonCount = 0;
+                let arrayCount = 0;
+                let objectCount = 0;
+                let documentPatterns = [];
+
+                for (const shipment of shipments) {
+                    addLog(`Analyzing shipment ${shipment.id}:`, 'info');
+
+                    const dest = shipment.destination;
+                    const destType = typeof dest;
+
+                    addLog(`Raw type: ${destType}`, 'info');
+                    addLog(`Raw value:`, 'info', dest);
+
+                    if (destType === 'string') {
+                        textCount++;
+
+                        // Try to parse as JSON
+                        try {
+                            const parsed = JSON.parse(dest);
+                            jsonCount++;
+
+                            if (Array.isArray(parsed)) {
+                                arrayCount++;
+                                addLog('✓ Valid JSON array', 'success');
+
+                                // Check for documents
+                                const hasDocuments = parsed.some(item =>
+                                    item && typeof item === 'object' &&
+                                    ('url' in item || 'name' in item || 'type' in item)
+                                );
+
+                                if (hasDocuments) {
+                                    documentPatterns.push('json_array_with_docs');
+                                    addLog('📄 Contains document objects', 'success');
+                                }
+                            } else if (typeof parsed === 'object') {
+                                objectCount++;
+                                addLog('✓ Valid JSON object', 'success');
+
+                                if ('url' in parsed || 'name' in parsed || 'type' in parsed) {
+                                    documentPatterns.push('json_object_doc');
+                                    addLog('📄 Is a document object', 'success');
+                                }
+                            }
+                        } catch (e) {
+                            addLog('✗ Not valid JSON', 'warning');
+                        }
+                    } else if (destType === 'object') {
+                        jsonCount++;
+                        if (Array.isArray(dest)) {
+                            arrayCount++;
+                            addLog('✓ Native JSON array', 'success');
+                        } else {
+                            objectCount++;
+                            addLog('✓ Native JSON object', 'success');
+                        }
+                    }
+
+                    addLog('---', 'info');
+                }
+
+                // Determine the predominant pattern
+                if (textCount > 0 && jsonCount > 0) {
+                    dataPattern = 'text_json';
+                    addLog('Pattern detected: Text column containing JSON strings', 'warning');
+                } else if (textCount > 0) {
+                    dataPattern = 'text_only';
+                    addLog('Pattern detected: Text column (may need parsing)', 'warning');
+                } else {
+                    dataPattern = 'jsonb';
+                    addLog('Pattern detected: JSONB column', 'success');
+                }
+
+                // Show statistics
+                const { data: allShipments } = await supabase
+                    .from('shipments')
+                    .select('id', { count: 'exact' });
+
+                const { data: withDest } = await supabase
+                    .from('shipments')
+                    .select('id', { count: 'exact' })
+                    .not('destination', 'is', null);
+
+                const { data: withDocs } = await supabase
+                    .from('shipments')
+                    .select('id', { count: 'exact' })
+                    .not('documents', 'is', null);
+
+                showStats({
+                    totalShipments: allShipments?.length || 0,
+                    withDestination: withDest?.length || 0,
+                    withDocuments: withDocs?.length || 0,
+                    dataType: dataPattern
+                });
+
+                document.getElementById('generateBtn').disabled = false;
+                addLog('Diagnosis complete! Click "Generate Custom Transfer Script" to continue.', 'success');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addLog(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function generateCustomScript() {
+            addLog('Generating custom transfer script based on your data pattern...', 'info');
+
+            if (dataPattern === 'text_json' || dataPattern === 'text_only') {
+                customScript = `
+-- Custom transfer script for text column containing JSON
+UPDATE shipments
+SET
+  documents = CASE
+    WHEN destination IS NOT NULL AND destination != ''
+    THEN
+      CASE
+        -- Try to parse and transfer if it's valid JSON
+        WHEN destination::text LIKE '[%]' OR destination::text LIKE '{%}'
+        THEN
+          CASE
+            WHEN documents IS NULL OR documents = '[]'::jsonb
+            THEN
+              CASE
+                WHEN destination::text LIKE '[%]'
+                THEN destination::jsonb
+                ELSE jsonb_build_array(destination::jsonb)
+              END
+            ELSE
+              CASE
+                WHEN destination::text LIKE '[%]'
+                THEN documents || destination::jsonb
+                ELSE documents || jsonb_build_array(destination::jsonb)
+              END
+          END
+        ELSE documents
+      END
+    ELSE documents
+  END,
+  destination = NULL,
+  updated_at = NOW()
+WHERE destination IS NOT NULL
+  AND destination != ''
+  AND (destination::text LIKE '%"url"%'
+       OR destination::text LIKE '%"name"%'
+       OR destination::text LIKE '%"type"%')
+  AND destination::text NOT LIKE '%"fbaWarehouse"%'
+  AND destination::text NOT LIKE '%"address"%';`;
+            } else {
+                customScript = `
+-- Custom transfer script for JSONB column
+UPDATE shipments
+SET
+  documents = CASE
+    WHEN destination IS NOT NULL
+    THEN
+      CASE
+        WHEN documents IS NULL OR documents = '[]'::jsonb
+        THEN
+          CASE
+            WHEN jsonb_typeof(destination) = 'array'
+            THEN destination
+            ELSE jsonb_build_array(destination)
+          END
+        ELSE
+          CASE
+            WHEN jsonb_typeof(destination) = 'array'
+            THEN documents || destination
+            ELSE documents || jsonb_build_array(destination)
+          END
+      END
+    ELSE documents
+  END,
+  destination = NULL,
+  updated_at = NOW()
+WHERE destination IS NOT NULL
+  AND (destination::text LIKE '%"url"%'
+       OR destination::text LIKE '%"name"%'
+       OR destination::text LIKE '%"type"%')
+  AND destination::text NOT LIKE '%"fbaWarehouse"%'
+  AND destination::text NOT LIKE '%"address"%';`;
+            }
+
+            addLog('Generated custom script:', 'success', customScript);
+            document.getElementById('executeBtn').disabled = false;
+        }
+
+        async function executeCustomTransfer() {
+            try {
+                if (!confirm('Execute the custom transfer script? This will modify your database.')) {
+                    return;
+                }
+
+                addLog('Executing custom transfer...', 'info');
+
+                // For safety, let's do it row by row with error handling
+                const { data: shipments, error: fetchError } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .not('destination', 'is', null);
+
+                if (fetchError) throw fetchError;
+
+                let successCount = 0;
+                let errorCount = 0;
+                let transferredDocs = 0;
+
+                for (const shipment of shipments) {
+                    try {
+                        let destData = shipment.destination;
+                        let docsToAdd = null;
+
+                        // Parse the destination data
+                        if (typeof destData === 'string' && destData.trim()) {
+                            try {
+                                destData = JSON.parse(destData);
+                            } catch (e) {
+                                // Not JSON, skip
+                                continue;
+                            }
+                        }
+
+                        // Check if it contains documents
+                        const isDoc = (item) => {
+                            return item && typeof item === 'object' &&
+                                   ('url' in item || 'name' in item || 'type' in item) &&
+                                   !('fbaWarehouse' in item) && !('address' in item);
+                        };
+
+                        if (Array.isArray(destData)) {
+                            const docs = destData.filter(isDoc);
+                            if (docs.length > 0) {
+                                docsToAdd = docs;
+                            }
+                        } else if (isDoc(destData)) {
+                            docsToAdd = [destData];
+                        }
+
+                        // Transfer if documents found
+                        if (docsToAdd) {
+                            const existingDocs = shipment.documents || [];
+                            const allDocs = [...existingDocs, ...docsToAdd];
+
+                            const { error: updateError } = await supabase
+                                .from('shipments')
+                                .update({
+                                    documents: allDocs,
+                                    destination: null,
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', shipment.id);
+
+                            if (updateError) {
+                                errorCount++;
+                                addLog(`❌ Failed to update ${shipment.id}: ${updateError.message}`, 'error');
+                            } else {
+                                successCount++;
+                                transferredDocs += docsToAdd.length;
+                                addLog(`✅ Transferred ${docsToAdd.length} documents from shipment ${shipment.id}`, 'success');
+                            }
+                        }
+                    } catch (err) {
+                        errorCount++;
+                        addLog(`❌ Error processing ${shipment.id}: ${err.message}`, 'error');
+                    }
+                }
+
+                addLog(`Transfer complete! Successfully updated ${successCount} shipments with ${transferredDocs} documents. ${errorCount} errors.`,
+                      errorCount > 0 ? 'warning' : 'success');
+
+                // Verify the results
+                const { data: verification } = await supabase
+                    .from('shipments')
+                    .select('id, documents')
+                    .not('documents', 'is', null);
+
+                const docsCount = verification?.filter(s =>
+                    s.documents && Array.isArray(s.documents) && s.documents.length > 0
+                ).length || 0;
+
+                addLog(`Verification: ${docsCount} shipments now have documents`, 'info');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addLog(`Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Transfer Instructions - Alternative Methods</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #2d3748;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .method-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .method-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #3182ce;
+        }
+        .warning {
+            background: #fff5f5;
+            border: 2px solid #feb2b2;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #ebf8ff;
+            border: 2px solid #90cdf4;
+            color: #2c5282;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #f0fff4;
+            border: 2px solid #9ae6b4;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            background: #4299e1;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Document Transfer - Alternative Methods</h1>
+
+        <div class="info">
+            <strong>Purpose:</strong> Transfer document data from the destination column to the proper documents column in your Supabase database.
+        </div>
+
+        <h2>Method 1: Supabase SQL Editor (Recommended)</h2>
+
+        <div class="method-card">
+            <div class="method-title">Direct SQL Execution in Supabase Dashboard</div>
+
+            <div class="step" data-step="1">
+                <strong>Login to Supabase Dashboard</strong>
+                <ul>
+                    <li>Go to <a href="https://app.supabase.com" target="_blank">app.supabase.com</a></li>
+                    <li>Select your project</li>
+                </ul>
+            </div>
+
+            <div class="step" data-step="2">
+                <strong>Navigate to SQL Editor</strong>
+                <ul>
+                    <li>Click on "SQL Editor" in the left sidebar</li>
+                    <li>Click "New query" button</li>
+                </ul>
+            </div>
+
+            <div class="step" data-step="3">
+                <strong>Run Analysis Query First</strong>
+                <p>Copy and paste this query to check current state:</p>
+                <div class="code-block">-- Check current document distribution
+SELECT
+  COUNT(*) as total_shipments,
+  COUNT(CASE WHEN destination IS NOT NULL THEN 1 END) as with_destination,
+  COUNT(CASE WHEN documents IS NOT NULL AND documents != '[]'::jsonb THEN 1 END) as with_documents
+FROM shipments;
+
+-- Preview documents in destination column
+SELECT
+  id,
+  destination,
+  documents
+FROM shipments
+WHERE destination IS NOT NULL
+LIMIT 5;
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            </div>
+
+            <div class="step" data-step="4">
+                <strong>Run Transfer Migration</strong>
+                <p>Copy and paste the migration SQL:</p>
+                <div class="code-block">-- Transfer documents from destination to documents column
+WITH documents_to_transfer AS (
+  SELECT
+    id,
+    destination,
+    documents,
+    CASE
+      -- Check if destination is an array of documents
+      WHEN jsonb_typeof(destination) = 'array'
+        AND destination::text LIKE '%"url"%'
+        AND destination::text LIKE '%"name"%'
+      THEN destination
+      -- Check if destination is a single document object
+      WHEN jsonb_typeof(destination) = 'object'
+        AND (destination ? 'url' OR destination ? 'name' OR destination ? 'type')
+        AND NOT (destination ? 'fbaWarehouse' OR destination ? 'address')
+      THEN jsonb_build_array(destination)
+      ELSE NULL
+    END as docs_from_destination
+  FROM shipments
+  WHERE destination IS NOT NULL
+)
+UPDATE shipments s
+SET
+  documents = COALESCE(
+    CASE
+      WHEN s.documents IS NULL OR s.documents = '[]'::jsonb
+      THEN dt.docs_from_destination
+      ELSE s.documents || dt.docs_from_destination
+    END,
+    s.documents
+  ),
+  destination = NULL,
+  updated_at = NOW()
+FROM documents_to_transfer dt
+WHERE s.id = dt.id
+  AND dt.docs_from_destination IS NOT NULL;
+
+-- Show results
+SELECT
+  COUNT(*) FILTER (WHERE documents IS NOT NULL AND documents != '[]'::jsonb) as shipments_with_documents,
+  COUNT(*) FILTER (WHERE destination IS NOT NULL) as shipments_still_with_destination
+FROM shipments;
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            </div>
+
+            <div class="step" data-step="5">
+                <strong>Verify Results</strong>
+                <div class="code-block">-- Verify transferred documents
+SELECT
+  id,
+  jsonb_array_length(COALESCE(documents, '[]'::jsonb)) as document_count,
+  documents
+FROM shipments
+WHERE documents IS NOT NULL
+  AND documents != '[]'::jsonb
+ORDER BY updated_at DESC
+LIMIT 10;
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <h2>Method 2: Supabase Database Functions</h2>
+
+        <div class="method-card">
+            <div class="method-title">Create a Reusable Database Function</div>
+
+            <p>Create this function once in your Supabase SQL Editor:</p>
+
+            <div class="code-block">-- Create a function to transfer documents
+CREATE OR REPLACE FUNCTION transfer_documents_from_destination()
+RETURNS TABLE(
+  transferred_count integer,
+  total_documents integer
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  transfer_count integer := 0;
+  doc_count integer := 0;
+BEGIN
+  -- Perform the transfer
+  WITH documents_to_transfer AS (
+    SELECT
+      id,
+      destination,
+      documents,
+      CASE
+        WHEN jsonb_typeof(destination) = 'array'
+          AND destination::text LIKE '%"url"%'
+        THEN destination
+        WHEN jsonb_typeof(destination) = 'object'
+          AND (destination ? 'url' OR destination ? 'name')
+          AND NOT (destination ? 'fbaWarehouse')
+        THEN jsonb_build_array(destination)
+        ELSE NULL
+      END as docs_from_destination
+    FROM shipments
+    WHERE destination IS NOT NULL
+  )
+  UPDATE shipments s
+  SET
+    documents = COALESCE(
+      CASE
+        WHEN s.documents IS NULL OR s.documents = '[]'::jsonb
+        THEN dt.docs_from_destination
+        ELSE s.documents || dt.docs_from_destination
+      END,
+      s.documents
+    ),
+    destination = NULL,
+    updated_at = NOW()
+  FROM documents_to_transfer dt
+  WHERE s.id = dt.id
+    AND dt.docs_from_destination IS NOT NULL;
+
+  -- Get counts
+  GET DIAGNOSTICS transfer_count = ROW_COUNT;
+
+  SELECT COUNT(*) INTO doc_count
+  FROM shipments
+  WHERE documents IS NOT NULL AND documents != '[]'::jsonb;
+
+  RETURN QUERY SELECT transfer_count, doc_count;
+END;
+$$;
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+
+            <p>Then call it anytime with:</p>
+            <div class="code-block">SELECT * FROM transfer_documents_from_destination();
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+        </div>
+
+        <h2>Method 3: Using Supabase CLI</h2>
+
+        <div class="method-card">
+            <div class="method-title">Execute via Command Line</div>
+
+            <div class="step" data-step="1">
+                <strong>Install Supabase CLI</strong>
+                <div class="code-block">brew install supabase/tap/supabase</div>
+            </div>
+
+            <div class="step" data-step="2">
+                <strong>Login and Link Project</strong>
+                <div class="code-block">supabase login
+supabase link --project-ref jqcbgpwheckblkdejuwv</div>
+            </div>
+
+            <div class="step" data-step="3">
+                <strong>Run Migration</strong>
+                <div class="code-block">supabase db push --path supabase/migrations/018_transfer_documents_data.sql</div>
+            </div>
+        </div>
+
+        <h2>Method 4: Node.js Script</h2>
+
+        <div class="method-card">
+            <div class="method-title">Run from Any Node.js Environment</div>
+
+            <p>Save this as <code>transfer-documents.js</code>:</p>
+
+            <div class="code-block">const { createClient } = require('@supabase/supabase-js');
+
+const supabaseUrl = 'https://jqcbgpwheckblkdejuwv.supabase.co';
+const supabaseKey = 'your-service-role-key'; // Use service role key for admin operations
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function transferDocuments() {
+  console.log('Starting document transfer...');
+
+  // Fetch shipments with destination data
+  const { data: shipments, error: fetchError } = await supabase
+    .from('shipments')
+    .select('*')
+    .not('destination', 'is', null);
+
+  if (fetchError) {
+    console.error('Error fetching shipments:', fetchError);
+    return;
+  }
+
+  console.log(`Found ${shipments.length} shipments with destination data`);
+
+  let transferred = 0;
+
+  for (const shipment of shipments) {
+    const dest = shipment.destination;
+
+    // Check if destination contains documents
+    if (isDocumentData(dest)) {
+      const docs = Array.isArray(dest) ? dest : [dest];
+      const allDocs = [...(shipment.documents || []), ...docs];
+
+      const { error: updateError } = await supabase
+        .from('shipments')
+        .update({
+          documents: allDocs,
+          destination: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', shipment.id);
+
+      if (!updateError) {
+        transferred++;
+        console.log(`✓ Transferred ${docs.length} documents for shipment ${shipment.id}`);
+      } else {
+        console.error(`✗ Error updating shipment ${shipment.id}:`, updateError);
+      }
+    }
+  }
+
+  console.log(`\nTransfer complete! Updated ${transferred} shipments`);
+}
+
+function isDocumentData(data) {
+  if (!data || typeof data !== 'object') return false;
+
+  const hasDocFields = 'url' in data || 'name' in data || 'type' in data;
+  const hasLocationFields = 'fbaWarehouse' in data || 'address' in data;
+
+  return hasDocFields && !hasLocationFields;
+}
+
+transferDocuments().catch(console.error);
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+
+            <p>Run with:</p>
+            <div class="code-block">node transfer-documents.js</div>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important Notes:</strong>
+            <ul>
+                <li>Always backup your data before running migrations</li>
+                <li>Test on a development environment first if possible</li>
+                <li>The migration will clear the destination column after transferring documents</li>
+                <li>Documents are identified by having 'url' or 'name' fields without location fields</li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <strong>✅ After Transfer:</strong>
+            <ul>
+                <li>Documents will be in the proper 'documents' JSONB column</li>
+                <li>Destination column will be cleared for transferred records</li>
+                <li>Your Documents Hub should display all documents correctly</li>
+                <li>Download functionality will work as expected</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.parentElement;
+            const code = codeBlock.textContent.replace('Copy', '').trim();
+
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#48bb78';
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#4299e1';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+    </script>
+</body>
+</html>
