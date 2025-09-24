@@ -423,7 +423,7 @@ export const DataService = {
     const transformedQuote = {
       request_id: quote.requestId,
       customer_id: quote.customerId,
-      staff_id: currentUser.id || '2',  // Default to staff user ID 2
+      staff_id: quote.staffId || currentUser.id || 'staff-demo-user',  // Use passed staffId first, then current user, then default
       status: quote.status || 'Pending',
       rate_type: quote.rateType || 'per-kg',
       freight_cost: quote.subtotal || 0,
