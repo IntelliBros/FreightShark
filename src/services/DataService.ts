@@ -415,15 +415,32 @@ export const DataService = {
     console.log('Creating quote for request:', quote.requestId);
     console.log('Quote request customerId:', quote.customerId);
     console.log('Quote object being created:', quote);
-    
+
     // Get current user from localStorage to set staff_id
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    
+
+    // If we have a staff user, try to find their actual ID in the database
+    let staffId = quote.staffId || currentUser.id;
+
+    // If no valid staff ID, try to find any existing staff user in the database
+    if (!staffId || staffId === 'staff-demo-user') {
+      try {
+        const staffUsers = await supabaseService.users.getAll();
+        const existingStaff = staffUsers.find((u: any) => u.role === 'staff');
+        if (existingStaff) {
+          staffId = existingStaff.id;
+          console.log('Using existing staff user ID from database:', staffId);
+        }
+      } catch (error) {
+        console.warn('Could not fetch staff users:', error);
+      }
+    }
+
     // Transform the quote data to match Supabase schema
     const transformedQuote = {
       request_id: quote.requestId,
       customer_id: quote.customerId,
-      staff_id: quote.staffId || currentUser.id || 'staff-demo-user',  // Use passed staffId first, then current user, then default
+      staff_id: staffId || quote.customerId,  // As last resort, use customer_id to avoid foreign key error
       status: quote.status || 'Pending',
       rate_type: quote.rateType || 'per-kg',
       freight_cost: quote.subtotal || 0,

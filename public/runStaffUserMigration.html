@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Staff User Migration</title>
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f9fafb;
+        }
+        h1 { color: #111827; margin-bottom: 10px; }
+        .critical {
+            background: #ef4444;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .sql-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .copy-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .copy-btn:hover {
+            background: #2563eb;
+        }
+        .success {
+            background: #10b981;
+            color: white;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fix Staff User for Quote Creation</h1>
+
+    <div class="critical">
+        ⚠️ CRITICAL: Run this migration immediately to fix quote creation!
+    </div>
+
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <div class="step" data-step="1.">Go to your Supabase Dashboard</div>
+        <div class="step" data-step="2.">Navigate to SQL Editor (in the left sidebar)</div>
+        <div class="step" data-step="3.">Click "New Query"</div>
+        <div class="step" data-step="4.">Copy the SQL below and paste it into the editor</div>
+        <div class="step" data-step="5.">Click "Run" to execute the migration</div>
+    </div>
+
+    <h2>Migration SQL:</h2>
+    <div class="sql-code" id="sql-code">-- Fix Staff User for Quote Creation
+-- This ensures the staff-demo-user exists in the database
+
+-- First, check what staff users exist
+SELECT id, email, name, role FROM users WHERE role = 'staff';
+
+-- Insert or update the staff demo user
+INSERT INTO users (
+    id,
+    email,
+    name,
+    role,
+    company,
+    password_hash,
+    created_at,
+    updated_at
+) VALUES (
+    'staff-demo-user',
+    'staff-demo@freightshark.com', -- Using a unique email
+    'Staff User',
+    'staff',
+    'FreightShark',
+    '$2a$10$GPQJLgZ.M2lUSiFn41gQjeMJBZgJYH1CQ1hJz0S1tlJa3qOY3s0TW', -- password123
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+) ON CONFLICT (id) DO UPDATE SET
+    role = 'staff',
+    name = 'Staff User',
+    updated_at = CURRENT_TIMESTAMP;
+
+-- Handle potential email conflicts
+DO $$
+DECLARE
+    existing_staff_id TEXT;
+BEGIN
+    -- Find any existing staff user
+    SELECT id INTO existing_staff_id
+    FROM users
+    WHERE role = 'staff'
+    LIMIT 1;
+
+    -- If we found a staff user that's not staff-demo-user
+    IF existing_staff_id IS NOT NULL AND existing_staff_id != 'staff-demo-user' THEN
+        -- Update all quotes that reference the old staff ID
+        UPDATE quotes
+        SET staff_id = 'staff-demo-user'
+        WHERE staff_id = existing_staff_id;
+
+        -- Optional: Update the existing staff user ID to staff-demo-user
+        -- (Commented out for safety - uncomment if you want to consolidate)
+        -- UPDATE users
+        -- SET id = 'staff-demo-user'
+        -- WHERE id = existing_staff_id;
+    END IF;
+END $$;
+
+-- Verify the staff user now exists
+SELECT
+    id,
+    email,
+    name,
+    role,
+    CASE
+        WHEN id = 'staff-demo-user' THEN '✅ Ready for quote creation'
+        ELSE '⚠️ Different ID - may need adjustment'
+    END as status
+FROM users
+WHERE role = 'staff';
+</div>
+
+    <div class="button-group">
+        <button class="copy-btn" onclick="copySQL()">Copy SQL to Clipboard</button>
+        <button class="copy-btn" style="background: #f59e0b;" onclick="window.open('https://supabase.com/dashboard/project/_/sql/new', '_blank')">Open Supabase SQL Editor</button>
+    </div>
+
+    <div id="message" style="margin-top: 20px;"></div>
+
+    <script>
+        async function copySQL() {
+            const sqlCode = document.getElementById('sql-code').textContent;
+            try {
+                await navigator.clipboard.writeText(sqlCode);
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('success');
+
+                setTimeout(() => {
+                    btn.textContent = 'Copy SQL to Clipboard';
+                    btn.classList.remove('success');
+                }, 3000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select the text manually.');
+            }
+        }
+    </script>
+</body>
+</html>
