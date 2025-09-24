@@ -37,24 +37,33 @@ export const EmailSettings = () => {
   const [editedTemplates, setEditedTemplates] = useState<Record<string, EmailTemplate>>({});
 
   useEffect(() => {
-    const savedConfig = emailService.getSmtpConfig();
-    if (savedConfig) {
-      setSmtpConfig(savedConfig);
-    }
+    const loadConfig = async () => {
+      try {
+        const savedConfig = await emailService.getSmtpConfig();
+        if (savedConfig) {
+          setSmtpConfig(savedConfig);
+        }
+      } catch (error) {
+        console.error('Failed to load SMTP config:', error);
+      }
+    };
+
+    loadConfig();
     setTemplates(emailService.getEmailTemplates());
   }, []);
 
   const handleSaveConfig = async () => {
-    if (!smtpConfig.host || !smtpConfig.port || !smtpConfig.auth.user || !smtpConfig.from.email) {
+    if (!smtpConfig.host || !smtpConfig.port || !smtpConfig.auth?.user || !smtpConfig.from?.email) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
 
     setIsSaving(true);
     try {
-      emailService.saveSmtpConfig(smtpConfig);
+      await emailService.saveSmtpConfig(smtpConfig);
       showToast('SMTP configuration saved successfully', 'success');
     } catch (error) {
+      console.error('Failed to save SMTP config:', error);
       showToast('Failed to save configuration', 'error');
     } finally {
       setIsSaving(false);
@@ -228,9 +237,9 @@ export const EmailSettings = () => {
               </label>
               <input
                 type="text"
-                value={smtpConfig.auth.user}
-                onChange={(e) => setSmtpConfig({ 
-                  ...smtpConfig, 
+                value={smtpConfig.auth?.user || ''}
+                onChange={(e) => setSmtpConfig({
+                  ...smtpConfig,
                   auth: { ...smtpConfig.auth, user: e.target.value }
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00b4d8]"
@@ -245,9 +254,9 @@ export const EmailSettings = () => {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  value={smtpConfig.auth.pass}
-                  onChange={(e) => setSmtpConfig({ 
-                    ...smtpConfig, 
+                  value={smtpConfig.auth?.pass || ''}
+                  onChange={(e) => setSmtpConfig({
+                    ...smtpConfig,
                     auth: { ...smtpConfig.auth, pass: e.target.value }
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00b4d8] pr-10"
@@ -278,7 +287,7 @@ export const EmailSettings = () => {
                 </label>
                 <input
                   type="text"
-                  value={smtpConfig.from.name}
+                  value={smtpConfig.from?.name || ''}
                   onChange={(e) => setSmtpConfig({ 
                     ...smtpConfig, 
                     from: { ...smtpConfig.from, name: e.target.value }
@@ -293,7 +302,7 @@ export const EmailSettings = () => {
                 </label>
                 <input
                   type="email"
-                  value={smtpConfig.from.email}
+                  value={smtpConfig.from?.email || ''}
                   onChange={(e) => setSmtpConfig({ 
                     ...smtpConfig, 
                     from: { ...smtpConfig.from, email: e.target.value }
