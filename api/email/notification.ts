@@ -835,20 +835,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const { createClient } = await import('@supabase/supabase-js');
       const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://isvuolzqqjutrfytebtl.supabase.co';
-      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      // Use service role key for backend API access to system_settings
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+
+      console.log('Supabase connection:', {
+        url: supabaseUrl,
+        hasKey: !!supabaseKey,
+        keyType: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' :
+                 process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'vite_service_role' :
+                 process.env.VITE_SUPABASE_ANON_KEY ? 'anon' : 'none'
+      });
 
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Fetch SMTP configuration using the function
-      const { data, error } = await supabase.rpc('get_smtp_config');
+      // Try to fetch SMTP configuration using the function first
+      try {
+        const { data, error } = await supabase.rpc('get_smtp_config');
+        if (!error && data && data.enabled) {
+          smtpConfig = data;
+          console.log('SMTP config fetched from Supabase function:', {
+            enabled: smtpConfig.enabled,
+            host: smtpConfig.host,
+            from: smtpConfig.from?.email
+          });
+        }
+      } catch (funcError) {
+        console.log('get_smtp_config function not found, fetching settings individually');
+      }
 
-      if (!error && data) {
-        smtpConfig = data;
-        console.log('SMTP config fetched from Supabase:', {
-          enabled: smtpConfig.enabled,
-          host: smtpConfig.host,
-          from: smtpConfig.from?.email
-        });
+      // Fallback: fetch settings individually if function didn't work
+      if (!smtpConfig) {
+        const settings: Record<string, string> = {};
+        const keys = ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_pass', 'smtp_from_name', 'smtp_from_email', 'smtp_enabled'];
+
+        for (const key of keys) {
+          const { data: setting } = await supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', key)
+            .single();
+
+          if (setting) {
+            settings[key] = setting.value;
+          }
+        }
+
+        console.log('Fetched individual SMTP settings:', settings);
+
+        if (settings.smtp_enabled === 'true' && settings.smtp_host) {
+          smtpConfig = {
+            enabled: true,
+            host: settings.smtp_host,
+            port: parseInt(settings.smtp_port || '587'),
+            secure: settings.smtp_secure === 'true',
+            auth: {
+              user: settings.smtp_user || '',
+              pass: settings.smtp_pass || ''
+            },
+            from: {
+              name: settings.smtp_from_name || 'FreightShark',
+              email: settings.smtp_from_email || ''
+            }
+          };
+          console.log('SMTP config built from individual settings:', {
+            enabled: smtpConfig.enabled,
+            host: smtpConfig.host,
+            from: smtpConfig.from?.email
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch SMTP config from Supabase:', error);
@@ -862,9 +916,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         template: templateId,
         subject: template.subject,
         variables,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        reason: !smtpConfig ? 'No config fetched' :
+                !smtpConfig.enabled ? 'SMTP disabled' :
+                !smtpConfig.host ? 'No host configured' :
+                !smtpConfig.auth?.user ? 'No auth user configured' : 'Unknown'
       });
-      
+
       return res.status(200).json({
         success: true,
         message: `Email simulated to ${to}. Configure SMTP to send real emails.`

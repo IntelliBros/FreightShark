@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Setup Email Sending on Vercel</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #f9fafb;
+        }
+        h1 {
+            color: #111827;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #374151;
+            margin-top: 30px;
+        }
+        .alert {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #dcfce7;
+            border: 1px solid #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .step {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .step-number {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #dc2626;
+        }
+        .code-block {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+        .env-var {
+            color: #60a5fa;
+        }
+        .env-value {
+            color: #34d399;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>📧 Setup Email Sending on Vercel</h1>
+
+    <div class="alert">
+        <strong>⚠️ Current Issue:</strong> Emails are being simulated instead of actually sent because the Vercel deployment needs the Supabase Service Role Key to access SMTP settings from the database.
+    </div>
+
+    <h2>Why Emails Are Being Simulated</h2>
+    <div class="info">
+        <p>The email system works as follows:</p>
+        <ol>
+            <li>SMTP configuration is stored in the <code>system_settings</code> table in Supabase</li>
+            <li>The Vercel API endpoint needs to fetch these settings to send emails</li>
+            <li>Without the Service Role Key, the API can't access the settings and falls back to simulation</li>
+        </ol>
+    </div>
+
+    <h2>Step-by-Step Setup</h2>
+
+    <div class="step">
+        <h3><span class="step-number">1</span> Get Your Supabase Service Role Key</h3>
+        <ol>
+            <li>Go to your <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank">Supabase Project Settings → API</a></li>
+            <li>Find the <strong>service_role</strong> key (NOT the anon key)</li>
+            <li>Copy the entire key (it starts with <code>eyJ...</code>)</li>
+        </ol>
+        <div class="alert">
+            <strong>🔐 Security Note:</strong> The service role key bypasses Row Level Security. Never expose it in client-side code!
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">2</span> Add Environment Variables to Vercel</h3>
+        <ol>
+            <li>Go to your <a href="https://vercel.com/dashboard" target="_blank">Vercel Dashboard</a></li>
+            <li>Select your <strong>FreightShark</strong> project</li>
+            <li>Go to <strong>Settings → Environment Variables</strong></li>
+            <li>Add the following variable:</li>
+        </ol>
+        <div class="code-block">
+<span class="env-var">SUPABASE_SERVICE_ROLE_KEY</span> = <span class="env-value">your-service-role-key-here</span>
+        </div>
+        <p>Make sure it's added for all environments (Production, Preview, Development)</p>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">3</span> Verify Your SMTP Settings</h3>
+        <p>Ensure your SMTP settings are saved in the database:</p>
+        <ol>
+            <li>Go to <a href="/admin/email-settings" target="_blank">Admin → Email Settings</a></li>
+            <li>Verify your SMTP configuration is saved</li>
+            <li>Test the connection to ensure it works</li>
+        </ol>
+        <p>Example Gmail SMTP settings:</p>
+        <div class="code-block">
+Host: smtp.gmail.com
+Port: 587
+Secure: false
+User: your-email@gmail.com
+Pass: your-app-password (NOT regular password)
+        </div>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">4</span> Redeploy Your Application</h3>
+        <p>After adding the environment variable:</p>
+        <ol>
+            <li>Go to your Vercel project</li>
+            <li>Click <strong>Redeploy</strong> or push a new commit</li>
+            <li>Wait for the deployment to complete</li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h3><span class="step-number">5</span> Test Email Sending</h3>
+        <p>Once redeployed, test the email system:</p>
+        <ol>
+            <li>Create a new quote request</li>
+            <li>Check the browser console for email logs</li>
+            <li>Verify the email was actually sent (check your inbox)</li>
+        </ol>
+        <div class="success">
+            <strong>✅ Success Indicators:</strong>
+            <ul>
+                <li>Console shows "EMAIL SENT SUCCESSFULLY via SMTP"</li>
+                <li>No "simulated" messages in the response</li>
+                <li>Actual email arrives in the recipient's inbox</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>Troubleshooting</h2>
+    <div class="step">
+        <h3>Common Issues and Solutions</h3>
+        <ul>
+            <li><strong>Still seeing "simulated" emails:</strong> Check Vercel logs for the actual error. The API logs detailed debugging information.</li>
+            <li><strong>Authentication failed:</strong> For Gmail, make sure you're using an App Password, not your regular password.</li>
+            <li><strong>Connection timeout:</strong> Some SMTP providers block Vercel's IP addresses. Try a different SMTP provider.</li>
+            <li><strong>No logs in Vercel:</strong> Make sure you're looking at the Function logs, not the build logs.</li>
+        </ul>
+    </div>
+
+    <h2>Checking Vercel Logs</h2>
+    <div class="step">
+        <p>To see what's happening with email sending:</p>
+        <ol>
+            <li>Go to your Vercel project dashboard</li>
+            <li>Click on <strong>Functions</strong> tab</li>
+            <li>Click on <strong>api/email/notification</strong></li>
+            <li>View the real-time logs to see debugging information</li>
+        </ol>
+        <p>The logs will show:</p>
+        <ul>
+            <li>Whether SMTP config was fetched successfully</li>
+            <li>Which key type is being used (service_role, anon, etc.)</li>
+            <li>Any errors during email sending</li>
+        </ul>
+    </div>
+
+    <div class="info">
+        <h3>📝 Summary</h3>
+        <p>The key requirement is adding <code>SUPABASE_SERVICE_ROLE_KEY</code> to your Vercel environment variables. This allows the API to:</p>
+        <ol>
+            <li>Access the system_settings table in Supabase</li>
+            <li>Fetch your SMTP configuration</li>
+            <li>Send actual emails instead of simulating them</li>
+        </ol>
+    </div>
+</body>
+</html>
