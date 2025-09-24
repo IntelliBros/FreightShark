@@ -696,10 +696,15 @@ export const DataService = {
 
     // Send email notification for new shipment
     try {
+      console.log('🚢 New shipment created:', result.id, 'Customer ID:', shipment.customerId);
+
       if (shipment.customerId) {
         const customer = await this.getUserById(shipment.customerId);
+        console.log('📧 Customer found for email:', customer);
+
         if (customer?.email) {
-          await emailService.sendNotification(
+          console.log('📨 Sending shipment creation email to:', customer.email);
+          const emailResult = await emailService.sendNotification(
             customer.email,
             'shipment-created',
             {
@@ -707,11 +712,15 @@ export const DataService = {
               customerName: customer.name || 'Customer'
             }
           );
-          console.log('Email notification sent for new shipment:', result.id);
+          console.log('✅ Email notification sent for new shipment:', result.id, 'Result:', emailResult);
+        } else {
+          console.log('⚠️ Customer has no email address');
         }
+      } else {
+        console.log('⚠️ Shipment has no customerId');
       }
     } catch (emailError) {
-      console.error('Failed to send shipment creation email:', emailError);
+      console.error('❌ Failed to send shipment creation email:', emailError);
       // Don't fail the shipment creation if email fails
     }
 
