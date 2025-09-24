@@ -45,7 +45,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setQuoteRequests(fetchedRequests);
         setQuotes(fetchedQuotes);
-        setShipments(fetchedShipments);
+        // Map shipments to ensure invoice and documents fields are included
+        setShipments(fetchedShipments.map(shipment => ({
+          ...shipment,
+          documents: shipment.documents || [],
+          invoice: shipment.invoice || null,
+          destinations: shipment.destinations || [],
+          photos: shipment.photos || []
+        })));
         setInvoices(fetchedInvoices);
       } else {
         // Use localStorage-backed service (fallback)
