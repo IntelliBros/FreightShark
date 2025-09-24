@@ -207,7 +207,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
 
       // Also fetch ALL messages directly from messages table (both read and unread)
       try {
-        const { supabaseService } = await import('../services/supabaseService');
+        const { supabase } = await import('../lib/supabase');
 
         // For customers, get messages from staff
         // For staff, get messages from customers
@@ -216,7 +216,7 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         const senderRoleFilter = isCustomer ? ['staff', 'admin'] : ['customer'];
 
         // Get ALL recent messages NOT from the current user
-        const { data: allMessages } = await supabaseService.supabase
+        const { data: allMessages } = await supabase
           .from('messages')
           .select('*')
           .neq('sender_id', user.id)  // Don't show user's own messages
