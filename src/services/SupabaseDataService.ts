@@ -140,20 +140,21 @@ class SupabaseDataService {
   // Helper function to set cache
   private setCache(key: string, data: any): void {
     this.cache.set(key, { data, timestamp: Date.now() });
-    // Also store in localStorage for offline support
+
+    // Skip localStorage for large collections to prevent quota issues
+    if (key === 'shipments' || key === 'quotes' || key === 'quoteRequests' || key === 'invoices') {
+      return; // Only use memory cache for these large collections
+    }
+
+    // Store smaller data in localStorage for offline support
     try {
       localStorage.setItem(`cache_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
     } catch (error: any) {
-      // If quota exceeded, try to clear old cache and retry
+      // If quota exceeded, clear all cache and don't retry
       if (error.name === 'QuotaExceededError') {
-        console.warn('localStorage quota exceeded, clearing old cache...');
+        console.warn('localStorage quota exceeded, clearing all cache...');
         this.clearOldCache();
-        try {
-          // Try one more time after clearing
-          localStorage.setItem(`cache_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
-        } catch (retryError) {
-          console.warn('Failed to cache even after clearing:', retryError);
-        }
+        // Don't retry - just use memory cache
       } else {
         console.warn('Failed to cache in localStorage:', error);
       }

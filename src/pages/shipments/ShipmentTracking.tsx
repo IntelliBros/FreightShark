@@ -1383,7 +1383,8 @@ export const ShipmentTracking = () => {
             Shipment Documents
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {shipment.documents.map((doc: any) => (
+            {shipment.documents && Array.isArray(shipment.documents) && shipment.documents.length > 0 ? (
+              shipment.documents.map((doc: any) => (
               <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:border-[#2E3B55]/30 transition">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center min-w-0 flex-1">
@@ -1512,7 +1513,13 @@ export const ShipmentTracking = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No documents uploaded yet. Use the upload button below to add documents.
+              </div>
+            )}
+            {/* Upload button - always show */}
             <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-center">
               <input
                 type="file"
