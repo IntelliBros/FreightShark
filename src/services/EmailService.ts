@@ -34,23 +34,55 @@ class EmailService {
   async getSmtpConfig(): Promise<SMTPConfig | null> {
     try {
       const { supabaseService } = await import('./supabaseService');
-      const { data } = await supabaseService.supabase.rpc('get_smtp_config');
 
-      if (!data || !data.enabled) {
+      // Try to use the function if it exists
+      try {
+        const { data } = await supabaseService.supabase.rpc('get_smtp_config');
+        if (data && data.enabled) {
+          return {
+            host: data.host,
+            port: data.port,
+            secure: data.secure,
+            auth: {
+              user: data.auth.user,
+              pass: data.auth.pass
+            },
+            from: {
+              name: data.from.name,
+              email: data.from.email
+            }
+          };
+        }
+      } catch (funcError) {
+        console.log('get_smtp_config function not found, fetching settings individually');
+      }
+
+      // Fallback: fetch settings individually
+      const settings: Record<string, string> = {};
+      const keys = ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_pass', 'smtp_from_name', 'smtp_from_email', 'smtp_enabled'];
+
+      for (const key of keys) {
+        const setting = await supabaseService.systemSettings.get(key);
+        if (setting) {
+          settings[key] = setting.value;
+        }
+      }
+
+      if (!settings.smtp_enabled || settings.smtp_enabled !== 'true' || !settings.smtp_host) {
         return null;
       }
 
       return {
-        host: data.host,
-        port: data.port,
-        secure: data.secure,
+        host: settings.smtp_host || '',
+        port: parseInt(settings.smtp_port || '587'),
+        secure: settings.smtp_secure === 'true',
         auth: {
-          user: data.auth.user,
-          pass: data.auth.pass
+          user: settings.smtp_user || '',
+          pass: settings.smtp_pass || ''
         },
         from: {
-          name: data.from.name,
-          email: data.from.email
+          name: settings.smtp_from_name || 'FreightShark',
+          email: settings.smtp_from_email || ''
         }
       };
     } catch (error) {
@@ -63,27 +95,24 @@ class EmailService {
     try {
       const { supabaseService } = await import('./supabaseService');
 
-      const smtpData = {
-        host: config.host,
-        port: config.port.toString(),
-        secure: config.secure.toString(),
-        auth: {
-          user: config.auth.user,
-          pass: config.auth.pass
-        },
-        from: {
-          name: config.from.name,
-          email: config.from.email
-        },
-        enabled: 'true'
-      };
+      // Update each setting individually in the system_settings table
+      const updates = [
+        { key: 'smtp_host', value: config.host },
+        { key: 'smtp_port', value: config.port.toString() },
+        { key: 'smtp_secure', value: config.secure.toString() },
+        { key: 'smtp_user', value: config.auth.user },
+        { key: 'smtp_pass', value: config.auth.pass },
+        { key: 'smtp_from_name', value: config.from.name },
+        { key: 'smtp_from_email', value: config.from.email },
+        { key: 'smtp_enabled', value: 'true' }
+      ];
 
-      const { error } = await supabaseService.supabase.rpc('update_smtp_config', {
-        config: smtpData
-      });
-
-      if (error) {
-        throw error;
+      // Update each setting
+      for (const update of updates) {
+        const { error } = await supabaseService.systemSettings.update(update.key, update.value);
+        if (error && error.code !== 'PGRST116') { // Ignore "no rows" error
+          console.error(`Failed to update ${update.key}:`, error);
+        }
       }
 
       console.log('✅ SMTP configuration saved to Supabase');
