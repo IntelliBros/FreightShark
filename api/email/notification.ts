@@ -324,6 +324,88 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
       `),
       text: `Quote Request #${variables.quoteId} Received! Dear ${variables.customerName}, we have successfully received your quote request and our experts are working on it. You'll receive your detailed quote within 1 business day. Track your quote status in your dashboard or contact us at quotes@freightshark.com`
     },
+    'quote-created': {
+      subject: `Quote #${variables.quoteId} has been created for your request`,
+      html: wrapTemplate(`
+        <!-- Header -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <h1 style="color: #16a34a; margin: 0 0 10px 0; font-size: 28px; font-family: Arial, sans-serif;">
+                ✨ Your Quote is Ready!
+              </h1>
+              <p style="color: #666666; font-size: 16px; margin: 0; font-family: Arial, sans-serif;">
+                Quote ID: <strong>#${variables.quoteId}</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Greeting -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="padding: 20px; background-color: #f8f9fa; border-left: 4px solid #00b4d8;">
+              <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+                <strong>Dear ${variables.customerName},</strong>
+              </p>
+              <p style="color: #555555; font-size: 15px; margin: 0; line-height: 1.6; font-family: Arial, sans-serif;">
+                Great news! We have created a detailed quote for your request <strong>#${variables.requestId}</strong>.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Quote Details -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td style="padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px;">
+              <p style="color: #ffffff; font-size: 14px; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">
+                Total Quote Amount
+              </p>
+              <p style="color: #ffffff; font-size: 32px; margin: 0; font-weight: bold;">
+                $${variables.amount}
+              </p>
+              <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 10px 0 0 0;">
+                Valid until: ${variables.validUntil}
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Next Steps -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td>
+              <h3 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0;">Next Steps:</h3>
+              <ol style="color: #666666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Review the detailed quote in your dashboard</li>
+                <li>Accept the quote if it meets your requirements</li>
+                <li>Our team will begin processing your shipment immediately</li>
+              </ol>
+            </td>
+          </tr>
+        </table>
+
+        <!-- CTA Button -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td align="center">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #00b4d8; padding: 12px 30px; text-align: center;">
+                    <a href="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/quotes/${variables.quoteId}"
+                       style="color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">
+                      Review & Accept Quote
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Quote #${variables.quoteId} Created! Dear ${variables.customerName}, we have created a quote for your request #${variables.requestId}. Total Amount: $${variables.amount}. Valid until: ${variables.validUntil}. Please log in to review and accept the quote.`
+    },
     'quote-ready': {
       subject: `Your Quote #${variables.quoteId} is ready`,
       html: wrapTemplate(`
@@ -548,6 +630,162 @@ function createEmailTemplate(templateId: string, variables: Record<string, strin
         </table>
       `),
       text: `Invoice for Shipment ${variables.shipmentId}. Dear ${variables.customerName}, an invoice has been generated. Amount Due: ${variables.amount}. Due Date: ${variables.dueDate}. IMPORTANT: Your shipment will not leave the warehouse until payment is received. Please log in to view and pay.`
+    },
+    'shipment-created': {
+      subject: `Your Shipment ${variables.shipmentId} has been created`,
+      html: wrapTemplate(`
+        <!-- Header -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <h1 style="color: #16a34a; margin: 0 0 10px 0; font-size: 28px; font-family: Arial, sans-serif;">
+                📦 Shipment Created Successfully!
+              </h1>
+              <p style="color: #666666; font-size: 16px; margin: 0; font-family: Arial, sans-serif;">
+                Shipment ID: <strong>${variables.shipmentId}</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Greeting -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="padding: 20px; background-color: #f8f9fa; border-left: 4px solid #00b4d8;">
+              <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+                <strong>Dear ${variables.customerName},</strong>
+              </p>
+              <p style="color: #555555; font-size: 15px; margin: 0; line-height: 1.6; font-family: Arial, sans-serif;">
+                Great news! Your shipment has been created and is being processed by our logistics team.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- What Happens Next -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px;">
+          <tr>
+            <td>
+              <h3 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0;">What Happens Next:</h3>
+              <ul style="color: #666666; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Our team will arrange pickup from the origin</li>
+                <li>You'll receive tracking information once the shipment is picked up</li>
+                <li>Real-time updates will be available in your dashboard</li>
+              </ul>
+            </td>
+          </tr>
+        </table>
+
+        <!-- CTA Button -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td align="center">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #00b4d8; padding: 12px 30px; text-align: center;">
+                    <a href="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/shipments/${variables.shipmentId}"
+                       style="color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">
+                      Track Your Shipment
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Shipment ${variables.shipmentId} Created! Dear ${variables.customerName}, your shipment has been created and is being processed. Our team will provide tracking information once your shipment is picked up.`
+    },
+    'shipment-delivered': {
+      subject: `Your Shipment ${variables.shipmentId} has been delivered! 🎉`,
+      html: wrapTemplate(`
+        <!-- Header -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <h1 style="color: #16a34a; margin: 0 0 10px 0; font-size: 28px; font-family: Arial, sans-serif;">
+                🎉 Shipment Delivered Successfully!
+              </h1>
+              <p style="color: #666666; font-size: 16px; margin: 0; font-family: Arial, sans-serif;">
+                Shipment ID: <strong>${variables.shipmentId}</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Greeting -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="padding: 20px; background-color: #dcfce7; border-left: 4px solid #16a34a;">
+              <p style="color: #333333; font-size: 16px; margin: 0 0 10px 0; font-family: Arial, sans-serif;">
+                <strong>Dear ${variables.customerName},</strong>
+              </p>
+              <p style="color: #555555; font-size: 15px; margin: 0; line-height: 1.6; font-family: Arial, sans-serif;">
+                Excellent news! Your shipment has been successfully delivered to its destination.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Delivery Details -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td style="padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+              <h3 style="color: #1e293b; font-size: 18px; margin: 0 0 15px 0;">Delivery Details:</h3>
+              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 5px 0;">
+                    <strong style="color: #64748b; font-size: 14px;">Delivered to:</strong>
+                    <p style="color: #1e293b; font-size: 14px; margin: 5px 0 0 0;">${variables.destination}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0;">
+                    <strong style="color: #64748b; font-size: 14px;">Delivery Date:</strong>
+                    <p style="color: #1e293b; font-size: 14px; margin: 5px 0 0 0;">${variables.deliveryDate}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0;">
+                    <strong style="color: #64748b; font-size: 14px;">Tracking Number:</strong>
+                    <p style="color: #1e293b; font-size: 14px; margin: 5px 0 0 0;">${variables.trackingNumber}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Thank You Message -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <tr>
+            <td style="text-align: center; padding: 20px;">
+              <p style="color: #666666; font-size: 15px; margin: 0;">
+                Thank you for choosing Freight Shark for your shipping needs!
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- CTA Button -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+          <tr>
+            <td align="center">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #00b4d8; padding: 12px 30px; text-align: center;">
+                    <a href="${process.env.FRONTEND_URL || 'https://freight-shark.vercel.app'}/shipments"
+                       style="color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">
+                      View All Shipments
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `),
+      text: `Shipment ${variables.shipmentId} Delivered! Dear ${variables.customerName}, your shipment has been successfully delivered. Destination: ${variables.destination}. Delivery Date: ${variables.deliveryDate}. Tracking: ${variables.trackingNumber}. Thank you for choosing Freight Shark!`
     }
   };
 
