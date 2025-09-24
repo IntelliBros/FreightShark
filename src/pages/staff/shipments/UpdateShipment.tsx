@@ -7,6 +7,7 @@ import { SearchIcon, UploadIcon, SaveIcon, PackageIcon, MapPinIcon, FileTextIcon
 import { useToast } from '../../../context/ToastContext';
 import { useData } from '../../../context/DataContextV2';
 import { DataService } from '../../../services/DataService';
+import { notificationService } from '../../../services/NotificationService';
 
 // Shipment statuses
 const WAREHOUSE_STATUSES = [
@@ -182,9 +183,21 @@ export const UpdateShipment = () => {
               location: 'System Update',
               description: `Status updated to ${update.status} for ${warehouse?.fbaWarehouse}`
             });
-            
+
             // Update the shipment status
             await DataService.updateShipment(shipmentId, { status: update.status });
+
+            // Create notification for customer
+            if (shipment.customerId) {
+              await notificationService.createNotification({
+                user_id: shipment.customerId,
+                type: 'shipment',
+                title: `Shipment ${shipmentId} Status Update`,
+                message: `Your shipment status has been updated to "${update.status}" for warehouse ${warehouse?.fbaWarehouse || 'N/A'}`,
+                icon: 'Package',
+                link: `/shipments/${shipmentId}`
+              });
+            }
           }
 
           // Handle document uploads
