@@ -88,8 +88,10 @@ export const DocumentsHub = () => {
           console.log('   Full shipment data:', shipment);
 
           // Add invoice if it exists - handle both embedded invoice data and status-only invoices
+          console.log('   Checking for invoice:', shipment.invoice);
           if (shipment.invoice) {
             const invoiceData = shipment.invoice;
+            console.log('   Found invoice data:', invoiceData);
 
             // Create a complete invoice object with all necessary fields
             const completeInvoice = {
