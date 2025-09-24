@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Email Notification Flow</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f8fafc;
+        }
+        h1 {
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #475569;
+        }
+        .test-item {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .test-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #334155;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            width: 300px;
+            margin-right: 10px;
+        }
+        .log-output {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid transparent;
+        }
+        .log-success {
+            border-left-color: #10b981;
+        }
+        .log-error {
+            border-left-color: #ef4444;
+        }
+        .log-info {
+            border-left-color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Email Notification Flow</h1>
+
+    <div class="test-section">
+        <div class="test-header">1️⃣ Check SMTP Configuration</div>
+        <div class="test-item">
+            <div class="test-title">Verify SMTP settings are loaded from database</div>
+            <button onclick="checkSmtpConfig()">Check SMTP Config</button>
+            <div id="smtp-status"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">2️⃣ Test Direct Email Sending</div>
+        <div class="test-item">
+            <div class="test-title">Send test email directly through EmailService</div>
+            <input type="email" id="test-email" placeholder="Enter email address" value="test@example.com">
+            <button onclick="sendTestEmail()">Send Test Email</button>
+            <div id="direct-status"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">3️⃣ Test Email Templates</div>
+        <div class="test-item">
+            <div class="test-title">Test each email template with sample data</div>
+            <select id="template-select">
+                <option value="quote-requested">Quote Request Received</option>
+                <option value="quote-created">Quote Created</option>
+                <option value="shipment-created">Shipment Created</option>
+                <option value="shipment-update">Shipment Status Update</option>
+                <option value="shipment-delivered">Shipment Delivered</option>
+            </select>
+            <input type="email" id="template-email" placeholder="Enter email address" value="test@example.com">
+            <button onclick="testTemplate()">Test Template</button>
+            <div id="template-status"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">4️⃣ Test Full Workflow</div>
+        <div class="test-item">
+            <div class="test-title">Simulate creating a quote request and verify email is sent</div>
+            <button onclick="testQuoteRequestFlow()">Test Quote Request Flow</button>
+            <div id="workflow-status"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">📋 Test Log</div>
+        <div class="log-output" id="log-output">
+            <div class="log-entry log-info">Test session started...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        window.addLog = function(message, type = 'info') {
+            const logOutput = document.getElementById('log-output');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logOutput.appendChild(entry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        };
+
+        window.updateStatus = function(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.className = `status ${type}`;
+            element.textContent = message;
+        };
+
+        window.checkSmtpConfig = async function() {
+            try {
+                addLog('Checking SMTP configuration...', 'info');
+                updateStatus('smtp-status', 'Checking...', 'pending');
+
+                // Import EmailService
+                const module = await import('/src/services/EmailService.ts');
+                const config = await module.emailService.getSmtpConfig();
+
+                if (config) {
+                    addLog(`✅ SMTP configured: ${config.host}:${config.port}`, 'success');
+                    addLog(`From: ${config.from.name} <${config.from.email}>`, 'info');
+                    updateStatus('smtp-status',
+                        `✅ SMTP configured: ${config.host}:${config.port} | From: ${config.from.name} <${config.from.email}>`,
+                        'success');
+                } else {
+                    addLog('❌ No SMTP configuration found', 'error');
+                    updateStatus('smtp-status', '❌ No SMTP configuration found in database', 'error');
+                }
+            } catch (error) {
+                addLog(`Error checking SMTP: ${error.message}`, 'error');
+                updateStatus('smtp-status', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.sendTestEmail = async function() {
+            try {
+                const email = document.getElementById('test-email').value;
+                if (!email) {
+                    updateStatus('direct-status', 'Please enter an email address', 'error');
+                    return;
+                }
+
+                addLog(`Sending test email to ${email}...`, 'info');
+                updateStatus('direct-status', 'Sending...', 'pending');
+
+                const module = await import('/src/services/EmailService.ts');
+                const result = await module.emailService.sendTestEmail(email);
+
+                if (result.success) {
+                    addLog(`✅ Email sent to ${email}`, 'success');
+                    updateStatus('direct-status', result.message, 'success');
+                } else {
+                    addLog(`❌ Failed to send email: ${result.message}`, 'error');
+                    updateStatus('direct-status', result.message, 'error');
+                }
+            } catch (error) {
+                addLog(`Error sending test email: ${error.message}`, 'error');
+                updateStatus('direct-status', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testTemplate = async function() {
+            try {
+                const templateId = document.getElementById('template-select').value;
+                const email = document.getElementById('template-email').value;
+
+                if (!email) {
+                    updateStatus('template-status', 'Please enter an email address', 'error');
+                    return;
+                }
+
+                addLog(`Testing template '${templateId}' to ${email}...`, 'info');
+                updateStatus('template-status', 'Sending...', 'pending');
+
+                // Create sample variables for each template
+                const sampleVariables = {
+                    'quote-requested': {
+                        quoteId: 'Q-TEST-001',
+                        customerName: 'John Doe',
+                        submittedDate: new Date().toLocaleString()
+                    },
+                    'quote-created': {
+                        quoteId: 'Q-TEST-002',
+                        requestId: 'REQ-TEST-001',
+                        customerName: 'John Doe',
+                        amount: '2,500.00',
+                        validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
+                    },
+                    'shipment-created': {
+                        shipmentId: 'FS-TEST-001',
+                        customerName: 'John Doe'
+                    },
+                    'shipment-update': {
+                        shipmentId: 'FS-TEST-001',
+                        customerName: 'John Doe',
+                        status: 'In Transit',
+                        trackingInfo: 'Package picked up and on the way to destination'
+                    },
+                    'shipment-delivered': {
+                        shipmentId: 'FS-TEST-001',
+                        customerName: 'John Doe',
+                        destination: '123 Main St, New York, NY',
+                        deliveryDate: new Date().toLocaleDateString(),
+                        trackingNumber: 'TRK123456789'
+                    }
+                };
+
+                const module = await import('/src/services/EmailService.ts');
+                const result = await module.emailService.sendNotification(
+                    email,
+                    templateId,
+                    sampleVariables[templateId]
+                );
+
+                if (result.success) {
+                    addLog(`✅ Template '${templateId}' sent to ${email}`, 'success');
+                    updateStatus('template-status', result.message, 'success');
+                } else {
+                    addLog(`❌ Failed to send template: ${result.message}`, 'error');
+                    updateStatus('template-status', result.message, 'error');
+                }
+            } catch (error) {
+                addLog(`Error testing template: ${error.message}`, 'error');
+                updateStatus('template-status', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testQuoteRequestFlow = async function() {
+            try {
+                addLog('Starting quote request workflow test...', 'info');
+                updateStatus('workflow-status', 'Creating test quote request...', 'pending');
+
+                // Import necessary services
+                const dataModule = await import('/src/services/DataService.ts');
+                const authModule = await import('/src/context/AuthContext.tsx');
+
+                // Create a mock user for testing
+                const testUser = {
+                    id: 'test-user-' + Date.now(),
+                    email: 'test@example.com',
+                    name: 'Test Customer',
+                    role: 'customer'
+                };
+
+                // Store test user in localStorage temporarily
+                localStorage.setItem('currentUser', JSON.stringify(testUser));
+                addLog('Created test user: ' + testUser.email, 'info');
+
+                // Create a test quote request
+                const quoteRequest = {
+                    products: [{
+                        name: 'Test Product',
+                        description: 'Test product for email flow verification',
+                        quantity: 100,
+                        weight: 50,
+                        value: 1000,
+                        hsCode: '1234.56'
+                    }],
+                    destinationWarehouses: [{
+                        warehouseName: 'Amazon FBA LAX9',
+                        address: '123 Test St, Los Angeles, CA 90001',
+                        cartonCount: 5,
+                        totalWeight: 50,
+                        weightUnit: 'kg',
+                        dimensions: {
+                            length: 40,
+                            width: 30,
+                            height: 20,
+                            unit: 'cm'
+                        }
+                    }],
+                    shippingType: 'sea',
+                    originCountry: 'China',
+                    incoterm: 'FOB',
+                    notes: 'Test quote request for email verification'
+                };
+
+                addLog('Submitting quote request...', 'info');
+                const result = await dataModule.dataService.createQuoteRequest(quoteRequest);
+
+                if (result.success) {
+                    addLog(`✅ Quote request created: ${result.id}`, 'success');
+                    addLog('📧 Email notification should have been triggered', 'info');
+                    updateStatus('workflow-status',
+                        `✅ Quote request ${result.id} created successfully. Check email logs above.`,
+                        'success');
+                } else {
+                    addLog(`❌ Failed to create quote request: ${result.message}`, 'error');
+                    updateStatus('workflow-status', `Failed: ${result.message}`, 'error');
+                }
+
+                // Clean up test user
+                localStorage.removeItem('currentUser');
+
+            } catch (error) {
+                addLog(`Error in workflow test: ${error.message}`, 'error');
+                updateStatus('workflow-status', `Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Initial check on load
+        window.addEventListener('load', () => {
+            addLog('Page loaded, ready to test email flow', 'info');
+            checkSmtpConfig();
+        });
+    </script>
+</body>
+</html>
