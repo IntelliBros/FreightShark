@@ -535,7 +535,7 @@ export const DataService = {
         cargoDetails: cargoDetails,
         estimatedTotal: shipment.quotes?.total_cost || 0,
         invoice: invoice, // Use extracted invoice from destination field
-        documents: documents, // Use extracted documents from destination field
+        documents: documents, // Use documents from dedicated column or fallback to destination field
         createdAt: shipment.created_at || shipment.createdAt // Map created_at to createdAt
       };
     });
@@ -561,7 +561,8 @@ export const DataService = {
     let invoice = null;
     let masterCargo = shipment.master_cargo || {};
     let actualTotal = null;
-    let documents = [];
+    // Use documents from the dedicated column first
+    let documents = shipment.documents || [];
 
     if (shipment.destination) {
       try {
@@ -591,9 +592,11 @@ export const DataService = {
           actualTotal = parsed.actualTotal;
         }
 
-        // Extract documents if they exist
-        if (parsed.documents && Array.isArray(parsed.documents)) {
-          documents = parsed.documents;
+        // Extract documents from destination only if we don't have them in the dedicated column
+        if (!documents || documents.length === 0) {
+          if (parsed.documents && Array.isArray(parsed.documents)) {
+            documents = parsed.documents;
+          }
         }
       } catch (e) {
         console.log('Could not parse destination:', shipment.destination);
