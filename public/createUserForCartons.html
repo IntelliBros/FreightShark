@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create User for Carton Configurations</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create User for Carton Configurations</h1>
+        <p class="description">
+            This tool will create the necessary user record in the database to allow carton configurations to be saved.
+        </p>
+
+        <div id="status" class="status"></div>
+
+        <button id="checkUserBtn" onclick="checkUser()">Check Current User</button>
+        <button id="createUserBtn" onclick="createUser()" disabled>Create User in Database</button>
+
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ0NjEzMjYsImV4cCI6MjA1MDAzNzMyNn0.h4DLsGmvkpvCFqk7KEp1l5gwXUCDhGvMtFCNgxRJMTA';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        let currentUserData = null;
+
+        function addLog(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        window.checkUser = async function() {
+            try {
+                // Get current user from localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+                if (!currentUser || !currentUser.id) {
+                    showStatus('No user logged in. Please log in first.', 'error');
+                    return;
+                }
+
+                currentUserData = currentUser;
+                addLog(`Found current user: ${currentUser.id} (${currentUser.name})`);
+
+                // Check if user exists in database
+                const { data: existingUser, error: checkError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('display_id', currentUser.id)
+                    .maybeSingle();
+
+                if (checkError) {
+                    addLog(`Error checking user: ${checkError.message}`, 'error');
+                }
+
+                if (existingUser) {
+                    showStatus(`User already exists in database with ID: ${existingUser.id}`, 'success');
+                    addLog(`User found in database: ${JSON.stringify(existingUser)}`);
+                    document.getElementById('createUserBtn').disabled = true;
+                } else {
+                    showStatus('User not found in database. Click "Create User" to add them.', 'info');
+                    addLog('User not found in database');
+                    document.getElementById('createUserBtn').disabled = false;
+                }
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                addLog(`Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.createUser = async function() {
+            if (!currentUserData) {
+                showStatus('Please check current user first', 'error');
+                return;
+            }
+
+            try {
+                addLog('Creating user in database...');
+
+                // Generate a numeric ID based on timestamp
+                const numericId = Math.floor(Date.now() / 1000);
+
+                const userData = {
+                    id: numericId,
+                    display_id: currentUserData.id,
+                    name: currentUserData.name || 'Unknown User',
+                    email: currentUserData.email || `${currentUserData.id}@example.com`,
+                    password_hash: 'mock_hash',
+                    company: currentUserData.company || '',
+                    role: currentUserData.role || 'user',
+                    amazon_seller_id: currentUserData.amazonSellerId || null,
+                    ein_tax_id: currentUserData.einTaxId || null,
+                    staff_position: currentUserData.staffPosition || null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                addLog(`Creating user with data: ${JSON.stringify(userData)}`);
+
+                const { data, error } = await supabase
+                    .from('users')
+                    .insert([userData])
+                    .select()
+                    .single();
+
+                if (error) {
+                    if (error.code === '23505') {
+                        showStatus('User already exists', 'info');
+                        addLog('User already exists (duplicate key)');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    showStatus(`User created successfully with ID: ${data.id}`, 'success');
+                    addLog(`User created: ${JSON.stringify(data)}`);
+
+                    // Now update the carton_configurations table to use the numeric ID
+                    addLog('Updating carton configurations foreign key...');
+
+                    // We need to update any existing carton configs to use the numeric ID
+                    const { error: updateError } = await supabase
+                        .from('carton_configurations')
+                        .update({ user_id: numericId.toString() })
+                        .eq('user_id', currentUserData.id);
+
+                    if (updateError) {
+                        addLog(`Note: Could not update existing carton configs: ${updateError.message}`);
+                    } else {
+                        addLog('Updated existing carton configurations');
+                    }
+
+                    document.getElementById('createUserBtn').disabled = true;
+                }
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                addLog(`Error: ${JSON.stringify(error)}`, 'error');
+            }
+        };
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            window.checkUser();
+        });
+    </script>
+</body>
+</html>
