@@ -2,280 +2,195 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run System Settings Migration</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>System Settings Migration</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            background: #f5f5f5;
+            font-family: system-ui;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f9fafb;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        button {
-            background: #00b4d8;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px 5px;
-        }
-        button:hover {
-            background: #0096c7;
-        }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .output {
-            margin-top: 20px;
+        h1 { color: #111827; margin-bottom: 10px; }
+        .info {
+            background: #fef3c7;
             padding: 15px;
-            background: #f8f9fa;
             border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #f59e0b;
+        }
+        .sql-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
             font-size: 14px;
-            max-height: 400px;
-            overflow-y: auto;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .copy-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .copy-btn:hover {
+            background: #2563eb;
         }
         .success {
-            color: #28a745;
+            background: #10b981;
+            color: white;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
             font-weight: bold;
-        }
-        .error {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .info {
-            color: #17a2b8;
-        }
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 20px;
+            color: #3b82f6;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 System Settings Migration</h1>
+    <h1>Fix System Settings Table for Commission Rate</h1>
 
-        <div class="warning">
-            <strong>⚠️ Important:</strong> This will create the system_settings table for storing global configuration like sample delivery addresses.
-        </div>
-
-        <button onclick="runMigration()">Run Migration</button>
-        <button onclick="checkTable()">Check Table Status</button>
-        <button onclick="testSettings()">Test Settings</button>
-
-        <div id="output" class="output"></div>
+    <div class="info">
+        <strong>⚠️ Important:</strong> This migration creates a key-value store for system settings, which is required for storing the commission rate and preventing quote creation errors.
     </div>
 
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <div class="step" data-step="1.">Go to your Supabase Dashboard</div>
+        <div class="step" data-step="2.">Navigate to SQL Editor (in the left sidebar)</div>
+        <div class="step" data-step="3.">Click "New Query"</div>
+        <div class="step" data-step="4.">Copy the SQL below and paste it into the editor</div>
+        <div class="step" data-step="5.">Click "Run" to execute the migration</div>
+    </div>
+
+    <h2>Migration SQL:</h2>
+    <div class="sql-code" id="sql-code">-- Fix System Settings Table for Commission Rate Storage
+-- This migration creates a proper key-value store for system settings
+
+-- First, rename the old system_settings table if it exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'system_settings') THEN
+        -- Rename old table to preserve data
+        ALTER TABLE IF EXISTS system_settings RENAME TO system_settings_old;
+    END IF;
+END $$;
+
+-- Create a key-value store table for system settings
+CREATE TABLE IF NOT EXISTS system_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default commission rate
+INSERT INTO system_settings (key, value, description)
+VALUES ('commission_rate', '0.50', 'Commission rate per kg in USD')
+ON CONFLICT (key) DO NOTHING;
+
+-- Migrate sample delivery address from old table if it exists
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'system_settings_old') THEN
+        INSERT INTO system_settings (key, value, description)
+        SELECT
+            'sample_delivery_address',
+            sample_delivery_address,
+            'Default address for sample deliveries'
+        FROM system_settings_old
+        WHERE sample_delivery_address IS NOT NULL
+        LIMIT 1
+        ON CONFLICT (key) DO NOTHING;
+    END IF;
+END $$;
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_system_settings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for updating updated_at
+DROP TRIGGER IF EXISTS trigger_update_system_settings_updated_at ON system_settings;
+CREATE TRIGGER trigger_update_system_settings_updated_at
+BEFORE UPDATE ON system_settings
+FOR EACH ROW
+EXECUTE FUNCTION update_system_settings_updated_at();
+
+-- Disable RLS for system settings
+ALTER TABLE system_settings DISABLE ROW LEVEL SECURITY;
+
+-- Grant permissions
+GRANT ALL ON system_settings TO authenticated;
+GRANT ALL ON system_settings TO anon;
+GRANT ALL ON system_settings TO service_role;
+
+-- Drop the old table if it exists
+DROP TABLE IF EXISTS system_settings_old;
+
+-- Verify the migration worked
+SELECT * FROM system_settings;
+</div>
+
+    <div class="button-group">
+        <button class="copy-btn" onclick="copySQL()">Copy SQL to Clipboard</button>
+        <button class="copy-btn" style="background: #f59e0b;" onclick="window.open('https://supabase.com/dashboard/project/_/sql/new', '_blank')">Open Supabase SQL Editor</button>
+    </div>
+
+    <div id="message" style="margin-top: 20px;"></div>
+
     <script>
-        const supabaseUrl = 'https://isvuolzqqjutrfytebtl.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzdnVvbHpxcWp1dHJmeXRlYnRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NDc4MTAsImV4cCI6MjA1MDUyMzgxMH0.jClrCvPtmGLlWJvdv3cAq0F5BQVXZF6w3YTCwtGHG84';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        function log(message, type = 'info') {
-            const output = document.getElementById('output');
-            const timestamp = new Date().toLocaleTimeString();
-            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
-            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
-            output.scrollTop = output.scrollHeight;
-        }
-
-        async function runMigration() {
-            log('Starting system settings migration...', 'info');
-
+        async function copySQL() {
+            const sqlCode = document.getElementById('sql-code').textContent;
             try {
-                // Create system_settings table
-                const createTableSQL = `
-                    CREATE TABLE IF NOT EXISTS system_settings (
-                        id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
-                        sample_delivery_address TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                `;
+                await navigator.clipboard.writeText(sqlCode);
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('success');
 
-                log('Creating system_settings table...', 'info');
-                const { error: createError } = await supabase.rpc('exec_sql', {
-                    sql: createTableSQL
-                }).catch(err => {
-                    // If RPC doesn't exist, try direct approach
-                    return { error: err };
-                });
-
-                if (createError) {
-                    log(`Note: Could not create table via RPC: ${createError.message}`, 'info');
-
-                    // Try alternative approach - insert default record
-                    log('Attempting to create table by inserting default record...', 'info');
-                    const { error: insertError } = await supabase
-                        .from('system_settings')
-                        .insert({
-                            id: 'default',
-                            sample_delivery_address: 'DDP Freight Consolidation Center, 123 Logistics Avenue, Building 7, Guangzhou, Guangdong 510000, China'
-                        });
-
-                    if (insertError && insertError.code !== '23505') { // Ignore duplicate key error
-                        log(`Error creating default settings: ${insertError.message}`, 'error');
-                        return;
-                    }
-                }
-
-                // Check if default settings exist
-                log('Checking for existing settings...', 'info');
-                const { data: existing, error: checkError } = await supabase
-                    .from('system_settings')
-                    .select('*')
-                    .eq('id', 'default')
-                    .single();
-
-                if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows found
-                    log(`Error checking settings: ${checkError.message}`, 'error');
-                }
-
-                if (!existing) {
-                    // Insert default settings
-                    log('Inserting default settings...', 'info');
-                    const { data, error: insertError } = await supabase
-                        .from('system_settings')
-                        .insert({
-                            id: 'default',
-                            sample_delivery_address: 'DDP Freight Consolidation Center, 123 Logistics Avenue, Building 7, Guangzhou, Guangdong 510000, China'
-                        })
-                        .select()
-                        .single();
-
-                    if (insertError) {
-                        log(`Error inserting default settings: ${insertError.message}`, 'error');
-                        return;
-                    }
-
-                    log('Default settings created successfully!', 'success');
-                    log(`Default address: ${data.sample_delivery_address}`, 'info');
-                } else {
-                    log('Settings already exist', 'info');
-                    log(`Current address: ${existing.sample_delivery_address}`, 'info');
-                }
-
-                log('\n✅ Migration completed successfully!', 'success');
-
-            } catch (error) {
-                log(`Error during migration: ${error.message}`, 'error');
+                setTimeout(() => {
+                    btn.textContent = 'Copy SQL to Clipboard';
+                    btn.classList.remove('success');
+                }, 3000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select the text manually.');
             }
         }
-
-        async function checkTable() {
-            log('Checking system_settings table...', 'info');
-
-            try {
-                const { data, error } = await supabase
-                    .from('system_settings')
-                    .select('*');
-
-                if (error) {
-                    log(`Table check failed: ${error.message}`, 'error');
-                    log('Table may not exist yet. Run the migration first.', 'info');
-                    return;
-                }
-
-                if (data && data.length > 0) {
-                    log(`✅ Table exists with ${data.length} record(s)`, 'success');
-                    data.forEach(record => {
-                        log(`\nRecord ID: ${record.id}`, 'info');
-                        log(`Sample Delivery Address: ${record.sample_delivery_address || '(not set)'}`, 'info');
-                        log(`Created: ${record.created_at}`, 'info');
-                        log(`Updated: ${record.updated_at}`, 'info');
-                    });
-                } else {
-                    log('Table exists but has no records', 'info');
-                }
-
-            } catch (error) {
-                log(`Error checking table: ${error.message}`, 'error');
-            }
-        }
-
-        async function testSettings() {
-            log('Testing settings operations...', 'info');
-
-            try {
-                // Test read
-                log('\n1. Testing READ operation...', 'info');
-                const { data: readData, error: readError } = await supabase
-                    .from('system_settings')
-                    .select('*')
-                    .eq('id', 'default')
-                    .single();
-
-                if (readError) {
-                    log(`Read failed: ${readError.message}`, 'error');
-                    return;
-                }
-                log('✅ Read successful', 'success');
-
-                // Test update
-                log('\n2. Testing UPDATE operation...', 'info');
-                const testAddress = 'Test Warehouse, 456 Test Street, Test City, Test State 12345';
-                const { error: updateError } = await supabase
-                    .from('system_settings')
-                    .update({
-                        sample_delivery_address: testAddress,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', 'default');
-
-                if (updateError) {
-                    log(`Update failed: ${updateError.message}`, 'error');
-                    return;
-                }
-                log('✅ Update successful', 'success');
-
-                // Restore original
-                log('\n3. Restoring original address...', 'info');
-                const { error: restoreError } = await supabase
-                    .from('system_settings')
-                    .update({
-                        sample_delivery_address: readData.sample_delivery_address,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', 'default');
-
-                if (restoreError) {
-                    log(`Restore failed: ${restoreError.message}`, 'error');
-                    return;
-                }
-                log('✅ Restore successful', 'success');
-
-                log('\n✅ All tests passed!', 'success');
-
-            } catch (error) {
-                log(`Test error: ${error.message}`, 'error');
-            }
-        }
-
-        // Auto-check on load
-        window.onload = () => {
-            log('Ready to run system settings migration', 'info');
-            log('Click "Check Table Status" to see current state', 'info');
-        };
     </script>
 </body>
 </html>

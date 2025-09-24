@@ -291,6 +291,7 @@ export const ProvideQuote = () => {
       addToast('Quote submitted successfully!', 'success');
       navigate('/staff/quotes/pending');
     } catch (error) {
+      console.error('Failed to create quote:', error);
       addToast('Failed to submit quote. Please try again.', 'error');
     } finally {
       setIsSaving(false);

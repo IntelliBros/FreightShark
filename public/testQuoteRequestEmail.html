@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Quote Request Email</title>
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            border: 1px solid #e5e7eb;
+        }
+        .success { background: #ecfdf5; border-color: #10b981; }
+        .error { background: #fef2f2; border-color: #ef4444; }
+        h1 { color: #111827; }
+        .info {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #0284c7;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Quote Request Email Notification</h1>
+
+    <div class="info">
+        This test will:
+        <ol>
+            <li>Login as a test customer</li>
+            <li>Create a quote request</li>
+            <li>Verify the email notification is sent</li>
+        </ol>
+    </div>
+
+    <button onclick="testQuoteRequestEmail()">Test Quote Request Email</button>
+    <div id="result"></div>
+
+    <script type="module">
+        import { DataService } from '../src/services/DataService.ts';
+        import { authService } from '../src/services/authService.ts';
+
+        window.testQuoteRequestEmail = async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Testing quote request email notification...\n\n';
+
+            try {
+                // Step 1: Login as test customer
+                resultDiv.textContent += '1. Logging in as test customer...\n';
+                const loginResult = await authService.login('john@example.com', 'password123');
+
+                if (!loginResult.success) {
+                    throw new Error('Failed to login: ' + loginResult.message);
+                }
+
+                const user = loginResult.user;
+                resultDiv.textContent += `   ✓ Logged in as: ${user.name} (${user.email})\n\n`;
+
+                // Step 2: Create a quote request
+                resultDiv.textContent += '2. Creating quote request...\n';
+                const quoteRequest = {
+                    customerId: user.id,
+                    serviceType: 'Air Freight',
+                    destinations: [
+                        {
+                            id: '1',
+                            fbaWarehouse: 'FBA15',
+                            amazonShipmentId: 'FBA15X234567',
+                            cartons: 100,
+                            weight: 500
+                        }
+                    ],
+                    supplierDetails: {
+                        name: 'Test Supplier Co.',
+                        address: '123 Factory Lane',
+                        city: 'Shanghai',
+                        country: 'China',
+                        contactName: 'John Smith',
+                        contactPhone: '+86 123 4567890'
+                    },
+                    cargoDetails: {
+                        cartonCount: 100,
+                        grossWeight: 500,
+                        cbm: 5.5
+                    },
+                    requestedDate: new Date().toISOString(),
+                    specialRequirements: 'Test email notification'
+                };
+
+                const createdRequest = await DataService.createQuoteRequest(quoteRequest);
+                resultDiv.textContent += `   ✓ Quote request created: ${createdRequest.id}\n\n`;
+
+                // Step 3: Check console for email notification
+                resultDiv.textContent += '3. Email notification status:\n';
+                resultDiv.textContent += '   Check the browser console for email details.\n';
+                resultDiv.textContent += '   The email should include:\n';
+                resultDiv.textContent += '   - Quote Request ID: ' + createdRequest.id + '\n';
+                resultDiv.textContent += '   - Customer Name: ' + user.name + '\n';
+                resultDiv.textContent += '   - Submitted Date: ' + new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) + '\n\n';
+
+                // Check simulated emails in localStorage
+                const simulatedEmails = JSON.parse(localStorage.getItem('freight_shark_simulated_emails') || '[]');
+                const latestEmail = simulatedEmails[simulatedEmails.length - 1];
+
+                if (latestEmail && latestEmail.template === 'quote-requested') {
+                    resultDiv.textContent += '✅ Email successfully queued!\n\n';
+                    resultDiv.textContent += 'Email Details:\n';
+                    resultDiv.textContent += JSON.stringify(latestEmail, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent += '⚠️ Email may not have been sent. Check console for details.\n';
+                    resultDiv.className = 'result';
+                }
+
+            } catch (error) {
+                resultDiv.textContent += '\n❌ Error: ' + error.message;
+                resultDiv.className = 'result error';
+                console.error('Test failed:', error);
+            }
+        };
+    </script>
+</body>
+</html>

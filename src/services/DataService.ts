@@ -326,20 +326,36 @@ export const DataService = {
     
     // Send email notification if SMTP is configured
     try {
+      console.log('📧 Preparing to send quote request email...');
+
       // Get current user from localStorage since authService.getCurrentUser might not be available
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      console.log('📧 Current user for email:', currentUser);
+
       if (currentUser?.email) {
-        await emailService.sendNotification(
+        console.log('📨 Sending quote request confirmation email to:', currentUser.email);
+
+        const emailResult = await emailService.sendNotification(
           currentUser.email,
           'quote-requested',
           {
             quoteId: result.id,
-            customerName: currentUser.name || 'Customer'
+            customerName: currentUser.name || 'Customer',
+            submittedDate: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
           }
         );
+        console.log('✅ Quote request email notification sent:', emailResult);
+      } else {
+        console.log('⚠️ Current user has no email address');
       }
     } catch (emailError) {
-      console.error('Failed to send email notification:', emailError);
+      console.error('❌ Failed to send quote request email notification:', emailError);
       // Don't fail the request if email fails
     }
     
@@ -978,14 +994,25 @@ export const DataService = {
   // Commission rate methods
   async getCommissionRate() {
     await simulateDelay(100);
-    // Get from system settings
-    const settings = await supabaseService.systemSettings.get('commission_rate');
-    return settings ? parseFloat(settings.value) : 0.50;
+    try {
+      // Try to get from system settings
+      const settings = await supabaseService.systemSettings.get('commission_rate');
+      return settings ? parseFloat(settings.value) : 0.50;
+    } catch (error: any) {
+      console.warn('System settings not available, using default commission rate:', error?.message || error);
+      // Return default commission rate if system_settings table doesn't exist
+      return 0.50;
+    }
   },
 
   async updateCommissionRate(rate: number) {
     await simulateDelay(300);
-    return await supabaseService.systemSettings.update('commission_rate', rate.toString());
+    try {
+      return await supabaseService.systemSettings.update('commission_rate', rate.toString());
+    } catch (error) {
+      console.error('Failed to update commission rate:', error);
+      throw new Error('Unable to update commission rate. Please run the system_settings migration.');
+    }
   },
 
   // Convert quote to shipment method

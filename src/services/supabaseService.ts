@@ -1115,16 +1115,22 @@ export const supabaseService = {
   // System settings
   systemSettings: {
     async get(key: string) {
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('*')
-        .eq('key', key)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('*')
+          .eq('key', key)
+          .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-        throw error;
+        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
+          console.warn(`System settings error for key '${key}':`, error);
+          return null; // Return null instead of throwing
+        }
+        return data;
+      } catch (err) {
+        console.warn(`Failed to get system setting '${key}':`, err);
+        return null; // Return null on any error
       }
-      return data;
     },
 
     async update(key: string, value: string) {

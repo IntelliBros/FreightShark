@@ -147,10 +147,10 @@ class EmailService {
     const defaultTemplates: EmailTemplate[] = [
       {
         id: 'quote-requested',
-        name: 'Quote Requested',
+        name: 'Quote Request Received',
         subject: 'Your Quote Request #{quoteId} has been received',
-        body: 'Dear {customerName},\n\nWe have received your quote request #{quoteId}. Our team will review it and respond within 1 business day.\n\nBest regards,\nFreight Shark Team',
-        variables: ['quoteId', 'customerName']
+        body: 'Dear {customerName},\n\nThank you for submitting your quote request!\n\nRequest Details:\n- Request ID: {quoteId}\n- Submitted: {submittedDate}\n\nOur team will review your request and provide a detailed quote within 1 business day.\n\nYou can track the status of your request in your dashboard at any time.\n\nBest regards,\nFreight Shark Team',
+        variables: ['quoteId', 'customerName', 'submittedDate']
       },
       {
         id: 'quote-created',
