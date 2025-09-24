@@ -193,7 +193,9 @@ export const ShipmentTracking = () => {
         const transformedShipment = {
           ...shipment,
           invoice: updatedShipmentData.invoice,
-          timeline: Array.isArray(updatedShipmentData.trackingEvents) 
+          documents: updatedShipmentData.documents || shipment.documents || [],
+          photos: updatedShipmentData.photos || shipment.photos || [],
+          timeline: Array.isArray(updatedShipmentData.trackingEvents)
             ? updatedShipmentData.trackingEvents.map((event: any) => ({
                 date: event.timestamp || event.date ? new Date(event.timestamp || event.date).toLocaleString() : 'Date not available',
                 event: event.description || 'No description',
@@ -458,6 +460,7 @@ export const ShipmentTracking = () => {
           }
           
           console.log('Starting transformation with shipmentData:', shipmentData);
+          console.log('shipmentData.documents before transformation:', shipmentData?.documents);
           
           // Safely check trackingEvents
           let safeTrackingEvents: any[] = [];
