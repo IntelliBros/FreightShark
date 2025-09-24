@@ -1337,7 +1337,7 @@ export const supabaseService = {
       console.log('Creating carton configuration in database:', config);
 
       const newConfig = {
-        id: `carton-${Date.now()}`,
+        id: `carton-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...config,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
