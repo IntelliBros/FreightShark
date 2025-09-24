@@ -861,25 +861,37 @@ export const ShipmentDetails = () => {
         setIsEditingCargo(false);
 
         // Create notification for customer about invoice
+        console.log('🔔 Attempting to create invoice notification');
+        console.log('🔔 Shipment object:', {
+          id: shipment.id,
+          customer: shipment.customer,
+          customerId: shipment.customerId,
+          customer_id: shipment.customer_id
+        });
+
         const customerId = shipment.customer?.id || shipment.customerId || shipment.customer_id;
-        console.log('Creating invoice notification for customer:', customerId);
+        console.log('🔔 Extracted customer ID:', customerId);
 
         if (customerId) {
           try {
-            await notificationService.createNotification({
+            const notificationData = {
               user_id: customerId,
               type: 'invoice',
               title: `Invoice Generated - Shipment ${shipment.id}`,
               message: `Your invoice for shipment ${shipment.id} has been generated. Total amount: $${invoiceData.total.toFixed(2)}. Payment is due by ${new Date(invoiceData.dueDate).toLocaleDateString()}.`,
               icon: 'FileText',
               link: `/shipments/${shipment.id}`
-            });
-            console.log('Invoice notification created successfully');
+            };
+
+            console.log('🔔 Creating notification with data:', notificationData);
+            const result = await notificationService.createNotification(notificationData);
+            console.log('🔔 Invoice notification created successfully:', result);
           } catch (notifError) {
-            console.error('Failed to create invoice notification:', notifError);
+            console.error('🔔 Failed to create invoice notification:', notifError);
           }
         } else {
-          console.warn('No customer ID found for invoice notification');
+          console.warn('🔔 No customer ID found for invoice notification');
+          console.warn('🔔 Full shipment object:', shipment);
         }
 
         addToast('Invoice generated successfully! The customer has been notified.', 'success');
