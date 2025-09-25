@@ -32,29 +32,32 @@ export const Reports = () => {
         req.status === 'Quote Accepted'
       );
       
-      // Find the accepted quote for this shipment to get the locked-in commission rate
-      // First try to find by quoteId and status
-      let acceptedQuote = quotes.find((q: any) =>
-        q.id === shipment.quoteId && q.status === 'Accepted'
-      );
+      // Find the quote for this shipment (regardless of status)
+      let shipmentQuote = null;
 
-      // If not found with 'Accepted' status, try just by quoteId (might have different status)
-      if (!acceptedQuote && shipment.quoteId) {
-        acceptedQuote = quotes.find((q: any) => q.id === shipment.quoteId);
-        if (!acceptedQuote) {
+      // First try by quoteId if shipment has one
+      if (shipment.quoteId) {
+        shipmentQuote = quotes.find((q: any) => q.id === shipment.quoteId);
+        if (!shipmentQuote) {
           console.log('No quote found for shipment:', shipment.id, 'with quoteId:', shipment.quoteId);
           console.log('Available quotes:', quotes.map((q: any) => ({ id: q.id, status: q.status })));
-        } else if (acceptedQuote.status !== 'Accepted') {
-          console.log('Quote found but status is:', acceptedQuote.status, 'for shipment:', shipment.id);
         }
       }
 
-      // Debug log to see quote structure
-      if (acceptedQuote && (shipment.id === 'FS-00020' || shipment.id === 'FS-00019')) {
-        console.log(`${shipment.id} Full quote object:`, acceptedQuote);
+      // If no quote found by ID, try to find any quote for this customer's request
+      if (!shipmentQuote && quoteRequest) {
+        shipmentQuote = quotes.find((q: any) =>
+          q.requestId === quoteRequest.id ||
+          (q.customerId === shipment.customerId && q.createdAt)
+        );
       }
 
-      const commissionRatePerKg = acceptedQuote?.commissionRatePerKg || 0.50; // Default to $0.50 if not found
+      // Debug log to see quote structure
+      if (shipmentQuote && (shipment.id === 'FS-00020' || shipment.id === 'FS-00019')) {
+        console.log(`${shipment.id} Full quote object:`, shipmentQuote);
+      }
+
+      const commissionRatePerKg = shipmentQuote?.commissionRatePerKg || 0.50; // Default to $0.50 if not found
       
       const origin = quoteRequest?.supplierDetails?.city 
         ? `${quoteRequest.supplierDetails.city}, ${quoteRequest.supplierDetails.country}`
@@ -293,26 +296,26 @@ export const Reports = () => {
         // Calculate commission ONLY on invoiced chargeable weight, not estimates
         const warehouseCommission = chargeableWeight ? (chargeableWeight * commissionRatePerKg) : null;
         
-        // Get the quote weight for this warehouse from the accepted quote
+        // Get the quote weight for this warehouse from the quote (should always be available)
         let quoteWeight = null;
-        if (acceptedQuote) {
+        if (shipmentQuote) {
           // The quote data maps per_warehouse_costs to warehouseRates
           // per_warehouse_costs structure: { warehouseId, name, rate, cartons, weight, subtotal }
-          if (acceptedQuote.warehouseRates && acceptedQuote.warehouseRates.length > 0) {
+          if (shipmentQuote.warehouseRates && shipmentQuote.warehouseRates.length > 0) {
             let warehouseRate = null;
 
             // Debug log to see structure
             if (shipment.id === 'FS-00020' || shipment.id === 'FS-00019') {
-              console.log(`${shipment.id} warehouseRates:`, acceptedQuote.warehouseRates);
+              console.log(`${shipment.id} warehouseRates:`, shipmentQuote.warehouseRates);
             }
 
             // If there's only one warehouse rate, always use it
-            if (acceptedQuote.warehouseRates.length === 1) {
-              warehouseRate = acceptedQuote.warehouseRates[0];
+            if (shipmentQuote.warehouseRates.length === 1) {
+              warehouseRate = shipmentQuote.warehouseRates[0];
             } else {
               // For multiple rates, try to match by warehouse
               // per_warehouse_costs uses 'name' field for warehouse code
-              warehouseRate = acceptedQuote.warehouseRates.find((wr: any) =>
+              warehouseRate = shipmentQuote.warehouseRates.find((wr: any) =>
                 wr.warehouseId === dest.id ||
                 wr.name === dest.fbaWarehouse ||  // 'name' field in per_warehouse_costs
                 wr.warehouse === dest.fbaWarehouse ||
@@ -320,8 +323,8 @@ export const Reports = () => {
               );
 
               // If no match, use index-based fallback
-              if (!warehouseRate && index < acceptedQuote.warehouseRates.length) {
-                warehouseRate = acceptedQuote.warehouseRates[index];
+              if (!warehouseRate && index < shipmentQuote.warehouseRates.length) {
+                warehouseRate = shipmentQuote.warehouseRates[index];
               }
             }
 
@@ -339,7 +342,7 @@ export const Reports = () => {
           }
 
           // Also check if per_warehouse_costs or perWarehouseCosts exists directly
-          const perWarehouseCosts = acceptedQuote.per_warehouse_costs || acceptedQuote.perWarehouseCosts;
+          const perWarehouseCosts = shipmentQuote.per_warehouse_costs || shipmentQuote.perWarehouseCosts;
           if (!quoteWeight && perWarehouseCosts && Array.isArray(perWarehouseCosts)) {
             let warehouseData = null;
 
@@ -366,11 +369,11 @@ export const Reports = () => {
           // Fallback: Check for total weight at quote level
           if (!quoteWeight) {
             // Try to get total weight from the quote
-            const totalQuoteWeight = acceptedQuote.totalWeight ||
-                                    acceptedQuote.chargeableWeight ||
-                                    acceptedQuote.estimatedWeight ||
-                                    acceptedQuote.total_weight ||
-                                    acceptedQuote.total_chargeable_weight ||
+            const totalQuoteWeight = shipmentQuote.totalWeight ||
+                                    shipmentQuote.chargeableWeight ||
+                                    shipmentQuote.estimatedWeight ||
+                                    shipmentQuote.total_weight ||
+                                    shipmentQuote.total_chargeable_weight ||
                                     null;
 
             // If there's a total weight and only one destination, use it
@@ -386,14 +389,14 @@ export const Reports = () => {
           if (!quoteWeight && shipment.quoteId) {
             console.log('No quote weight found for shipment:', shipment.id, {
               quoteId: shipment.quoteId,
-              hasAcceptedQuote: !!acceptedQuote,
-              warehouseRates: acceptedQuote?.warehouseRates,
-              per_warehouse_costs: acceptedQuote?.per_warehouse_costs,
-              perWarehouseCosts: acceptedQuote?.perWarehouseCosts,
-              totalWeight: acceptedQuote?.totalWeight,
-              total: acceptedQuote?.total,
+              hasShipmentQuote: !!shipmentQuote,
+              warehouseRates: shipmentQuote?.warehouseRates,
+              per_warehouse_costs: shipmentQuote?.per_warehouse_costs,
+              perWarehouseCosts: shipmentQuote?.perWarehouseCosts,
+              totalWeight: shipmentQuote?.totalWeight,
+              total: shipmentQuote?.total,
               destination: dest.fbaWarehouse,
-              quoteKeys: acceptedQuote ? Object.keys(acceptedQuote) : []
+              quoteKeys: shipmentQuote ? Object.keys(shipmentQuote) : []
             });
           }
         }
@@ -430,17 +433,17 @@ export const Reports = () => {
           deliveryDate: deliveryDate,
           isDelivered: dest.deliveryStatus === 'delivered' || shipment.status === 'Delivered',
           // Try to get cartons from multiple sources - destination data, invoice data, or quote data
-          totalCartons: dest.cartons || 
-                       dest.actualCartons || 
-                       dest.estimatedCartons || 
+          totalCartons: dest.cartons ||
+                       dest.actualCartons ||
+                       dest.estimatedCartons ||
                        (shipment.invoice?.warehouseDetails?.[0]?.cartons) ||
                        (shipment.invoice?.warehouseDetails?.[0]?.totalCartons) ||
                        0,
           totalWeight: dest.estimatedWeight || dest.weight || dest.grossWeight || 0,
           actualWeight: dest.actualWeight || null,
-          // Use chargeable weight from invoice if available, otherwise fall back to destination data
-          displayWeight: chargeableWeight || dest.chargeableWeight || dest.actualWeight || dest.weight || null,
-          quoteWeight: quoteWeight, // Weight used in the original quote
+          // Only show weight if invoice exists with actual weight data
+          displayWeight: chargeableWeight || invoicedActualWeight || null, // Only from invoice
+          quoteWeight: quoteWeight, // Should always show when quote exists
           soNumber: dest.soNumber || '-',
           amazonReferenceId: dest.amazonReferenceId || '-',
           invoiceStatus,
