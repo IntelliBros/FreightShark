@@ -301,7 +301,13 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
       // Fallback to localStorage cache
       const cachedNotifications = localStorage.getItem(`notifications_${user.id}`);
       if (cachedNotifications) {
-        setNotifications(JSON.parse(cachedNotifications));
+        const parsed = JSON.parse(cachedNotifications);
+        // Re-format dates for cached notifications
+        const formattedCached = parsed.map((notif: any) => ({
+          ...notif,
+          date: formatDate(new Date(notif.timestamp))
+        }));
+        setNotifications(formattedCached);
       }
     }
   }, [user]);
