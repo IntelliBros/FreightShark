@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/DataService';
 import { useData } from '../../context/DataContextV2';
+import PayeeDetailsModal, { PayeeDetails } from '../../components/PayeeDetailsModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -32,6 +33,7 @@ export const QuoteDetails = () => {
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showPayeeModal, setShowPayeeModal] = useState(false);
   
   // Check if user is staff based on the current route
   const isStaffView = location.pathname.startsWith('/staff');
@@ -84,16 +86,23 @@ export const QuoteDetails = () => {
   const { refreshData } = useData();
   
   const handleAcceptQuote = async () => {
+    // Show payee details modal instead of directly accepting
+    setShowPayeeModal(true);
+  };
+
+  const handlePayeeDetailsSubmit = async (payeeDetails: PayeeDetails) => {
+    setShowPayeeModal(false);
     setIsLoading(true);
     try {
-      // Update quote status to Accepted first
+      // Update quote with payee details and status to Accepted
       await DataService.updateQuote(id!, {
-        status: 'Accepted'
+        status: 'Accepted',
+        payeeDetails: payeeDetails
       });
-      
+
       // Convert the approved quote to a shipment
       const shipment = await DataService.convertQuoteToShipment(id!);
-      
+
       if (shipment) {
         // Refresh data context to ensure shipments are updated
         await refreshData();
@@ -906,6 +915,14 @@ export const QuoteDetails = () => {
           </div>
         </div>
       )}
+
+      {/* Payee Details Modal */}
+      <PayeeDetailsModal
+        isOpen={showPayeeModal}
+        onClose={() => setShowPayeeModal(false)}
+        onSubmit={handlePayeeDetailsSubmit}
+        initialEmail={user?.email || ''}
+      />
     </div>
   );
 };

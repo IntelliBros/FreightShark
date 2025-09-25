@@ -504,7 +504,13 @@ export const DataService = {
 
   async updateQuote(id: string, updates: any) {
     await simulateDelay(300);
-    return await supabaseService.quotes.update(id, updates);
+    // Convert payeeDetails to payee_details for database
+    const dbUpdates = { ...updates };
+    if (updates.payeeDetails) {
+      dbUpdates.payee_details = updates.payeeDetails;
+      delete dbUpdates.payeeDetails;
+    }
+    return await supabaseService.quotes.update(id, dbUpdates);
   },
 
   async acceptQuote(id: string) {

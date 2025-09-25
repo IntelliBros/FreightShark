@@ -35,6 +35,7 @@ export interface Quote {
   per_warehouse_costs?: any;
   commission_rate_per_kg?: number;
   notes?: string;
+  payee_details?: any; // Stores email, name, company, country, state/province
   created_at?: string;
   updated_at?: string;
 }

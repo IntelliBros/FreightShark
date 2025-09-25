@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Payee Details Column Migration</title>
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f9fafb;
+        }
+        h1 { color: #111827; margin-bottom: 10px; }
+        .info {
+            background: #dbeafe;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #3b82f6;
+        }
+        .success {
+            background: #dcfce7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #10b981;
+        }
+        .warning {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #f59e0b;
+        }
+        .sql-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .copy-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .copy-btn:hover {
+            background: #2563eb;
+        }
+        .success-btn {
+            background: #10b981;
+            color: white;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .feature-list {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .feature-list li::before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Add Payee Details Column to Quotes Table</h1>
+
+    <div class="info">
+        <strong>ℹ️ Purpose:</strong> This migration adds a payee_details column to the quotes table to store customer payee information (email, name, company, country, state/province) when they accept a quote.
+    </div>
+
+    <div class="feature-list">
+        <h2>What This Migration Does:</h2>
+        <ul>
+            <li>Adds a JSONB column called payee_details to the quotes table</li>
+            <li>Stores payee information collected during quote acceptance</li>
+            <li>Includes email, full name, company name (optional), country, and state/province</li>
+            <li>Allows for proper invoicing and payment processing</li>
+        </ul>
+    </div>
+
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <div class="step" data-step="1.">Go to your Supabase Dashboard</div>
+        <div class="step" data-step="2.">Navigate to SQL Editor (in the left sidebar)</div>
+        <div class="step" data-step="3.">Click "New Query"</div>
+        <div class="step" data-step="4.">Copy the SQL below and paste it into the editor</div>
+        <div class="step" data-step="5.">Click "Run" to execute the migration</div>
+        <div class="step" data-step="6.">Verify the column was added successfully</div>
+    </div>
+
+    <h2>Migration SQL:</h2>
+    <div class="sql-code" id="sql-code">-- Add payee_details column to quotes table
+-- This stores the payee information collected when a customer accepts a quote
+
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS payee_details JSONB;
+
+-- Add comment for documentation
+COMMENT ON COLUMN quotes.payee_details IS 'Stores payee information including email, name, company, country, and state/province collected during quote acceptance';
+
+-- Verify the column was added
+SELECT
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM
+    information_schema.columns
+WHERE
+    table_name = 'quotes'
+    AND column_name = 'payee_details';
+
+-- Example of what will be stored in payee_details:
+-- {
+--   "email": "john.doe@example.com",
+--   "fullName": "John Doe",
+--   "companyName": "Acme Corp",
+--   "country": "United States",
+--   "stateOrProvince": "California"
+-- }</div>
+
+    <div class="button-group">
+        <button class="copy-btn" onclick="copySQL()">Copy SQL to Clipboard</button>
+        <button class="copy-btn" style="background: #f59e0b;" onclick="window.open('https://supabase.com/dashboard/project/_/sql/new', '_blank')">Open Supabase SQL Editor</button>
+    </div>
+
+    <div class="success">
+        <h3>✅ After Running the Migration:</h3>
+        <p>The payee_details column will be available in the quotes table. When customers accept quotes, they will be prompted to enter their payee information through a modal dialog, and this information will be stored with the quote for invoicing purposes.</p>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ Note:</strong> This is a non-destructive migration that only adds a new column. Existing data will not be affected, and the new column will be NULL for existing quotes.
+    </div>
+
+    <script>
+        async function copySQL() {
+            const sqlCode = document.getElementById('sql-code').textContent;
+            try {
+                await navigator.clipboard.writeText(sqlCode);
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('success-btn');
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('success-btn');
+                }, 3000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select the text manually.');
+            }
+        }
+    </script>
+</body>
+</html>
