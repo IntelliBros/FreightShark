@@ -40,9 +40,18 @@ export const ActiveShipments = () => {
           ? shipment.destinations[0] 
           : null;
         
-        // Check if missing shipment IDs
-        const missingShipmentIds = shipment.invoice?.status === 'Paid' && 
-          shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '');
+        // Check if missing shipment IDs - but trust the database status
+        let missingShipmentIds = false;
+
+        // Only check for missing IDs if status is NOT already "In Progress"
+        if (shipment.status !== 'In Progress') {
+          // Check multiple data sources for IDs
+          const hasIdsInDestinations = shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '');
+          const hasIdsInDestinationField = shipment.destination?.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '');
+
+          missingShipmentIds = shipment.invoice?.status === 'Paid' &&
+            !hasIdsInDestinations && !hasIdsInDestinationField;
+        }
         
         // Calculate progress based on status
         // Status flow: Waiting for Pickup (5%) -> Final Invoice Ready (5%) -> Missing Shipment IDs (10%) -> In Progress (40%) -> Delivered (40%)
@@ -100,16 +109,19 @@ export const ActiveShipments = () => {
             email: customer?.email || 'unknown@example.com'
           },
           status: (() => {
-            // Determine status based on the new flow
+            // Trust the database status first
             if (shipment.status === 'Delivered') {
               return 'Delivered';
             }
-            if (shipment.invoice?.status === 'Paid' && missingShipmentIds) {
+            if (shipment.status === 'In Progress') {
+              return 'In Progress';
+            }
+            // Only show missing IDs if we confirmed they're missing
+            if (missingShipmentIds) {
               return 'Missing Shipment IDs';
             }
-            if (shipment.invoice?.status === 'Paid' &&
-                shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
-              return 'In Progress';
+            if (shipment.invoice?.status === 'Paid') {
+              return 'In Progress'; // Paid and has IDs (or status is In Progress)
             }
             if (shipment.invoice) {
               return 'Final Invoice Ready';

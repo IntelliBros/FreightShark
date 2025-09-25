@@ -33,12 +33,21 @@ export const Reports = () => {
       );
       
       // Find the accepted quote for this shipment to get the locked-in commission rate
-      const acceptedQuote = quotes.find((q: any) => 
+      // First try to find by quoteId and status
+      let acceptedQuote = quotes.find((q: any) =>
         q.id === shipment.quoteId && q.status === 'Accepted'
       );
+
+      // If not found with 'Accepted' status, try just by quoteId (might have different status)
       if (!acceptedQuote && shipment.quoteId) {
-        console.log('No accepted quote found for shipment:', shipment.id, 'with quoteId:', shipment.quoteId);
+        acceptedQuote = quotes.find((q: any) => q.id === shipment.quoteId);
+        if (!acceptedQuote) {
+          console.log('No quote found for shipment:', shipment.id, 'with quoteId:', shipment.quoteId);
+        } else if (acceptedQuote.status !== 'Accepted') {
+          console.log('Quote found but status is:', acceptedQuote.status, 'for shipment:', shipment.id);
+        }
       }
+
       const commissionRatePerKg = acceptedQuote?.commissionRatePerKg || 0.50; // Default to $0.50 if not found
       
       const origin = quoteRequest?.supplierDetails?.city 
@@ -280,40 +289,62 @@ export const Reports = () => {
         
         // Get the quote weight for this warehouse from the accepted quote
         let quoteWeight = null;
-        if (acceptedQuote && acceptedQuote.warehouseRates && acceptedQuote.warehouseRates.length > 0) {
-          if (shipment.id === 'FS-00013') {
-            console.log('FS-00013 Quote warehouse rates:', acceptedQuote.warehouseRates);
-          }
-          
-          // Always try to use quote data, even if destinations don't match
-          let warehouseRate = null;
-          
-          // If there's only one warehouse rate, always use it
-          if (acceptedQuote.warehouseRates.length === 1) {
-            warehouseRate = acceptedQuote.warehouseRates[0];
-            if (shipment.id === 'FS-00013') {
-              console.log('FS-00013: Using single warehouse rate from quote');
-            }
-          } else {
-            // For multiple rates, try to match first
-            warehouseRate = acceptedQuote.warehouseRates.find((wr: any) => 
-              wr.warehouseId === dest.id || wr.warehouse === dest.fbaWarehouse
-            );
-            
-            // If no match, use index-based fallback
-            if (!warehouseRate && index < acceptedQuote.warehouseRates.length) {
-              warehouseRate = acceptedQuote.warehouseRates[index];
-              if (shipment.id === 'FS-00013') {
-                console.log('FS-00013: Using index-based warehouse rate');
+        if (acceptedQuote) {
+          // Check for warehouse rates first (new structure)
+          if (acceptedQuote.warehouseRates && acceptedQuote.warehouseRates.length > 0) {
+            let warehouseRate = null;
+
+            // If there's only one warehouse rate, always use it
+            if (acceptedQuote.warehouseRates.length === 1) {
+              warehouseRate = acceptedQuote.warehouseRates[0];
+            } else {
+              // For multiple rates, try to match by warehouse
+              warehouseRate = acceptedQuote.warehouseRates.find((wr: any) =>
+                wr.warehouseId === dest.id ||
+                wr.warehouse === dest.fbaWarehouse ||
+                wr.warehouseCode === dest.fbaWarehouse
+              );
+
+              // If no match, use index-based fallback
+              if (!warehouseRate && index < acceptedQuote.warehouseRates.length) {
+                warehouseRate = acceptedQuote.warehouseRates[index];
               }
             }
-          }
-          
-          if (warehouseRate) {
-            quoteWeight = warehouseRate.chargeableWeight || warehouseRate.weight || null;
-            if (shipment.id === 'FS-00013') {
-              console.log('FS-00013: Extracted quote weight:', quoteWeight);
+
+            if (warehouseRate) {
+              quoteWeight = warehouseRate.chargeableWeight ||
+                           warehouseRate.weight ||
+                           warehouseRate.estimatedWeight ||
+                           null;
             }
+          }
+
+          // Fallback: Check for total weight at quote level
+          if (!quoteWeight) {
+            // Try to get total weight from the quote
+            const totalQuoteWeight = acceptedQuote.totalWeight ||
+                                    acceptedQuote.chargeableWeight ||
+                                    acceptedQuote.estimatedWeight ||
+                                    acceptedQuote.total_weight ||
+                                    null;
+
+            // If there's a total weight and only one destination, use it
+            if (totalQuoteWeight && (!destinations || destinations.length === 1)) {
+              quoteWeight = totalQuoteWeight;
+            } else if (totalQuoteWeight && destinations && destinations.length > 1) {
+              // Distribute the total weight evenly across destinations as a fallback
+              quoteWeight = totalQuoteWeight / destinations.length;
+            }
+          }
+
+          // Debug logging for missing quote weights
+          if (!quoteWeight && shipment.quoteId) {
+            console.log('No quote weight found for shipment:', shipment.id, {
+              quoteId: shipment.quoteId,
+              warehouseRates: acceptedQuote.warehouseRates,
+              totalWeight: acceptedQuote.totalWeight,
+              destination: dest.fbaWarehouse
+            });
           }
         }
         

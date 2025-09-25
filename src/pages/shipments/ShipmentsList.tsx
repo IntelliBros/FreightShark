@@ -46,39 +46,41 @@ export const ShipmentsList = () => {
       return <Badge variant="success">Delivered</Badge>;
     }
 
-    // Check if invoice is paid but IDs are missing - this takes priority
-    // Check both destinations array and invoice warehouseDetails
-    if (shipment.invoice?.status === 'Paid') {
-      // Check if IDs are missing in destinations or in invoice warehouseDetails
+    // Check the status from database first
+    const status = shipment.status;
+
+    // If status is already "In Progress", trust it - the backend has validated the IDs
+    if (status === 'In Progress') {
+      return <Badge variant="info">In Progress</Badge>;
+    }
+
+    // Only show "Missing Shipment IDs" if status is explicitly "Pending Payment" or similar
+    // and invoice is paid but IDs are actually missing
+    if (shipment.invoice?.status === 'Paid' && status === 'Pending Payment') {
+      // Check if IDs are missing in destinations
       const destinationsHaveMissingIds = shipment.destinations?.length > 0
         ? shipment.destinations.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')
         : false;
 
+      // Check destination field (JSONB from database) which may have updated destinations
+      const destinationDataHasIds = shipment.destination?.destinations?.length > 0
+        ? shipment.destination.destinations.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')
+        : false;
+
+      // If destination field has IDs, they were provided
+      if (destinationDataHasIds) {
+        return <Badge variant="info">In Progress</Badge>;
+      }
+
+      // Check invoice warehouseDetails as fallback
       const warehouseDetailsHaveMissingIds = shipment.invoice?.warehouseDetails?.length > 0
         ? shipment.invoice.warehouseDetails.some((w: any) => !w.amazonShipmentId || w.amazonShipmentId === '')
         : false;
 
-      // If either source shows missing IDs, display the error badge
+      // Only show missing IDs if we confirmed they're actually missing
       if (destinationsHaveMissingIds || warehouseDetailsHaveMissingIds) {
         return <Badge variant="error">Missing Shipment IDs</Badge>;
       }
-    }
-
-    // Check the status from database
-    const status = shipment.status;
-    
-    // Handle "In Progress" status - but only if all IDs are provided when invoice is paid
-    if (status === 'In Progress') {
-      // If invoice is paid, check if IDs are provided
-      if (shipment.invoice?.status === 'Paid') {
-        if (shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '')) {
-          return <Badge variant="info">In Progress</Badge>;
-        }
-        // If we get here, some IDs are missing, which should have been caught above
-        return <Badge variant="error">Missing Shipment IDs</Badge>;
-      }
-      // If no invoice or not paid, show In Progress
-      return <Badge variant="info">In Progress</Badge>;
     }
     
     switch (status) {
@@ -110,38 +112,38 @@ export const ShipmentsList = () => {
       return 100;
     }
 
-    // Simplified progress based on status since invoices are created by staff
+    // Simplified progress based on status
     const status = shipment.status;
 
-    // If shipment has been created, it's at least at booking confirmed stage
-    if (status === 'Booking Confirmed' || status === 'Awaiting Pickup') {
-      return 20;
-    }
-
-    // Check if invoice exists and is paid
-    if (shipment.invoice?.status === 'Paid') {
-      // If paid but missing IDs
-      if (shipment.destinations?.some((d: any) => !d.amazonShipmentId || d.amazonShipmentId === '')) {
-        return 30;
-      }
-      // If paid and has IDs, check actual status
-      if (status === 'In Transit' || status === 'Customs' || status === 'In Progress') {
-        return 70;
-      }
-      if (status === 'Out for Delivery') {
-        return 90;
-      }
-      return 40; // Paid but still waiting
-    }
-
-    // Status-based progress without invoice
+    // Status-based progress
     switch (status) {
-      case 'In Transit':
-      case 'Customs':
+      case 'Booking Confirmed':
+        return 20;
+      case 'Awaiting Pickup':
+        return 25;
+      case 'Pending Payment':
+        return 30;
       case 'In Progress':
-        return 50;
+        // If in progress, check if it's because of missing IDs or actual progress
+        if (shipment.invoice?.status === 'Paid') {
+          // Check if IDs exist in any location
+          const hasIdsInDestinations = shipment.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '');
+          const hasIdsInDestinationField = shipment.destination?.destinations?.every((d: any) => d.amazonShipmentId && d.amazonShipmentId !== '');
+
+          if (hasIdsInDestinations || hasIdsInDestinationField) {
+            return 70; // Has IDs and in progress
+          }
+          return 40; // Paid but missing IDs
+        }
+        return 50; // In progress without payment context
+      case 'In Transit':
+        return 70;
+      case 'Customs':
+        return 75;
       case 'Out for Delivery':
-        return 80;
+        return 90;
+      case 'Delivered':
+        return 100;
       default:
         return 20; // Default for any shipment that exists
     }
