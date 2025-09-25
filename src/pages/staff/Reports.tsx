@@ -293,8 +293,8 @@ export const Reports = () => {
           });
         }
         
-        // Calculate commission ONLY on invoiced chargeable weight, not estimates
-        const warehouseCommission = chargeableWeight ? (chargeableWeight * commissionRatePerKg) : null;
+        // Calculate commission ONLY when invoice is paid AND has chargeable weight
+        const warehouseCommission = (invoiceStatus === 'Paid' && chargeableWeight) ? (chargeableWeight * commissionRatePerKg) : null;
         
         // Get the quote weight for this warehouse from the quote (should always be available)
         let quoteWeight = null;
