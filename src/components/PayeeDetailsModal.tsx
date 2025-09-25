@@ -156,6 +156,8 @@ export default function PayeeDetailsModal({
     }
   };
 
+  console.log('PayeeDetailsModal - isOpen:', isOpen);
+
   if (!isOpen) return null;
 
   return (

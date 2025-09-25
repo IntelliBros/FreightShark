@@ -85,9 +85,12 @@ export const QuoteDetails = () => {
   
   const { refreshData } = useData();
   
-  const handleAcceptQuote = async () => {
+  const handleAcceptQuote = () => {
+    console.log('handleAcceptQuote called');
+    console.log('Current showPayeeModal state:', showPayeeModal);
     // Show payee details modal instead of directly accepting
     setShowPayeeModal(true);
+    console.log('Set showPayeeModal to true');
   };
 
   const handlePayeeDetailsSubmit = async (payeeDetails: PayeeDetails) => {
@@ -913,6 +916,13 @@ export const QuoteDetails = () => {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Debug: Show state */}
+      {showPayeeModal && (
+        <div className="fixed top-0 left-0 bg-red-500 text-white p-4 z-[100]">
+          Modal should be visible! showPayeeModal = {String(showPayeeModal)}
         </div>
       )}
 
