@@ -49,6 +49,10 @@ export const PendingInvoices = () => {
   };
 
   const markAsPaid = async (shipmentId: string, invoiceId: string) => {
+    // Confirm before marking as paid
+    const confirmed = window.confirm('Are you sure the payment has been received? This will update the invoice status to Paid and allow the shipment to proceed.');
+    if (!confirmed) return;
+
     try {
       // Get the shipment
       const shipment = await DataService.getShipmentById(shipmentId);
@@ -66,11 +70,16 @@ export const PendingInvoices = () => {
       };
 
       // Update the shipment with new invoice data
-      await DataService.updateShipment(shipmentId, {
-        ...shipment,
-        invoice: updatedInvoice,
-        status: 'In Progress'
-      });
+      // Store in destination field for database persistence
+      const updatedShipment = {
+        status: 'In Progress' as const,
+        destination: {
+          ...shipment.destination,
+          invoice: updatedInvoice
+        }
+      };
+
+      await DataService.updateShipment(shipmentId, updatedShipment);
 
       addToast(`Invoice ${invoiceId} marked as paid`, 'success');
       refreshData();
@@ -250,15 +259,13 @@ export const PendingInvoices = () => {
                         Remind
                       </Button>
                     </div>
-                    <Button
-                      variant="success"
-                      size="sm"
+                    <button
                       onClick={() => markAsPaid(invoice.shipmentId, invoice.id)}
-                      className="w-full"
+                      className="w-full inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                     >
                       <CheckCircleIcon className="h-4 w-4 mr-1" />
                       Mark as Paid
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
