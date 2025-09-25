@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -8,6 +8,7 @@ import { DataService, QuoteRequest, Quote } from '../../services/DataService';
 import { useToast } from '../../context/ToastContext';
 import { useData } from '../../context/DataContextV2';
 import { useAuth } from '../../context/AuthContext';
+import PayeeDetailsModal, { PayeeDetails } from '../../components/PayeeDetailsModal';
 type QuoteWithRequest = {
   request: QuoteRequest;
   quote?: Quote;
@@ -18,6 +19,7 @@ export const AllQuotes = () => {
   } = useToast();
   const { refreshData, quotes: contextQuotes } = useData();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [quotes, setQuotes] = useState<QuoteWithRequest[]>([]);
   const [filteredQuotes, setFilteredQuotes] = useState<QuoteWithRequest[]>([]);
@@ -25,6 +27,8 @@ export const AllQuotes = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [processingQuotes, setProcessingQuotes] = useState<Set<string>>(new Set());
   const [animatingQuotes, setAnimatingQuotes] = useState<Set<string>>(new Set());
+  const [showPayeeModal, setShowPayeeModal] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<{ quoteId: string; requestId: string } | null>(null);
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
@@ -116,24 +120,41 @@ export const AllQuotes = () => {
       year: 'numeric'
     });
   };
-  const handleAcceptQuote = async (quoteId: string, requestId: string) => {
+  const handleAcceptQuote = (quoteId: string, requestId: string) => {
+    // Store the selected quote info and show the modal
+    setSelectedQuote({ quoteId, requestId });
+    setShowPayeeModal(true);
+  };
+
+  const handlePayeeDetailsSubmit = async (payeeDetails: PayeeDetails) => {
+    if (!selectedQuote) return;
+
+    const { quoteId, requestId } = selectedQuote;
+    setShowPayeeModal(false);
+
     try {
-      console.log('Accepting quote:', quoteId, 'for request:', requestId);
-      
+      console.log('Accepting quote with payee details:', quoteId, 'for request:', requestId);
+
       // Add to processing set to show loading state
       setProcessingQuotes(prev => new Set([...prev, requestId]));
-      
-      // Convert the approved quote to a shipment (this also updates the quote status)
+
+      // Update quote with payee details and status
+      await DataService.updateQuote(quoteId, {
+        status: 'Accepted',
+        payeeDetails: payeeDetails
+      });
+
+      // Convert the approved quote to a shipment
       const shipment = await DataService.convertQuoteToShipment(quoteId);
       console.log('Shipment created:', shipment);
-      
+
       if (shipment) {
         // Add to animating set for fade-out effect
         setAnimatingQuotes(prev => new Set([...prev, requestId]));
-        
+
         // Show success message immediately
         addToast('Quote accepted successfully! Your shipment has been created and is being processed.', 'success');
-        
+
         // Wait for animation to complete before removing from list
         setTimeout(async () => {
           // Refresh data context to ensure shipments are updated
@@ -145,6 +166,8 @@ export const AllQuotes = () => {
             newSet.delete(requestId);
             return newSet;
           });
+          // Navigate to shipments page
+          navigate('/shipments');
         }, 500);
       } else {
         addToast('Failed to create shipment from quote. Please contact support.', 'error');
@@ -159,6 +182,7 @@ export const AllQuotes = () => {
         newSet.delete(requestId);
         return newSet;
       });
+      setSelectedQuote(null);
     }
   };
   const handleRejectQuote = async (quoteId: string, requestId: string) => {
@@ -408,6 +432,19 @@ export const AllQuotes = () => {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Payee Details Modal */}
+      {showPayeeModal && selectedQuote && (
+        <PayeeDetailsModal
+          isOpen={showPayeeModal}
+          onClose={() => {
+            setShowPayeeModal(false);
+            setSelectedQuote(null);
+          }}
+          onSubmit={handlePayeeDetailsSubmit}
+          initialEmail={user?.email}
+        />
       )}
     </div>
   );
