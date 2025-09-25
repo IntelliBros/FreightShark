@@ -179,7 +179,7 @@ export const Notifications = () => {
                         <div className="flex items-center justify-between">
                           <p className="text-xs text-gray-400 flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
-                            {notification.timestamp}
+                            {notification.date}
                           </p>
                           <div className="flex items-center space-x-2">
                             {!notification.read && (
