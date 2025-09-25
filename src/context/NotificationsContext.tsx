@@ -221,18 +221,19 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
       try {
         const { supabase } = await import('../lib/supabase');
 
-        // For customers, get messages from staff
+        // For customers, get messages from staff and admin (exclude system messages)
         // For staff, get messages from customers
         const isCustomer = user.role === 'user';
         const readField = isCustomer ? 'read_by_customer' : 'read_by_staff';
         const senderRoleFilter = isCustomer ? ['staff', 'admin'] : ['customer'];
 
-        // Get ALL recent messages NOT from the current user
+        // Get ALL recent messages NOT from the current user and NOT from system
         const { data: allMessages } = await supabase
           .from('messages')
           .select('*')
           .neq('sender_id', user.id)  // Don't show user's own messages
           .in('sender_role', senderRoleFilter)  // Only show messages from the other party
+          .neq('sender_role', 'system')  // Explicitly exclude system messages
           .order('created_at', { ascending: false })
           .limit(50);  // Increased limit to show more message history
 
@@ -417,9 +418,10 @@ export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ ch
         console.log('🔔 Found messages from database:', recentMessages?.length || 0);
 
         if (recentMessages && recentMessages.length > 0) {
-          // Filter for messages from other users
+          // Filter for messages from other users (exclude system messages)
           const newMessages = recentMessages.filter((msg: any) =>
             msg.sender_id !== user.id &&
+            msg.sender_role !== 'system' &&  // Exclude system messages
             new Date(msg.created_at) > lastChecked
           );
 

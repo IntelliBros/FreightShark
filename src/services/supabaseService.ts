@@ -1056,6 +1056,7 @@ export const supabaseService = {
             messagesQuery = messagesQuery
               .in('shipment_id', shipmentIds)
               .neq('sender_id', userId)
+              .neq('sender_role', 'system')  // Exclude system messages for customers
               .gte('created_at', since)
               .order('created_at', { ascending: false });
           } else {
