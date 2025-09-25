@@ -488,66 +488,70 @@ export const SampleManagement = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sample Management</h1>
+    <div className="space-y-4 md:space-y-6">
+      <div className="px-4 md:px-0">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Sample Management</h1>
         <p className="text-sm text-gray-600 mt-1">Scan and track incoming sample shipments</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="flex -mb-px min-w-max md:min-w-0">
             <button
               onClick={() => setActiveTab('scan')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`px-3 md:px-6 py-3 text-xs md:text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'scan'
                   ? 'border-[#00b4d8] text-[#00b4d8]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Scan className="h-4 w-4 inline mr-2" />
-              Scan Samples
+              <Scan className="h-4 w-4 inline mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Scan Samples</span>
+              <span className="sm:hidden">Scan</span>
             </button>
             <button
               onClick={() => setActiveTab('requests')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`px-3 md:px-6 py-3 text-xs md:text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'requests'
                   ? 'border-[#00b4d8] text-[#00b4d8]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Package className="h-4 w-4 inline mr-2" />
-              Sample Requests
+              <Package className="h-4 w-4 inline mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Sample Requests</span>
+              <span className="sm:hidden">Requests</span>
             </button>
             <button
               onClick={() => setActiveTab('received')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`px-3 md:px-6 py-3 text-xs md:text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'received'
                   ? 'border-[#00b4d8] text-[#00b4d8]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <CheckCircle className="h-4 w-4 inline mr-2" />
-              Received Samples
+              <CheckCircle className="h-4 w-4 inline mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Received Samples</span>
+              <span className="sm:hidden">Received</span>
             </button>
             <button
               onClick={() => setActiveTab('shipments')}
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`px-3 md:px-6 py-3 text-xs md:text-sm font-medium border-b-2 whitespace-nowrap ${
                 activeTab === 'shipments'
                   ? 'border-[#00b4d8] text-[#00b4d8]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <TruckIcon className="h-4 w-4 inline mr-2" />
-              Shipment Requests
+              <TruckIcon className="h-4 w-4 inline mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Shipment Requests</span>
+              <span className="sm:hidden">Shipments</span>
             </button>
           </nav>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {activeTab === 'scan' && (
-            <div className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-6">
+            <div className="space-y-4 md:space-y-6">
+              <div className="bg-gray-50 rounded-lg p-4 md:p-6">
                 <h2 className="text-lg font-semibold mb-4">QR Code Scanner</h2>
 
                 {!isScanning ? (
@@ -556,7 +560,7 @@ export const SampleManagement = () => {
                     <p className="text-gray-600">Ready to scan sample barcodes</p>
                     <button
                       onClick={startScanning}
-                      className="bg-[#00b4d8] text-white px-6 py-2 rounded-lg hover:bg-[#0096c7]"
+                      className="bg-[#00b4d8] text-white px-4 md:px-6 py-2 rounded-lg hover:bg-[#0096c7] w-full sm:w-auto"
                     >
                       <Scan className="h-4 w-4 inline mr-2" />
                       Start QR Scanner
@@ -565,7 +569,7 @@ export const SampleManagement = () => {
                 ) : (
                   <div className="space-y-4">
                     <div className="bg-black rounded-lg overflow-hidden">
-                      <video ref={videoRef} className="w-full h-64 object-cover" />
+                      <video ref={videoRef} className="w-full h-48 md:h-64 object-cover" />
                     </div>
                     <div className="flex gap-3">
                       {availableCameras.length > 1 && (
@@ -580,7 +584,7 @@ export const SampleManagement = () => {
                       )}
                       <button
                         onClick={stopScanning}
-                        className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 flex-1"
+                        className="bg-red-500 text-white px-4 md:px-6 py-2 rounded-lg hover:bg-red-600 flex-1"
                       >
                         Stop Scanning
                       </button>
@@ -605,7 +609,7 @@ export const SampleManagement = () => {
 
 
               {showPhotoCapture && (
-                <div className="bg-blue-50 rounded-lg p-6 border-2 border-blue-300">
+                <div className="bg-blue-50 rounded-lg p-4 md:p-6 border-2 border-blue-300">
                   <h3 className="text-lg font-semibold mb-4 text-blue-900">
                     <Camera className="h-5 w-5 inline mr-2" />
                     Take Sample Photo
@@ -644,7 +648,7 @@ export const SampleManagement = () => {
                         <img
                           src={samplePhoto}
                           alt="Sample"
-                          className="w-full max-w-md mx-auto rounded-lg shadow-lg"
+                          className="w-full max-w-sm md:max-w-md mx-auto rounded-lg shadow-lg"
                         />
                         <div className="flex gap-3">
                           <button
@@ -686,15 +690,15 @@ export const SampleManagement = () => {
                 </div>
               )}
 
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Manual Entry</h3>
+              <div className="bg-gray-50 rounded-lg p-4 md:p-6">
+                <h3 className="text-base md:text-lg font-semibold mb-4">Manual Entry</h3>
                 <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
                     💡 <strong>Tip:</strong> If QR code scanning doesn't work, you can manually enter any sample ID from the label.
                     Any format is accepted (barcode, QR code, text, numbers, etc.)
                   </p>
                 </div>
-                <form onSubmit={handleManualSubmit} className="flex gap-3">
+                <form onSubmit={handleManualSubmit} className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     value={manualInput}
@@ -704,7 +708,7 @@ export const SampleManagement = () => {
                   />
                   <button
                     type="submit"
-                    className="bg-[#00b4d8] text-white px-6 py-2 rounded-lg hover:bg-[#0096c7]"
+                    className="bg-[#00b4d8] text-white px-4 md:px-6 py-2 rounded-lg hover:bg-[#0096c7] w-full sm:w-auto"
                   >
                     Submit
                   </button>
@@ -715,8 +719,8 @@ export const SampleManagement = () => {
 
           {activeTab === 'requests' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                   <div className="relative">
                     <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
@@ -724,13 +728,13 @@ export const SampleManagement = () => {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search requests..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent"
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent w-full sm:w-auto"
                     />
                   </div>
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent w-full sm:w-auto"
                   >
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
@@ -740,8 +744,8 @@ export const SampleManagement = () => {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto -mx-4 sm:-mx-0 px-4 sm:px-0">
+                <table className="w-full min-w-[600px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sample ID</th>
@@ -790,8 +794,8 @@ export const SampleManagement = () => {
 
           {activeTab === 'received' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                   <div className="relative">
                     <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
@@ -805,7 +809,7 @@ export const SampleManagement = () => {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00b4d8] focus:border-transparent w-full sm:w-auto"
                   >
                     <option value="all">All Status</option>
                     <option value="in_warehouse">In Warehouse</option>
@@ -815,9 +819,9 @@ export const SampleManagement = () => {
                 </div>
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-3 md:gap-4">
                 {filteredReceived.map((sample) => (
-                  <div key={sample.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div key={sample.id} className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{sample.productName}</h3>
@@ -848,11 +852,11 @@ export const SampleManagement = () => {
 
           {activeTab === 'shipments' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Sample Shipment Requests</h2>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+                <h2 className="text-base md:text-lg font-semibold">Sample Shipment Requests</h2>
                 <button
                   onClick={loadShipmentRequests}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  className="px-3 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm md:text-base"
                 >
                   Refresh
                 </button>
@@ -864,10 +868,10 @@ export const SampleManagement = () => {
                   <p className="text-gray-600">No shipment requests at this time</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {shipmentRequests.map((request) => (
-                    <div key={request.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
+                    <div key={request.id} className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:justify-between mb-3 gap-2">
                         <div>
                           <h3 className="font-medium text-gray-900">
                             Request #{request.id}
@@ -892,15 +896,15 @@ export const SampleManagement = () => {
                         </span>
                       </div>
 
-                      <div className="bg-gray-50 rounded p-3 mb-3">
+                      <div className="bg-gray-50 rounded p-2 md:p-3 mb-3 text-sm md:text-base">
                         <p className="text-sm font-medium text-gray-700 mb-1">Delivery Address:</p>
                         <p className="text-sm text-gray-600">{request.delivery_address}</p>
                       </div>
 
                       {selectedShipmentRequest?.id === request.id ? (
-                        <div className="space-y-3 border-t pt-3">
+                        <div className="space-y-3 border-t pt-3 overflow-x-auto">
                           {/* Sample Details */}
-                          <div className="bg-blue-50 rounded-lg p-4 mb-3">
+                          <div className="bg-blue-50 rounded-lg p-3 md:p-4 mb-3">
                             <h4 className="font-medium text-gray-900 mb-3">Sample Details</h4>
                             <div className="space-y-3">
                               {request.sample_ids.map((sampleId) => {
@@ -931,13 +935,13 @@ export const SampleManagement = () => {
                                           <img
                                             src={sample.photos[0]}
                                             alt="Sample"
-                                            className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80"
+                                            className="w-12 h-12 md:w-16 md:h-16 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80"
                                             onClick={() => {
                                               const modal = document.createElement('div');
                                               modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
                                               modal.onclick = () => modal.remove();
                                               modal.innerHTML = `
-                                                <img src="${sample.photos[0]}" class="max-w-[90%] max-h-[90%] rounded-lg" />
+                                                <img src="${sample.photos[0]}" class="max-w-[90vw] max-h-[90vh] rounded-lg" />
                                               `;
                                               document.body.appendChild(modal);
                                             }}
@@ -956,7 +960,7 @@ export const SampleManagement = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Package Photo
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <input
                                 type="file"
                                 accept="image/*"
@@ -995,7 +999,7 @@ export const SampleManagement = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Payment Link
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <input
                                 type="url"
                                 value={paymentLink}
@@ -1069,7 +1073,7 @@ export const SampleManagement = () => {
                               <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Tracking Number
                               </label>
-                              <div className="flex gap-2">
+                              <div className="flex flex-col sm:flex-row gap-2">
                                 <input
                                   type="text"
                                   value={trackingNumber}
