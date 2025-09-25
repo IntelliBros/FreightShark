@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon, EyeIcon, XIcon, CheckIcon } from 'lucide-react';
+import { TruckIcon, PackageIcon, MapPinIcon, ClockIcon, FileTextIcon, DownloadIcon, CheckCircleIcon, AlertCircleIcon, InfoIcon, DollarSignIcon, CalendarIcon, ArrowRightIcon, PlusIcon, TrashIcon, CalculatorIcon, MessageCircleIcon, EyeIcon, XIcon, CheckIcon, CreditCardIcon } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { DataService, QuoteRequest } from '../../../services/DataService';
 import { useData } from '../../../context/DataContextV2';
@@ -713,6 +713,58 @@ export const ShipmentDetails = () => {
     addToast(`Downloaded ${doc.name}`, 'success');
   };
 
+  const handleMarkAsPaid = async () => {
+    // Confirm before marking as paid
+    const confirmed = window.confirm('Are you sure the payment has been received? This will update the invoice status to Paid and allow the shipment to proceed.');
+    if (!confirmed) return;
+
+    setIsLoading(true);
+    try {
+      if (!shipment || !shipment.invoice) {
+        addToast('No invoice found for this shipment', 'error');
+        return;
+      }
+
+      // Update invoice status
+      const updatedInvoice = {
+        ...shipment.invoice,
+        status: 'Paid',
+        paidDate: new Date().toISOString(),
+        paymentMethod: shipment.invoice.paymentLink ? 'External Payment Link' : 'Manual Payment'
+      };
+
+      // Update the shipment with new invoice data
+      const updatedShipment = {
+        status: 'In Progress' as const,
+        destination: {
+          ...shipment.destination,
+          invoice: updatedInvoice
+        }
+      };
+
+      await DataService.updateShipment(shipment.id, updatedShipment);
+
+      // Update local state
+      setShipment({
+        ...shipment,
+        status: 'In Progress',
+        invoice: updatedInvoice,
+        destination: {
+          ...shipment.destination,
+          invoice: updatedInvoice
+        }
+      });
+
+      addToast('Invoice marked as paid successfully!', 'success');
+      refreshData();
+    } catch (error) {
+      console.error('Error marking invoice as paid:', error);
+      addToast('Failed to mark invoice as paid', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePaymentLinkSubmit = () => {
     if (!paymentLink.trim()) {
       addToast('Please enter a payment link', 'error');
@@ -995,6 +1047,16 @@ export const ShipmentDetails = () => {
             <span className="text-sm text-gray-600">
               Customer: {shipment.customer?.company || 'Unknown Company'} ({shipment.customer?.name || 'Unknown Customer'})
             </span>
+            {shipment.status === 'Pending Payment' && shipment.invoice && (
+              <button
+                onClick={handleMarkAsPaid}
+                disabled={isLoading}
+                className="ml-3 inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CreditCardIcon className="h-3.5 w-3.5 mr-1" />
+                Mark as Paid
+              </button>
+            )}
           </div>
         </div>
         <div className="flex space-x-3">
@@ -1834,9 +1896,21 @@ export const ShipmentDetails = () => {
                     • Due by {shipment.invoice.dueDate}
                   </p>
                 </div>
-                <Badge variant={shipment.invoice.status === 'Paid' ? 'success' : 'warning'}>
-                  {shipment.invoice.status}
-                </Badge>
+                <div className="flex items-center space-x-3">
+                  <Badge variant={shipment.invoice.status === 'Paid' ? 'success' : 'warning'}>
+                    {shipment.invoice.status}
+                  </Badge>
+                  {shipment.invoice.status !== 'Paid' && (
+                    <button
+                      onClick={handleMarkAsPaid}
+                      disabled={isLoading}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <CreditCardIcon className="h-3.5 w-3.5 mr-1" />
+                      Mark as Paid
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
