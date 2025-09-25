@@ -290,17 +290,25 @@ export const Reports = () => {
         // Get the quote weight for this warehouse from the accepted quote
         let quoteWeight = null;
         if (acceptedQuote) {
-          // Check for warehouse rates first (new structure)
+          // The quote data maps per_warehouse_costs to warehouseRates
+          // per_warehouse_costs structure: { warehouseId, name, rate, cartons, weight, subtotal }
           if (acceptedQuote.warehouseRates && acceptedQuote.warehouseRates.length > 0) {
             let warehouseRate = null;
+
+            // Debug log to see structure
+            if (shipment.id === 'FS-00020' || shipment.id === 'FS-00019') {
+              console.log(`${shipment.id} warehouseRates:`, acceptedQuote.warehouseRates);
+            }
 
             // If there's only one warehouse rate, always use it
             if (acceptedQuote.warehouseRates.length === 1) {
               warehouseRate = acceptedQuote.warehouseRates[0];
             } else {
               // For multiple rates, try to match by warehouse
+              // per_warehouse_costs uses 'name' field for warehouse code
               warehouseRate = acceptedQuote.warehouseRates.find((wr: any) =>
                 wr.warehouseId === dest.id ||
+                wr.name === dest.fbaWarehouse ||  // 'name' field in per_warehouse_costs
                 wr.warehouse === dest.fbaWarehouse ||
                 wr.warehouseCode === dest.fbaWarehouse
               );
@@ -312,10 +320,39 @@ export const Reports = () => {
             }
 
             if (warehouseRate) {
-              quoteWeight = warehouseRate.chargeableWeight ||
-                           warehouseRate.weight ||
+              // per_warehouse_costs has 'weight' field directly
+              quoteWeight = warehouseRate.weight ||
+                           warehouseRate.chargeableWeight ||
                            warehouseRate.estimatedWeight ||
                            null;
+
+              if (shipment.id === 'FS-00020' || shipment.id === 'FS-00019') {
+                console.log(`${shipment.id} extracted weight:`, quoteWeight, 'from rate:', warehouseRate);
+              }
+            }
+          }
+
+          // Also check if per_warehouse_costs exists directly (in case it wasn't mapped)
+          if (!quoteWeight && acceptedQuote.per_warehouse_costs) {
+            const perWarehouseCosts = acceptedQuote.per_warehouse_costs;
+            let warehouseData = null;
+
+            if (perWarehouseCosts.length === 1) {
+              warehouseData = perWarehouseCosts[0];
+            } else {
+              warehouseData = perWarehouseCosts.find((wc: any) =>
+                wc.warehouseId === dest.id ||
+                wc.name === dest.fbaWarehouse
+              );
+
+              if (!warehouseData && index < perWarehouseCosts.length) {
+                warehouseData = perWarehouseCosts[index];
+              }
+            }
+
+            if (warehouseData) {
+              quoteWeight = warehouseData.weight;
+              console.log(`${shipment.id} extracted weight from per_warehouse_costs:`, quoteWeight);
             }
           }
 
@@ -326,6 +363,7 @@ export const Reports = () => {
                                     acceptedQuote.chargeableWeight ||
                                     acceptedQuote.estimatedWeight ||
                                     acceptedQuote.total_weight ||
+                                    acceptedQuote.total_chargeable_weight ||
                                     null;
 
             // If there's a total weight and only one destination, use it
@@ -342,6 +380,7 @@ export const Reports = () => {
             console.log('No quote weight found for shipment:', shipment.id, {
               quoteId: shipment.quoteId,
               warehouseRates: acceptedQuote.warehouseRates,
+              per_warehouse_costs: acceptedQuote.per_warehouse_costs,
               totalWeight: acceptedQuote.totalWeight,
               destination: dest.fbaWarehouse
             });
