@@ -99,6 +99,7 @@ export interface Invoice {
   paidDate?: string;
   paymentMethod?: string;
   paymentReference?: string;
+  paymentLink?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;

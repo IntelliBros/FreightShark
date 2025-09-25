@@ -73,7 +73,8 @@ export const CreateInvoice = () => {
     tax: 0,
     total: 0,
     notes: '',
-    dueDate: ''
+    dueDate: '',
+    paymentLink: ''
   });
   // Mock data for demonstration
   useEffect(() => {
@@ -911,9 +912,27 @@ export const CreateInvoice = () => {
             </div>
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-3">
-                Due Date & Notes
+                Payment & Invoice Details
               </h3>
               <div className="space-y-4">
+                <div>
+                  <label htmlFor="payment-link" className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Link <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    id="payment-link"
+                    value={invoiceData.paymentLink}
+                    onChange={e => setInvoiceData({
+                      ...invoiceData,
+                      paymentLink: e.target.value
+                    })}
+                    placeholder="https://pay.stripe.com/..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-[#1E2A45] focus:border-[#1E2A45]"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter the payment link URL where the customer will complete payment</p>
+                </div>
                 <div>
                   <label htmlFor="due-date" className="block text-sm font-medium text-gray-700 mb-1">
                     Due Date

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Payment Link Column Migration</title>
+    <style>
+        body {
+            font-family: system-ui;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f9fafb;
+        }
+        h1 { color: #111827; margin-bottom: 10px; }
+        .info {
+            background: #dbeafe;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #3b82f6;
+        }
+        .success {
+            background: #dcfce7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #10b981;
+        }
+        .warning {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #f59e0b;
+        }
+        .sql-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .copy-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        .copy-btn:hover {
+            background: #2563eb;
+        }
+        .success-btn {
+            background: #10b981;
+            color: white;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .feature-list {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .feature-list li::before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>💳 Add Payment Link Column to Invoices Table</h1>
+
+    <div class="info">
+        <strong>ℹ️ Purpose:</strong> This migration adds a payment_link column to store external payment URLs for invoices. This allows staff to provide payment links (e.g., Stripe, PayPal) that customers can use to complete payments.
+    </div>
+
+    <div class="feature-list">
+        <h2>What This Migration Does:</h2>
+        <ul>
+            <li>Adds a payment_link TEXT column to the invoices table</li>
+            <li>Enables staff to upload payment links when creating invoices</li>
+            <li>Allows customers to pay through external payment processors</li>
+            <li>Staff can manually mark invoices as paid after verification</li>
+            <li>Maintains backward compatibility with existing payment flow</li>
+        </ul>
+    </div>
+
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <div class="step" data-step="1.">Go to your Supabase Dashboard</div>
+        <div class="step" data-step="2.">Navigate to SQL Editor (in the left sidebar)</div>
+        <div class="step" data-step="3.">Click "New Query"</div>
+        <div class="step" data-step="4.">Copy the SQL below and paste it into the editor</div>
+        <div class="step" data-step="5.">Click "Run" to execute the migration</div>
+        <div class="step" data-step="6.">Verify the column was added successfully</div>
+    </div>
+
+    <h2>Migration SQL:</h2>
+    <div class="sql-code" id="sql-code">-- Add payment_link column to invoices table
+-- This stores the external payment URL for the invoice
+
+ALTER TABLE invoices
+ADD COLUMN IF NOT EXISTS payment_link TEXT;
+
+-- Add comment for documentation
+COMMENT ON COLUMN invoices.payment_link IS 'External payment link URL (e.g., Stripe, PayPal) for customer to complete payment';
+
+-- Verify the column was added
+SELECT
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM
+    information_schema.columns
+WHERE
+    table_name = 'invoices'
+    AND column_name = 'payment_link';
+
+-- Example usage:
+-- UPDATE invoices
+-- SET payment_link = 'https://pay.stripe.com/invoice/acct_1234/invst_5678'
+-- WHERE id = 'INV-001';</div>
+
+    <div class="button-group">
+        <button class="copy-btn" onclick="copySQL()">Copy SQL to Clipboard</button>
+        <button class="copy-btn" style="background: #f59e0b;" onclick="window.open('https://supabase.com/dashboard/project/_/sql/new', '_blank')">Open Supabase SQL Editor</button>
+    </div>
+
+    <div class="success">
+        <h3>✅ After Running the Migration:</h3>
+        <p>The payment_link column will be available in the invoices table. When creating invoices, staff can now:</p>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+            <li>Add a payment link URL from their payment processor</li>
+            <li>Customers will be redirected to this link when clicking "Pay Invoice"</li>
+            <li>Staff can manually mark invoices as paid after confirming payment</li>
+        </ul>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ Note:</strong> This is a non-destructive migration that only adds a new column. Existing invoices will have NULL payment_link values and will fall back to the existing payment modal.
+    </div>
+
+    <script>
+        async function copySQL() {
+            const sqlCode = document.getElementById('sql-code').textContent;
+            try {
+                await navigator.clipboard.writeText(sqlCode);
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('success-btn');
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('success-btn');
+                }, 3000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select the text manually.');
+            }
+        }
+    </script>
+</body>
+</html>

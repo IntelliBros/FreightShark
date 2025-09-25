@@ -1021,11 +1021,19 @@ export const ShipmentTracking = () => {
                   </div>
                   {shipment.invoice.status !== 'Paid' && (
                     <div className="mt-3">
-                      <Button 
-                        variant="primary" 
-                        size="sm" 
+                      <Button
+                        variant="primary"
+                        size="sm"
                         className="w-full"
-                        onClick={() => setShowPaymentModal(true)}
+                        onClick={() => {
+                          // If payment link exists, open it in new tab
+                          if (shipment.invoice.paymentLink) {
+                            window.open(shipment.invoice.paymentLink, '_blank');
+                          } else {
+                            // Fallback to existing modal
+                            setShowPaymentModal(true);
+                          }
+                        }}
                       >
                         Pay Invoice
                       </Button>
@@ -1653,10 +1661,18 @@ export const ShipmentTracking = () => {
                 Download Invoice
               </Button>
               {shipment.invoice.status !== 'Paid' && (
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   size="sm"
-                  onClick={() => setShowPaymentModal(true)}
+                  onClick={() => {
+                    // If payment link exists, open it in new tab
+                    if (shipment.invoice.paymentLink) {
+                      window.open(shipment.invoice.paymentLink, '_blank');
+                    } else {
+                      // Fallback to existing modal
+                      setShowPaymentModal(true);
+                    }
+                  }}
                 >
                   <CreditCardIcon className="h-4 w-4 mr-1" />
                   Pay Invoice

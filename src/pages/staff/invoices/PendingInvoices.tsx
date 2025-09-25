@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
-import { ReceiptIcon, SearchIcon, FilterIcon, ChevronDownIcon, MailIcon, ClockIcon, AlertCircleIcon, DownloadIcon } from 'lucide-react';
+import { ReceiptIcon, SearchIcon, FilterIcon, ChevronDownIcon, MailIcon, ClockIcon, AlertCircleIcon, DownloadIcon, CheckCircleIcon } from 'lucide-react';
 import { useData } from '../../../context/DataContextV2';
 import { useToast } from '../../../context/ToastContext';
+import { DataService } from '../../../services/DataService';
 
 export const PendingInvoices = () => {
   const [filterOpen, setFilterOpen] = useState(false);
@@ -45,6 +46,38 @@ export const PendingInvoices = () => {
   const sendReminder = (invoiceId: string) => {
     // In a real app, this would send an API request
     addToast(`Payment reminder sent for invoice ${invoiceId}`, 'success');
+  };
+
+  const markAsPaid = async (shipmentId: string, invoiceId: string) => {
+    try {
+      // Get the shipment
+      const shipment = await DataService.getShipmentById(shipmentId);
+      if (!shipment || !shipment.invoice) {
+        addToast('Failed to update invoice', 'error');
+        return;
+      }
+
+      // Update invoice status
+      const updatedInvoice = {
+        ...shipment.invoice,
+        status: 'Paid',
+        paidDate: new Date().toISOString(),
+        paymentMethod: 'External Payment Link'
+      };
+
+      // Update the shipment with new invoice data
+      await DataService.updateShipment(shipmentId, {
+        ...shipment,
+        invoice: updatedInvoice,
+        status: 'In Progress'
+      });
+
+      addToast(`Invoice ${invoiceId} marked as paid`, 'success');
+      refreshData();
+    } catch (error) {
+      console.error('Error marking invoice as paid:', error);
+      addToast('Failed to mark invoice as paid', 'error');
+    }
   };
   return <div className="max-w-6xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
@@ -206,14 +239,25 @@ export const PendingInvoices = () => {
                         <span className="text-gray-900">{invoice.notes}</span>
                       </div>}
                   </div>
-                  <div className="flex space-x-2">
-                    <Button variant="primary" size="sm">
-                      <DownloadIcon className="h-4 w-4 mr-1" />
-                      PDF
-                    </Button>
-                    <Button variant="secondary" size="sm" onClick={() => sendReminder(invoice.id)}>
-                      <MailIcon className="h-4 w-4 mr-1" />
-                      Send Reminder
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex space-x-2">
+                      <Button variant="primary" size="sm">
+                        <DownloadIcon className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => sendReminder(invoice.id)}>
+                        <MailIcon className="h-4 w-4 mr-1" />
+                        Remind
+                      </Button>
+                    </div>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => markAsPaid(invoice.shipmentId, invoice.id)}
+                      className="w-full"
+                    >
+                      <CheckCircleIcon className="h-4 w-4 mr-1" />
+                      Mark as Paid
                     </Button>
                   </div>
                 </div>
