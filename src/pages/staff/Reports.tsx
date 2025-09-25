@@ -43,9 +43,15 @@ export const Reports = () => {
         acceptedQuote = quotes.find((q: any) => q.id === shipment.quoteId);
         if (!acceptedQuote) {
           console.log('No quote found for shipment:', shipment.id, 'with quoteId:', shipment.quoteId);
+          console.log('Available quotes:', quotes.map((q: any) => ({ id: q.id, status: q.status })));
         } else if (acceptedQuote.status !== 'Accepted') {
           console.log('Quote found but status is:', acceptedQuote.status, 'for shipment:', shipment.id);
         }
+      }
+
+      // Debug log to see quote structure
+      if (acceptedQuote && (shipment.id === 'FS-00020' || shipment.id === 'FS-00019')) {
+        console.log(`${shipment.id} Full quote object:`, acceptedQuote);
       }
 
       const commissionRatePerKg = acceptedQuote?.commissionRatePerKg || 0.50; // Default to $0.50 if not found
@@ -332,9 +338,9 @@ export const Reports = () => {
             }
           }
 
-          // Also check if per_warehouse_costs exists directly (in case it wasn't mapped)
-          if (!quoteWeight && acceptedQuote.per_warehouse_costs) {
-            const perWarehouseCosts = acceptedQuote.per_warehouse_costs;
+          // Also check if per_warehouse_costs or perWarehouseCosts exists directly
+          const perWarehouseCosts = acceptedQuote.per_warehouse_costs || acceptedQuote.perWarehouseCosts;
+          if (!quoteWeight && perWarehouseCosts && Array.isArray(perWarehouseCosts)) {
             let warehouseData = null;
 
             if (perWarehouseCosts.length === 1) {
@@ -342,7 +348,8 @@ export const Reports = () => {
             } else {
               warehouseData = perWarehouseCosts.find((wc: any) =>
                 wc.warehouseId === dest.id ||
-                wc.name === dest.fbaWarehouse
+                wc.name === dest.fbaWarehouse ||
+                wc.warehouseCode === dest.fbaWarehouse
               );
 
               if (!warehouseData && index < perWarehouseCosts.length) {
@@ -351,8 +358,8 @@ export const Reports = () => {
             }
 
             if (warehouseData) {
-              quoteWeight = warehouseData.weight;
-              console.log(`${shipment.id} extracted weight from per_warehouse_costs:`, quoteWeight);
+              quoteWeight = warehouseData.weight || warehouseData.chargeableWeight || warehouseData.estimatedWeight;
+              console.log(`${shipment.id} extracted weight from perWarehouseCosts:`, quoteWeight, 'from data:', warehouseData);
             }
           }
 
@@ -379,10 +386,14 @@ export const Reports = () => {
           if (!quoteWeight && shipment.quoteId) {
             console.log('No quote weight found for shipment:', shipment.id, {
               quoteId: shipment.quoteId,
-              warehouseRates: acceptedQuote.warehouseRates,
-              per_warehouse_costs: acceptedQuote.per_warehouse_costs,
-              totalWeight: acceptedQuote.totalWeight,
-              destination: dest.fbaWarehouse
+              hasAcceptedQuote: !!acceptedQuote,
+              warehouseRates: acceptedQuote?.warehouseRates,
+              per_warehouse_costs: acceptedQuote?.per_warehouse_costs,
+              perWarehouseCosts: acceptedQuote?.perWarehouseCosts,
+              totalWeight: acceptedQuote?.totalWeight,
+              total: acceptedQuote?.total,
+              destination: dest.fbaWarehouse,
+              quoteKeys: acceptedQuote ? Object.keys(acceptedQuote) : []
             });
           }
         }
