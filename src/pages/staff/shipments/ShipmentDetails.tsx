@@ -42,6 +42,8 @@ export const ShipmentDetails = () => {
   const [isEditingCargo, setIsEditingCargo] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<any>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
+  const [paymentLink, setPaymentLink] = useState('');
   // Form state for actual cargo data with enhanced warehouse management
   const [actualCargoData, setActualCargoData] = useState<any>({
     grossWeight: 0,
@@ -711,6 +713,24 @@ export const ShipmentDetails = () => {
     addToast(`Downloaded ${doc.name}`, 'success');
   };
 
+  const handlePaymentLinkSubmit = () => {
+    if (!paymentLink.trim()) {
+      addToast('Please enter a payment link', 'error');
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(paymentLink);
+    } catch (error) {
+      addToast('Please enter a valid URL', 'error');
+      return;
+    }
+
+    setShowPaymentLinkModal(false);
+    handleGenerateInvoice();
+  };
+
   const handleGenerateInvoice = async () => {
     setIsLoading(true);
     try {
@@ -806,6 +826,7 @@ export const ShipmentDetails = () => {
         status: 'Pending',
         amount: invoiceData.total,
         dueDate: invoiceData.dueDate,
+        paymentLink: paymentLink,
         createdAt: new Date().toISOString(),
         warehouseDetails: warehouseDetails,
         additionalServices: actualCargoData.additionalServices.map(service => ({
@@ -895,6 +916,9 @@ export const ShipmentDetails = () => {
         }
 
         addToast('Invoice generated successfully! The customer has been notified.', 'success');
+
+        // Reset payment link
+        setPaymentLink('');
 
         // Don't refresh data context - it causes re-fetch without customer join
         // refreshData();
@@ -1374,7 +1398,7 @@ export const ShipmentDetails = () => {
                 <Button variant="tertiary" onClick={() => setIsEditingCargo(false)}>
                   Cancel
                 </Button>
-                <Button variant="primary" onClick={handleGenerateInvoice} isLoading={isLoading}>
+                <Button variant="primary" onClick={() => setShowPaymentLinkModal(true)}>
                   Generate Invoice
                 </Button>
               </div>
@@ -2204,6 +2228,66 @@ export const ShipmentDetails = () => {
               >
                 <DownloadIcon className="h-4 w-4 mr-2" />
                 Download
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Link Modal */}
+      {showPaymentLinkModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={() => setShowPaymentLinkModal(false)}>
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-lg bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Enter Payment Link</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Provide the payment link URL where the customer will complete payment
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="payment-link" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Link URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  id="payment-link"
+                  value={paymentLink}
+                  onChange={(e) => setPaymentLink(e.target.value)}
+                  placeholder="https://pay.stripe.com/..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Examples: Stripe Payment Link, PayPal Invoice, Square Checkout, etc.
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Note:</strong> After generating the invoice with this payment link,
+                  you'll need to manually mark it as paid once the customer completes payment.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-2">
+              <Button
+                variant="tertiary"
+                onClick={() => {
+                  setShowPaymentLinkModal(false);
+                  setPaymentLink('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handlePaymentLinkSubmit}
+                disabled={!paymentLink.trim()}
+              >
+                Generate Invoice
               </Button>
             </div>
           </div>
